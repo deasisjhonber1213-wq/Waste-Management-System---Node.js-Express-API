@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Dashboard · SmartWaste Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .dash-grid-wide {
+            grid-column: 1 / -1;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .activity-text {
+            font-size: 0.82rem;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .activity-time {
+            font-size: 0.7rem;
+            color: var(--text2);
+            margin-top: 2px;
+        }
+
+        .quick-action {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 18px 12px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: var(--text2);
+            font-size: 0.78rem;
+            text-align: center;
+        }
+
+        .quick-action:hover {
+            border-color: var(--gold-mid);
+            color: var(--gold);
+            background: var(--gold-dim);
+        }
+
+        .quick-action-icon {
+            font-size: 1.4rem;
+        }
+
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 220px;
+        }
+
+        @media (max-width: 900px) {
+            .dash-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quick-actions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="dashboard.html" class="nav-item active"><span class="nav-icon">⬡</span>Dashboard</a>
+
+            <div class="nav-section-label">Management</div>
+            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+
+            <div class="nav-section-label">Community</div>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports <span class="nav-badge"
+                    id="reportBadge">…</span></a>
+            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+
+            <div class="nav-section-label">Analytics</div>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <div class="sidebar-user-name" id="adminName">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+            </div>
+            <a href="/login.html" class="sidebar-logout" style="margin-top:10px; display:flex;">⎋ &nbsp;Logout</a>
+        </div>
+    </aside>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+            <div class="topbar-left">
+                <div class="topbar-title">Dashboard</div>
+                <div class="topbar-breadcrumb">SmartWaste / <span>Overview</span></div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div style="font-size:0.72rem;color:var(--text2);font-family:var(--mono)" id="clock"></div>
+            <a href="announcements.html" class="topbar-btn">+ New Announcement</a>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- STAT CARDS -->
+        <div class="stat-grid reveal" id="statGrid">
+            <div class="stat-card" data-icon="👥">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="s-users">—</div>
+                <div class="stat-sub">All registered accounts</div>
+            </div>
+            <div class="stat-card" data-icon="🧑‍✈️">
+                <div class="stat-label">Drivers</div>
+                <div class="stat-value" id="s-drivers">—</div>
+                <div class="stat-sub">Active driver accounts</div>
+            </div>
+            <div class="stat-card" data-icon="🚛">
+                <div class="stat-label">Trucks</div>
+                <div class="stat-value" id="s-trucks">—</div>
+                <div class="stat-sub">Fleet vehicles</div>
+            </div>
+            <div class="stat-card" data-icon="🗺️">
+                <div class="stat-label">Routes</div>
+                <div class="stat-value" id="s-routes">—</div>
+                <div class="stat-sub">Active zones</div>
+            </div>
+            <div class="stat-card" data-icon="⚠️">
+                <div class="stat-label">Reports</div>
+                <div class="stat-value" id="s-reports">—</div>
+                <div class="stat-sub">Resident reports</div>
+            </div>
+            <div class="stat-card" data-icon="⛽">
+                <div class="stat-label">Fuel Used</div>
+                <div class="stat-value" id="s-fuel">—</div>
+                <div class="stat-sub">Liters logged</div>
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="panel section-gap reveal">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">⚡</div>Quick Actions
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="quick-actions-grid">
+                    <a href="users.html" class="quick-action">
+                        <div class="quick-action-icon">👤</div>Add User
+                    </a>
+                    <a href="trucks.html" class="quick-action">
+                        <div class="quick-action-icon">🚛</div>Add Truck
+                    </a>
+                    <a href="routes.html" class="quick-action">
+                        <div class="quick-action-icon">🗺️</div>Add Route
+                    </a>
+                    <a href="schedules.html" class="quick-action">
+                        <div class="quick-action-icon">📅</div>Assign Route
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS + ACTIVITY -->
+        <div class="dash-grid">
+            <div class="panel reveal">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <div class="panel-title-icon">📊</div>Report Types
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-wrap"><canvas id="reportChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="panel reveal">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <div class="panel-title-icon">📋</div>Recent Reports
+                    </div>
+                    <a href="reports.html" class="btn btn-outline btn-sm">View All</a>
+                </div>
+                <div class="panel-body" id="recentReports">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-text">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Schedules — full width -->
+            <div class="panel reveal dash-grid-wide">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <div class="panel-title-icon">📅</div>Upcoming Pickups
+                    </div>
+                    <a href="schedules.html" class="btn btn-outline btn-sm">View All</a>
+                </div>
+                <div class="panel-body-flush">
+                    <table class="data-table" id="pickupTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Driver</th>
+                                <th>Truck</th>
+                                <th>Zone</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pickupBody">
+                            <tr>
+                                <td colspan="5" class="empty-state-text"
+                                    style="text-align:center;padding:24px;color:var(--text2)">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="../js/style.js"></script>
+    <script>
+        (() => {
+            // Clock
+            function updateClock() {
+                const now = new Date();
+                document.getElementById("clock").textContent = now.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                });
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            // Load stats
+            async function loadStats() {
+                try {
+                    const res = await API.get("/api/admin/dashboard");
+                    if (!res.ok) throw new Error();
+                    const d = await res.json();
+                    document.getElementById("s-users").textContent = d.totalUsers ?? "—";
+                    document.getElementById("s-drivers").textContent = d.totalDrivers ?? "—";
+                    document.getElementById("s-trucks").textContent = d.totalTrucks ?? "—";
+                    document.getElementById("s-routes").textContent = d.totalRoutes ?? "—";
+                    document.getElementById("s-reports").textContent = d.totalReports ?? "—";
+                    document.getElementById("s-fuel").textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) + "L" : "0L";
+                    document.getElementById("reportBadge").textContent = d.totalReports ?? "0";
+                } catch {
+                    showToast("Failed to load stats", "error");
+                }
+            }
+
+            // Load report analytics chart
+            async function loadChart() {
+                try {
+                    const res = await API.get("/api/admin/analytics");
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    new Chart(document.getElementById("reportChart"), {
+                        type: "doughnut",
+                        data: {
+                            labels: data.map(d => d.type.replace("_", " ").toUpperCase()),
+                            datasets: [{
+                                data: data.map(d => d.total),
+                                backgroundColor: ["#ffc13c", "#3ddc84", "#ff5c5c", "#60a5fa"],
+                                borderWidth: 0,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: "bottom",
+                                    labels: {
+                                        color: "#8d99a8",
+                                        font: { family: "Outfit", size: 11 },
+                                        padding: 16,
+                                        boxWidth: 10
+                                    }
+                                }
+                            },
+                            cutout: "65%"
+                        }
+                    });
+                } catch { }
+            }
+
+            // Load recent reports
+            async function loadRecentReports() {
+                try {
+                    const res = await API.get("/api/admin/reports");
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    const el = document.getElementById("recentReports");
+                    if (!data.length) {
+                        el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No reports yet</div></div>';
+                        return;
+                    }
+                    el.innerHTML = data.slice(0, 5).map(r => `
+                <div class="activity-item">
+                    <div class="activity-dot" style="background:${r.type === 'missed_pickup' ? 'var(--gold)' : r.type === 'overflowing_bin' ? 'var(--green)' : 'var(--red)'}"></div>
+                    <div>
+                        <div class="activity-text">${r.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</div>
+                        <div class="activity-time">${r.description?.slice(0, 60) || "No description"}</div>
+                        <div class="activity-time">${fmtDate(r.created_at || new Date())}</div>
+                    </div>
+                </div>`).join("");
+                } catch { }
+            }
+
+            // Load upcoming pickups
+            async function loadPickups() {
+                try {
+                    const res = await API.get("/api/admin/pickups");
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    const tbody = document.getElementById("pickupBody");
+                    if (!data.length) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">No schedules found</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.slice(0, 7).map(p => `
+                <tr>
+                    <td class="table-mono">${fmtDate(p.assigned_date)}</td>
+                    <td>${p.driver_name || "—"}</td>
+                    <td class="table-mono">${p.truck_plate || "—"}</td>
+                    <td>${p.zone_name || "—"}</td>
+                    <td>${statusBadge(p.status)}</td>
+                </tr>`).join("");
+                } catch { }
+            }
+
+            // Load admin name
+            async function loadProfile() {
+                try {
+                    const res = await API.get("/api/admin/profile");
+                    if (!res.ok) throw new Error();
+                    const d = await res.json();
+                    document.getElementById("adminName").textContent = d.name || "Admin";
+                } catch { }
+            }
+
+            // Initialize dashboard
+            loadStats();
+            loadChart();
+            loadRecentReports();
+            loadPickups();
+            loadProfile();
+        })();
+    </script>
+</body>
+
+</html>

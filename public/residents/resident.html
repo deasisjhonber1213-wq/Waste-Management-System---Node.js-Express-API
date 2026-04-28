@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SmartWaste | Resident Portal - Live Fleet Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Clean font system for better readability without squishing -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ---------- ROOT VARIABLES ---------- */
+        :root {
+            --bg-dark: #0a0f0c;
+            --bg-card: #0f1a12;
+            --border: rgba(74, 222, 128, 0.15);
+            --border-glow: rgba(74, 222, 128, 0.35);
+            --text: #ebf5eb;
+            --text-muted: #9bbfa8;
+            --glow: #4ade80;
+            --glow-dim: rgba(74, 222, 128, 0.1);
+            --glow-mid: rgba(74, 222, 128, 0.3);
+            --danger: #f87171;
+            --warn: #fbbf24;
+            --font-display: 'Space Grotesk', system-ui, sans-serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, #0a0f0c 0%, #0d1410 100%);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Subtle background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle at 25% 50%, rgba(74, 222, 128, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        nav,
+        section,
+        footer {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(10, 15, 12, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+            color: var(--glow);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--glow);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: #0a0f0c;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 0.5rem;
+            list-style: none;
+        }
+
+        nav ul a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            transition: all 0.2s;
+        }
+
+        nav ul a:hover,
+        nav ul a.active {
+            color: var(--glow);
+            background: var(--glow-dim);
+        }
+
+        .nav-logout {
+            background: var(--glow);
+            color: #0a0f0c;
+            text-decoration: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .nav-logout:hover {
+            background: var(--text);
+            transform: translateY(-1px);
+        }
+
+        .nav-hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-hamburger span {
+            width: 24px;
+            height: 2px;
+            background: var(--glow);
+            border-radius: 2px;
+            transition: 0.2s;
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 15, 12, 0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            transform: translateX(100%);
+            transition: 0.3s;
+            z-index: 999;
+        }
+
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        .mobile-menu a {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .mobile-menu a:hover {
+            color: var(--glow);
+        }
+
+        /* Sections */
+        section {
+            padding: 5rem 2rem;
+        }
+
+        .section-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--glow);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        .section-title span {
+            color: var(--glow);
+        }
+
+        .glow-line {
+            width: 60px;
+            height: 2px;
+            background: var(--glow);
+            margin: 1rem 0 2rem;
+            border-radius: 2px;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Glassmorphic backgrounds */
+        #about,
+        #pickup,
+        #updates,
+        #tips,
+        #report {
+            background: rgba(15, 26, 18, 0.5);
+            backdrop-filter: blur(2px);
+            border-top: 1px solid var(--border);
+        }
+
+        /* HERO GRID - FIXED MAP SQUISHING */
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+            align-items: start;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            margin: 1rem 0 1.5rem;
+        }
+
+        .hero-title .line2 {
+            color: var(--glow);
+        }
+
+        .hero-title .line3 {
+            color: transparent;
+            -webkit-text-stroke: 1px var(--glow-mid);
+        }
+
+        .hero-desc {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 90%;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .hero-stat-num {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--glow);
+        }
+
+        .hero-stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        /* MAP CONTAINER - NO SQUISHING */
+        .hero-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .hero-img-frame {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-glow);
+        }
+
+        .hero-img-frame img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .hero-truck-card {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            background: rgba(10, 15, 12, 0.9);
+            backdrop-filter: blur(12px);
+            padding: 0.7rem 1rem;
+            border-radius: 14px;
+            border-left: 3px solid var(--glow);
+        }
+
+        .hero-truck-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: var(--glow);
+            letter-spacing: 0.08em;
+        }
+
+        #todayTruck {
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* MAP PANEL - CRITICAL: Fixed dimensions prevent squish */
+        .hero-map-panel {
+            background: rgba(15, 26, 18, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            border: 1px solid var(--border-glow);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .hero-map-label {
+            padding: 0.7rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--glow);
+            border-bottom: 1px solid var(--border);
+        }
+
+        #map {
+            width: 100%;
+            height: 320px;
+            min-height: 280px;
+            background: #1a2a1e;
+            z-index: 1;
+        }
+
+        /* About grid */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .about-img img {
+            width: 100%;
+            border-radius: 20px;
+            height: 350px;
+            object-fit: cover;
+            border: 1px solid var(--border-glow);
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 1rem;
+            background: rgba(15, 26, 18, 0.7);
+            padding: 1rem;
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .feature-icon {
+            font-size: 1.6rem;
+            width: 44px;
+            height: 44px;
+            background: var(--glow-dim);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-title {
+            font-family: var(--font-display);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* Schedule rows */
+        .schedule-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .pickup-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 1fr auto;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(15, 26, 18, 0.7);
+            padding: 1rem 1.2rem;
+            border-radius: 16px;
+            border-left: 3px solid var(--glow);
+        }
+
+        .pickup-date {
+            font-weight: 700;
+            font-family: var(--font-display);
+        }
+
+        .badge {
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-upcoming {
+            background: var(--glow-dim);
+            color: var(--glow);
+        }
+
+        .badge-done {
+            background: rgba(100, 116, 139, 0.3);
+            color: #94a3b8;
+        }
+
+        /* Updates & Tips */
+        .updates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin-top: 2rem;
+        }
+
+        .update-card {
+            background: rgba(15, 26, 18, 0.7);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .update-card-img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+        }
+
+        .update-card-body {
+            padding: 1rem;
+        }
+
+        .update-card-title {
+            font-weight: 700;
+            font-family: var(--font-display);
+            margin-bottom: 4px;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.2rem;
+        }
+
+        .tip-card {
+            background: rgba(15, 26, 18, 0.7);
+            padding: 1.2rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .tip-icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.8rem;
+            display: block;
+        }
+
+        /* Report */
+        .report-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .report-form-card {
+            background: rgba(15, 26, 18, 0.8);
+            padding: 1.5rem;
+            border-radius: 24px;
+            border: 1px solid var(--border-glow);
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            padding: 0.8rem;
+            border-radius: 12px;
+            color: var(--text);
+            font-family: var(--font-body);
+        }
+
+        .btn-primary {
+            background: var(--glow);
+            color: #0a0f0c;
+            font-weight: 700;
+            padding: 0.8rem;
+            border-radius: 40px;
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        footer {
+            background: rgba(10, 15, 12, 0.9);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        /* RESPONSIVE - PREVENTS MAP SQUISHING ON ALL DEVICES */
+        @media (max-width: 900px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .about-grid,
+            .report-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .tips-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .pickup-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            nav ul {
+                display: none;
+            }
+
+            .nav-hamburger {
+                display: flex;
+            }
+
+            #map {
+                height: 280px;
+                min-height: 250px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            section {
+                padding: 3rem 1rem;
+            }
+
+            .tips-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-img-frame img {
+                height: 150px;
+            }
+
+            #map {
+                height: 240px;
+                min-height: 220px;
+            }
+
+            .hero-title {
+                font-size: clamp(2rem, 10vw, 3rem);
+            }
+        }
+
+        @media (max-width: 480px) {
+            #map {
+                height: 200px;
+                min-height: 200px;
+            }
+
+            .hero-map-label {
+                font-size: 0.6rem;
+            }
+
+            .about-img img {
+                height: 200px;
+            }
+
+            footer {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--glow);
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="nav-logo">
+            <div class="nav-logo-icon">♻</div> Jose Dalman WM
+        </div>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#pickup">Schedule</a></li>
+            <li><a href="#updates">Updates</a></li>
+            <li><a href="#tips">Tips</a></li>
+            <li><a href="#report">Report</a></li>
+        </ul>
+        <a href="/login.html" class="nav-logout">Logout</a>
+        <button class="nav-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#home">Home</a><a href="#about">About</a><a href="#pickup">Schedule</a>
+        <a href="#updates">Updates</a><a href="#tips">Tips</a><a href="#report">Report</a>
+        <a href="/login.html">Logout</a>
+    </div>
+
+    <section id="home">
+        <div class="section-inner hero-grid">
+            <div class="hero-text reveal">
+                <div class="section-label">Resident Portal</div>
+                <h1 class="hero-title"><span class="line1">Jose Dalman</span><span class="line2">Waste
+                        Management</span><span class="line3">Portal</span></h1>
+                <p class="hero-desc">Track garbage trucks in real-time, stay informed about your collection schedule,
+                    and help keep your community clean.</p>
+                <div class="hero-stats">
+                    <div>
+                        <div class="hero-stat-num">24/7</div>
+                        <div class="hero-stat-label">Live Tracking</div>
+                    </div>
+                    <div>
+                        <div class="hero-stat-num">100%</div>
+                        <div class="hero-stat-label">Coverage</div>
+                    </div>
+                    <div>
+                        <div class="hero-stat-num">&lt;2min</div>
+                        <div class="hero-stat-label">Report Time</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual reveal">
+                <div class="hero-img-frame">
+                    <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80"
+                        alt="waste truck">
+                    <div class="hero-truck-card">
+                        <div class="hero-truck-label"><span class="live-dot"></span> Live Truck Status</div>
+                        <div id="todayTruck">Loading...</div>
+                    </div>
+                </div>
+                <div class="hero-map-panel">
+                    <div class="hero-map-label">📍 Real-time GPS Location</div>
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about">
+        <div class="section-inner">
+            <div class="reveal">
+                <div class="section-label">Our Mission</div>
+                <h2 class="section-title">Waste Management<br><span>Reinvented</span></h2>
+                <div class="glow-line"></div>
+            </div>
+            <div class="about-grid">
+                <div class="about-img reveal"><img
+                        src="https://images.unsplash.com/photo-1581093588401-1ec91b9d2b9b?auto=format&fit=crop&w=1000&q=80"
+                        alt="collection"></div>
+                <div class="about-features reveal">
+                    <div class="feature-item">
+                        <div class="feature-icon">🛰️</div>
+                        <div>
+                            <div class="feature-title">Real-Time GPS Tracking</div>
+                            <div class="feature-desc">Monitor garbage truck's exact location — updated every 10 seconds.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📅</div>
+                        <div>
+                            <div class="feature-title">Smart Scheduling</div>
+                            <div class="feature-desc">Personalized pickup schedules based on your neighborhood.</div>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">⚡</div>
+                        <div>
+                            <div class="feature-title">Instant Reporting</div>
+                            <div class="feature-desc">Report missed pickups or overflowing bins in under two minutes.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🔔</div>
+                        <div>
+                            <div class="feature-title">Community Alerts</div>
+                            <div class="feature-desc">Stay informed with real-time announcements.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pickup">
+        <div class="section-inner">
+            <div class="reveal">
+                <div class="section-label">Collection Schedule</div>
+                <h2 class="section-title">Your Pickup<br><span>Timeline</span></h2>
+                <div class="glow-line"></div>
+            </div>
+            <div class="schedule-grid" id="scheduleCards"></div>
+        </div>
+    </section>
+
+    <section id="updates">
+        <div class="section-inner">
+            <div class="reveal">
+                <div class="section-label">Community Board</div>
+                <h2 class="section-title">Latest<br><span>Announcements</span></h2>
+                <div class="glow-line"></div>
+            </div>
+            <div class="updates-grid" id="announcementCards"></div>
+        </div>
+    </section>
+
+    <section id="tips">
+        <div class="section-inner">
+            <div class="reveal">
+                <div class="section-label">Green Living</div>
+                <h2 class="section-title">Eco Tips &<br><span>Guides</span></h2>
+                <div class="glow-line"></div>
+            </div>
+            <div class="tips-grid">
+                <div class="tip-card"><span class="tip-icon">♻️</span>
+                    <div class="tip-title">Segregate Your Waste</div>
+                    <p class="tip-desc">Separate wet, dry, and hazardous waste for efficient processing.</p>
+                </div>
+                <div class="tip-card"><span class="tip-icon">🌱</span>
+                    <div class="tip-title">Compost Organics</div>
+                    <p class="tip-desc">Turn food scraps into natural fertilizer, reducing methane.</p>
+                </div>
+                <div class="tip-card"><span class="tip-icon">🚨</span>
+                    <div class="tip-title">Report Overflows Quickly</div>
+                    <p class="tip-desc">Use the report tool to alert our team instantly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="report">
+        <div class="section-inner">
+            <div class="reveal">
+                <div class="section-label">Issue Reporting</div>
+                <h2 class="section-title">Something<br><span>Wrong?</span></h2>
+                <div class="glow-line"></div>
+            </div>
+            <div class="report-layout">
+                <div class="reveal">
+                    <p class="section-sub" style="margin-bottom:1rem">Quickly report missed pickup, overflowing bin, or
+                        illegal dumping.</p>
+                    <div class="report-types">
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.8rem;">
+                            <div style="width:10px;height:10px;background:var(--warn);border-radius:50%"></div> Missed
+                            Pickup
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.8rem;">
+                            <div style="width:10px;height:10px;background:var(--danger);border-radius:50%"></div>
+                            Illegal Dumping
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.5rem;">
+                            <div style="width:10px;height:10px;background:var(--glow);border-radius:50%"></div>
+                            Overflowing Bin
+                        </div>
+                    </div>
+                </div>
+                <div class="report-form-card reveal">
+                    <h3 style="font-family:var(--font-display); font-weight:700; margin-bottom:1rem;">Submit a Report
+                    </h3>
+                    <form id="reportForm">
+                        <div class="form-group"><label class="form-label"
+                                style="display:block; margin-bottom:4px;">Issue Type</label><select id="type"
+                                class="form-control">
+                                <option value="missed_pickup">Missed Pickup</option>
+                                <option value="illegal_dumping">Illegal Dumping</option>
+                                <option value="overflowing_bin">Overflowing Bin</option>
+                            </select></div>
+                        <div class="form-group"><label class="form-label">Description</label><textarea id="description"
+                                class="form-control" placeholder="Describe the issue in detail..."></textarea></div>
+                        <button type="submit" class="btn-primary">Submit Report →</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-logo">♻ SmartWaste</div>
+        <div class="footer-copy">© 2026 Smart Waste Management · Jose Dalman, Zamboanga del Norte</div>
+        <div class="footer-links"><a href="#home">Home</a><a href="#about">About</a><a href="#pickup">Schedule</a><a
+                href="#report">Report</a></div>
+    </footer>
+
+    <script>
+        const token = localStorage.getItem("token");
+        if (!token) window.location.href = "/login.html";
+
+        // Mobile menu
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('open');
+            mobileMenu.classList.toggle('open');
+            document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+        });
+        document.querySelectorAll('.mobile-menu a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    mobileMenu.classList.remove('open');
+                    hamburger.classList.remove('open');
+                    document.body.style.overflow = '';
+                    setTimeout(() => target?.scrollIntoView({ behavior: 'smooth' }), 50);
+                }
+            });
+        });
+
+        // Reveal animations
+        const observer = new IntersectionObserver(entries => entries.forEach(e => e.isIntersecting && e.target.classList.add('visible')), { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Active nav
+        const sections = ['home', 'about', 'pickup', 'updates', 'tips', 'report'];
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && window.scrollY >= el.offsetTop - 200) current = id;
+            });
+            document.querySelectorAll('nav ul a').forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${current}`));
+        });
+
+        document.querySelectorAll('nav a, footer a').forEach(a => {
+            a.addEventListener('click', (e) => {
+                const href = a.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // ========== MAP IMPLEMENTATION (Matches your backend API) ==========
+        let map, marker, currentTruckId, locationInterval;
+
+        function initMap(lat, lng) {
+            if (map) return;
+
+            // Better free map tiles recommendation:
+            // Option 1: CartoDB Voyager (clean, detailed, free) - BEST FOR REAL-TIME TRACKING
+            // Option 2: Stamen Toner (high contrast)
+            // Option 3: OpenStreetMap (default but slower)
+
+            map = L.map('map').setView([lat || 8.2317, lng || 123.4018], 14);
+
+            // RECOMMENDED: CartoDB Voyager - cleaner, faster, better for vehicle tracking
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 19,
+                minZoom: 3
+            }).addTo(map);
+
+            // Alternative high-detail free tile (uncomment to use MapTiler free plan):
+            // L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=YOUR_FREE_KEY', {
+            //     attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>'
+            // }).addTo(map);
+        }
+
+        function placeMarker(lat, lng) {
+            if (!map) initMap(lat, lng);
+            if (marker) map.removeLayer(marker);
+
+            const customIcon = L.divIcon({
+                html: `<div style="width: 18px; height: 18px; background: #4ade80; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px rgba(74,222,128,0.6), 0 0 16px rgba(74,222,128,0.5); animation: pulse 1.5s infinite;"></div>`,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+                className: 'custom-truck-marker'
+            });
+
+            marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+            map.setView([lat, lng], 15);
+        }
+
+        async function loadTodayTruck() {
+            try {
+                const res = await fetch("/api/resident/today-truck", {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                if (!data) {
+                    document.getElementById("todayTruck").innerHTML = "No truck assigned today.";
+                    initMap();
+                    return;
+                }
+
+                currentTruckId = data.truck_id;
+                document.getElementById("todayTruck").innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
+
+                if (data.latitude && data.longitude) {
+                    initMap(data.latitude, data.longitude);
+                    placeMarker(data.latitude, data.longitude);
+                } else {
+                    initMap();
+                }
+
+                loadTruckLocation();
+
+                // Clear existing interval
+                if (locationInterval) clearInterval(locationInterval);
+                locationInterval = setInterval(loadTruckLocation, 10000);
+            } catch (err) {
+                console.error("Failed to load truck:", err);
+                document.getElementById("todayTruck").textContent = "Please login again.";
+                initMap();
+            }
+        }
+
+        async function loadTruckLocation() {
+            if (!currentTruckId) return;
+            try {
+                const res = await fetch(`/api/resident/truck/${currentTruckId}/location`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error();
+                const logs = await res.json();
+                if (logs && logs.length > 0) {
+                    const latest = logs[0];
+                    if (latest.latitude && latest.longitude) {
+                        placeMarker(latest.latitude, latest.longitude);
+                    }
+                }
+            } catch (err) {
+                console.error("Location fetch failed:", err);
+            }
+        }
+
+        async function loadSchedule() {
+            try {
+                const res = await fetch("/api/resident/pickup-schedule", {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                const el = document.getElementById("scheduleCards");
+
+                if (!data.length) {
+                    el.innerHTML = '<p style="color:var(--text-muted);">No schedule available.</p>';
+                    return;
+                }
+
+                el.innerHTML = data.map(s => {
+                    const d = new Date(s.assigned_date);
+                    const upcoming = s.status === 'pending';
+                    return `<div class="pickup-row" style="animation: slideIn 0.4s ease forwards;">
+                    <div>
+                        <div class="pickup-date">${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                        <div class="pickup-date-sub">${d.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                    </div>
+                    <div class="pickup-meta">
+                        <span class="pickup-label">Truck</span>
+                        <strong>🚛 ${s.plate_number}</strong>
+                    </div>
+                    <div class="pickup-meta">
+                        <span class="pickup-label">Zone</span>
+                        <span>📍 ${s.zone_name}</span>
+                    </div>
+                    <div>
+                        <span class="badge ${upcoming ? 'badge-upcoming' : 'badge-done'}">${s.status}</span>
+                        <div style="font-size:0.7rem; margin-top:4px;">${s.pickup_type}</div>
+                    </div>
+                </div>`;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                document.getElementById("scheduleCards").innerHTML = '<p style="color:var(--text-muted);">Failed to load schedule.</p>';
+            }
+        }
+
+        async function loadAnnouncements() {
+            try {
+                const res = await fetch("/api/resident/announcements", {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const el = document.getElementById("announcementCards");
+
+                el.innerHTML = data.length ? data.map(a => `
+                <div class="update-card">
+                    ${a.image_url ? `<img class="update-card-img" src="${a.image_url}" alt="">` : ''}
+                    <div class="update-card-body">
+                        <div class="update-card-date">${a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</div>
+                        <div class="update-card-title">${a.title}</div>
+                        <div class="update-card-msg">${a.message}</div>
+                    </div>
+                </div>
+            `).join('') : '<p style="color:var(--text-muted);">No announcements yet.</p>';
+            } catch (err) {
+                console.error(err);
+                document.getElementById("announcementCards").innerHTML = '<p style="color:var(--text-muted);">Failed to load announcements.</p>';
+            }
+        }
+
+        // Report submission
+        document.getElementById("reportForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+            btn.textContent = 'Submitting...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch("/api/resident/reports", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        type: document.getElementById("type").value,
+                        description: document.getElementById("description").value
+                    })
+                });
+
+                if (!res.ok) throw new Error();
+
+                btn.textContent = '✓ Report Submitted';
+                btn.style.background = 'rgba(74,222,128,0.3)';
+                document.getElementById("description").value = "";
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                    btn.disabled = false;
+                }, 3000);
+            } catch (err) {
+                btn.textContent = 'Failed — Try Again';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        });
+
+        // Initialize everything
+        loadTodayTruck();
+        loadSchedule();
+        loadAnnouncements();
+
+        // Add CSS animation for slideIn
+        const style = document.createElement('style');
+        style.textContent = `@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>

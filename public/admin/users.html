@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Users · SmartWaste Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <div class="nav-section-label">Management</div>
+            <a href="users.html" class="nav-item active"><span class="nav-icon">👥</span>Users</a>
+            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <div class="nav-section-label">Community</div>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <div class="nav-section-label">Analytics</div>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <div class="sidebar-user-name" id="adminName">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+            </div>
+            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+        </div>
+    </aside>
+
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+            <div class="topbar-left">
+                <div class="topbar-title">Users</div>
+                <div class="topbar-breadcrumb">SmartWaste / Management / <span>Users</span></div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="topbar-btn" onclick="openModal('addUserModal')">+ Add User</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <!-- STAT ROW -->
+        <div class="stat-grid reveal" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px" id="userStats">
+            <div class="stat-card" data-icon="👥">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="totalUsers">—</div>
+            </div>
+            <div class="stat-card" data-icon="🧑‍✈️">
+                <div class="stat-label">Drivers</div>
+                <div class="stat-value" id="totalDrivers">—</div>
+            </div>
+            <div class="stat-card" data-icon="🏘️">
+                <div class="stat-label">Residents</div>
+                <div class="stat-value" id="totalResidents">—</div>
+            </div>
+        </div>
+
+        <div class="panel reveal">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">👥</div>All Users
+                </div>
+                <div class="flex-row">
+                    <div class="search-bar"><input type="text" placeholder="Search users…" id="searchInput"
+                            oninput="filterUsers()"></div>
+                    <select class="form-control" id="roleFilter" onchange="filterUsers()"
+                        style="width:130px;padding:8px 12px;font-size:0.82rem">
+                        <option value="">All Roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="driver">Driver</option>
+                        <option value="resident">Resident</option>
+                    </select>
+                </div>
+            </div>
+            <div class="panel-body-flush">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                        <tr>
+                            <td colspan="7" style="text-align:center;padding:32px;color:var(--text2)"><span
+                                    class="loading-spinner"></span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ADD USER MODAL -->
+    <div class="modal-overlay" id="addUserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">👤 Add New User</div>
+                <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid form-grid-2">
+                    <div class="form-group"><label class="form-label">Full Name</label><input class="form-control"
+                            id="uName" placeholder="John Doe"></div>
+                    <div class="form-group"><label class="form-label">Email</label><input class="form-control"
+                            id="uEmail" type="email" placeholder="john@example.com"></div>
+                    <div class="form-group"><label class="form-label">Password</label><input class="form-control"
+                            id="uPass" type="password" placeholder="••••••••"></div>
+                    <div class="form-group"><label class="form-label">Role</label>
+                        <select class="form-control" id="uRole">
+                            <option value="resident">Resident</option>
+                            <option value="driver">Driver</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Phone</label><input class="form-control"
+                            id="uPhone" placeholder="+1 555 0000"></div>
+                    <div class="form-group"><label class="form-label">Address</label><input class="form-control"
+                            id="uAddress" placeholder="123 Main St"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="addUser()">Create User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW USER MODAL -->
+    <div class="modal-overlay" id="viewUserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">👤 User Details</div>
+                <button class="modal-close" onclick="closeModal('viewUserModal')">✕</button>
+            </div>
+            <div class="modal-body" id="viewUserBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('viewUserModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="../js/style.js"></script>
+    <script>
+        let allUsers = [];
+
+        async function loadUsers() {
+            try {
+                const res = await API.get("/api/admin/users");
+                if (!res.ok) throw new Error();
+                allUsers = await res.json();
+                renderUsers(allUsers);
+                // Stats
+                document.getElementById("totalUsers").textContent = allUsers.length;
+                document.getElementById("totalDrivers").textContent = allUsers.filter(u => u.role === "driver").length;
+                document.getElementById("totalResidents").textContent = allUsers.filter(u => u.role === "resident").length;
+            } catch { showToast("Failed to load users", "error"); }
+        }
+
+        function renderUsers(data) {
+            const tbody = document.getElementById("usersBody");
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No users found</div></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map((u, i) => `
+        <tr>
+            <td class="table-muted table-mono">${String(i + 1).padStart(2, "0")}</td>
+            <td><strong>${u.name}</strong></td>
+            <td class="table-muted">${u.email}</td>
+            <td>${statusBadge(u.role)}</td>
+            <td class="table-muted">${u.phone || "—"}</td>
+            <td class="table-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.address || "—"}</td>
+            <td>
+                <div class="flex-row" style="gap:6px">
+                    <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${JSON.stringify(u).replace(/"/g, '&quot;')})">👁</button>
+                    <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="deleteUser(${u.id},'${u.name}')">🗑</button>
+                </div>
+            </td>
+        </tr>`).join("");
+        }
+
+        function filterUsers() {
+            const q = document.getElementById("searchInput").value.toLowerCase();
+            const role = document.getElementById("roleFilter").value;
+            const filtered = allUsers.filter(u =>
+                (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
+                (!role || u.role === role)
+            );
+            renderUsers(filtered);
+        }
+
+        async function addUser() {
+            const body = {
+                name: document.getElementById("uName").value,
+                email: document.getElementById("uEmail").value,
+                password: document.getElementById("uPass").value,
+                role: document.getElementById("uRole").value,
+                phone: document.getElementById("uPhone").value,
+                address: document.getElementById("uAddress").value,
+            };
+            if (!body.name || !body.email || !body.password) { showToast("Name, email and password required", "error"); return; }
+            try {
+                const res = await API.post("/api/auth/register", body);
+                if (!res.ok) throw new Error();
+                closeModal("addUserModal");
+                showToast("User created successfully", "success");
+                loadUsers();
+            } catch { showToast("Failed to create user", "error"); }
+        }
+
+        async function deleteUser(id, name) {
+            if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+            try {
+                const res = await API.del(`/api/admin/users/${id}`);
+                if (!res.ok) throw new Error();
+                showToast("User deleted", "success");
+                loadUsers();
+            } catch { showToast("Failed to delete user", "error"); }
+        }
+
+        function viewUser(u) {
+            document.getElementById("viewUserBody").innerHTML = `
+        <div class="form-grid form-grid-2" style="gap:14px">
+            <div><div class="form-label">Name</div><div style="font-weight:600;margin-top:4px">${u.name}</div></div>
+            <div><div class="form-label">Email</div><div style="margin-top:4px">${u.email}</div></div>
+            <div><div class="form-label">Role</div><div style="margin-top:4px">${statusBadge(u.role)}</div></div>
+            <div><div class="form-label">Phone</div><div style="margin-top:4px">${u.phone || "—"}</div></div>
+            <div style="grid-column:1/-1"><div class="form-label">Address</div><div style="margin-top:4px">${u.address || "—"}</div></div>
+        </div>`;
+            openModal("viewUserModal");
+        }
+
+        loadUsers();
+    </script>
+</body>
+
+</html>

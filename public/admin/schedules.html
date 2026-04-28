@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Schedules · SmartWaste Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <div class="nav-section-label">Management</div>
+            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="schedules.html" class="nav-item active"><span class="nav-icon">📅</span>Schedules</a>
+            <div class="nav-section-label">Community</div>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <div class="nav-section-label">Analytics</div>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+            </div>
+            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+        </div>
+    </aside>
+
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+            <div class="topbar-left">
+                <div class="topbar-title">Schedules</div>
+                <div class="topbar-breadcrumb">SmartWaste / Management / <span>Schedules</span></div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="topbar-btn" onclick="openModal('assignModal')">+ Assign Route</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <!-- STATS -->
+        <div class="stat-grid reveal" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+            <div class="stat-card" data-icon="📅">
+                <div class="stat-label">Total Schedules</div>
+                <div class="stat-value" id="totalSched">—</div>
+            </div>
+            <div class="stat-card" data-icon="⏳">
+                <div class="stat-label">Pending</div>
+                <div class="stat-value text-gold" id="pendingSched">—</div>
+            </div>
+            <div class="stat-card" data-icon="✅">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value text-green" id="doneSched">—</div>
+            </div>
+        </div>
+
+        <div class="panel reveal">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">📅</div>All Pickup Schedules
+                </div>
+                <div class="flex-row flex-wrap" style="gap:8px">
+                    <div class="search-bar"><input type="text" placeholder="Search…" id="searchInput"
+                            oninput="filterSchedules()"></div>
+                    <select class="form-control" id="statusFilter" onchange="filterSchedules()"
+                        style="width:130px;padding:8px 12px;font-size:0.82rem">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="missed">Missed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="panel-body-flush">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Driver</th>
+                            <th>Truck</th>
+                            <th>Zone</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedBody">
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:32px;color:var(--text2)"><span
+                                    class="loading-spinner"></span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ASSIGN MODAL -->
+    <div class="modal-overlay" id="assignModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">📅 Assign Route</div>
+                <button class="modal-close" onclick="closeModal('assignModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid form-grid-2">
+                    <div class="form-group"><label class="form-label">Driver</label>
+                        <select class="form-control" id="aDriver">
+                            <option value="">Select driver…</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Truck</label>
+                        <select class="form-control" id="aTruck">
+                            <option value="">Select truck…</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Route / Zone</label>
+                        <select class="form-control" id="aRoute">
+                            <option value="">Select route…</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Date</label>
+                        <input class="form-control" type="date" id="aDate">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Pickup Type</label>
+                        <select class="form-control" id="aType">
+                            <option value="regular">Regular</option>
+                            <option value="special">Special</option>
+                            <option value="recyclable">Recyclable</option>
+                            <option value="hazardous">Hazardous</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('assignModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="assignRoute()">Assign</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT STATUS MODAL -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">✏️ Update Schedule</div>
+                <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="form-grid form-grid-2">
+                    <div class="form-group"><label class="form-label">Status</label>
+                        <select class="form-control" id="editStatus">
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="missed">Missed</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Date</label>
+                        <input class="form-control" type="date" id="editDate">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="updateSchedule()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="../js/style.js"></script>
+    <script>
+        let allSchedules = [];
+
+        async function loadSchedules() {
+            try {
+                const res = await API.get("/api/admin/pickups");
+                if (!res.ok) throw new Error();
+                allSchedules = await res.json();
+                renderSchedules(allSchedules);
+                document.getElementById("totalSched").textContent = allSchedules.length;
+                document.getElementById("pendingSched").textContent = allSchedules.filter(s => s.status === "pending").length;
+                document.getElementById("doneSched").textContent = allSchedules.filter(s => s.status === "completed").length;
+            } catch { showToast("Failed to load schedules", "error"); }
+        }
+
+        function renderSchedules(data) {
+            const tbody = document.getElementById("schedBody");
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">No schedules found</div></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map((s, i) => `
+        <tr>
+            <td class="table-mono table-muted">${String(i + 1).padStart(2, "0")}</td>
+            <td class="table-mono">${fmtDate(s.assigned_date)}</td>
+            <td>${s.driver_name || "—"}</td>
+            <td class="table-mono text-gold">${s.truck_plate || "—"}</td>
+            <td>${s.zone_name || "—"}</td>
+            <td><span class="badge badge-gray">${s.pickup_type || "regular"}</span></td>
+            <td>${statusBadge(s.status)}</td>
+            <td>
+                <div class="flex-row" style="gap:6px">
+                    <button class="btn btn-outline btn-sm btn-icon" title="Edit" onclick="openEdit(${s.id},'${s.status}','${s.assigned_date?.slice(0, 10)}')">✏️</button>
+                    <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteSchedule(${s.id})">🗑</button>
+                </div>
+            </td>
+        </tr>`).join("");
+        }
+
+        function filterSchedules() {
+            const q = document.getElementById("searchInput").value.toLowerCase();
+            const st = document.getElementById("statusFilter").value;
+            renderSchedules(allSchedules.filter(s =>
+                (!q || (s.driver_name || "").toLowerCase().includes(q) || (s.zone_name || "").toLowerCase().includes(q) || (s.truck_plate || "").toLowerCase().includes(q)) &&
+                (!st || s.status === st)
+            ));
+        }
+
+        async function loadFormData() {
+            try {
+                const [uRes, tRes, rRes] = await Promise.all([
+                    API.get("/api/admin/users"), API.get("/api/admin/trucks"), API.get("/api/admin/routes")
+                ]);
+                const users = await uRes.json();
+                const trucks = await tRes.json();
+                const routes = await rRes.json();
+                document.getElementById("aDriver").innerHTML = '<option value="">Select driver…</option>' +
+                    users.filter(u => u.role === "driver").map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+                document.getElementById("aTruck").innerHTML = '<option value="">Select truck…</option>' +
+                    trucks.map(t => `<option value="${t.id}">${t.plate_number}</option>`).join("");
+                document.getElementById("aRoute").innerHTML = '<option value="">Select route…</option>' +
+                    routes.map(r => `<option value="${r.id}">${r.zone_name}</option>`).join("");
+            } catch { }
+        }
+
+        async function assignRoute() {
+            const body = {
+                driver_id: document.getElementById("aDriver").value,
+                truck_id: document.getElementById("aTruck").value,
+                route_id: document.getElementById("aRoute").value,
+                assigned_date: document.getElementById("aDate").value,
+                pickup_type: document.getElementById("aType").value,
+            };
+            if (!body.driver_id || !body.truck_id || !body.route_id || !body.assigned_date) {
+                showToast("Fill all fields", "error"); return;
+            }
+            try {
+                const res = await API.post("/api/admin/assign-route", body);
+                if (!res.ok) throw new Error();
+                closeModal("assignModal");
+                showToast("Route assigned successfully", "success");
+                loadSchedules();
+            } catch { showToast("Assignment failed", "error"); }
+        }
+
+        function openEdit(id, status, date) {
+            document.getElementById("editId").value = id;
+            document.getElementById("editStatus").value = status;
+            document.getElementById("editDate").value = date || "";
+            openModal("editModal");
+        }
+
+        async function updateSchedule() {
+            const id = document.getElementById("editId").value;
+            const status = document.getElementById("editStatus").value;
+            const date = document.getElementById("editDate").value;
+            try {
+                const res = await API.put(`/api/admin/pickups/${id}`, { status, assigned_date: date });
+                if (!res.ok) throw new Error();
+                closeModal("editModal");
+                showToast("Schedule updated", "success");
+                loadSchedules();
+            } catch { showToast("Update failed", "error"); }
+        }
+
+        async function deleteSchedule(id) {
+            if (!confirm("Delete this schedule?")) return;
+            try {
+                const res = await API.del(`/api/admin/pickups/${id}`);
+                if (!res.ok) throw new Error();
+                showToast("Schedule deleted", "success");
+                loadSchedules();
+            } catch { showToast("Delete failed", "error"); }
+        }
+
+        // Pre-fill today's date
+        document.getElementById("aDate").value = new Date().toISOString().slice(0, 10);
+
+        loadSchedules();
+        loadFormData();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Reports · SmartWaste Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .report-type-bar {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 6px;
+            transition: width 0.6s ease;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <div class="nav-section-label">Management</div>
+            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <div class="nav-section-label">Community</div>
+            <a href="reports.html" class="nav-item active"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <div class="nav-section-label">Analytics</div>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+            </div>
+            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+        </div>
+    </aside>
+
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+            <div class="topbar-left">
+                <div class="topbar-title">Reports</div>
+                <div class="topbar-breadcrumb">SmartWaste / Community / <span>Reports</span></div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <!-- TYPE BREAKDOWN -->
+        <div class="stat-grid reveal" id="reportStats" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+            <div class="stat-card" data-icon="🚛">
+                <div class="stat-label">Missed Pickup</div>
+                <div class="stat-value" id="c-missed">—</div>
+                <div class="report-type-bar" style="background:var(--gold)"></div>
+            </div>
+            <div class="stat-card" data-icon="🗑️">
+                <div class="stat-label">Overflowing Bin</div>
+                <div class="stat-value" id="c-overflow">—</div>
+                <div class="report-type-bar" style="background:var(--green)"></div>
+            </div>
+            <div class="stat-card" data-icon="⚠️">
+                <div class="stat-label">Illegal Dumping</div>
+                <div class="stat-value" id="c-illegal">—</div>
+                <div class="report-type-bar" style="background:var(--red)"></div>
+            </div>
+        </div>
+
+        <div class="panel reveal">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">⚠️</div>Resident Reports
+                </div>
+                <div class="flex-row flex-wrap" style="gap:8px">
+                    <div class="search-bar"><input type="text" placeholder="Search…" id="searchInput"
+                            oninput="filterReports()"></div>
+                    <select class="form-control" id="typeFilter" onchange="filterReports()"
+                        style="width:160px;padding:8px 12px;font-size:0.82rem">
+                        <option value="">All Types</option>
+                        <option value="missed_pickup">Missed Pickup</option>
+                        <option value="overflowing_bin">Overflowing Bin</option>
+                        <option value="illegal_dumping">Illegal Dumping</option>
+                    </select>
+                </div>
+            </div>
+            <div class="panel-body-flush">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Reporter</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsBody">
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:32px;color:var(--text2)"><span
+                                    class="loading-spinner"></span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- VIEW REPORT MODAL -->
+    <div class="modal-overlay" id="viewReportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">📋 Report Details</div>
+                <button class="modal-close" onclick="closeModal('viewReportModal')">✕</button>
+            </div>
+            <div class="modal-body" id="reportModalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('viewReportModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="../js/style.js"></script>
+
+    <script>
+        let allReports = [];
+
+        const TYPE_COLORS = {
+            missed_pickup: "var(--gold)",
+            overflowing_bin: "var(--green)",
+            illegal_dumping: "var(--red)"
+        };
+
+        const TYPE_BADGES = {
+            missed_pickup: "badge-gold",
+            overflowing_bin: "badge-green",
+            illegal_dumping: "badge-red"
+        };
+
+        async function loadReports() {
+            try {
+                const res = await API.get("/api/admin/reports");
+                if (!res.ok) throw new Error();
+                allReports = await res.json();
+                renderReports(allReports);
+                // Stats
+                document.getElementById("c-missed").textContent = allReports.filter(r => r.type === "missed_pickup").length;
+                document.getElementById("c-overflow").textContent = allReports.filter(r => r.type === "overflowing_bin").length;
+                document.getElementById("c-illegal").textContent = allReports.filter(r => r.type === "illegal_dumping").length;
+            } catch { showToast("Failed to load reports", "error"); }
+        }
+
+        function renderReports(data) {
+            const tbody = document.getElementById("reportsBody");
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No reports found</div></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map((r, i) => `
+        <tr>
+            <td class="table-mono table-muted">${String(i + 1).padStart(2, "0")}</td>
+            <td>
+                <span class="badge ${TYPE_BADGES[r.type] || 'badge-gray'}">
+                    ${r.type.replace(/_/g, " ")}
+                </span>
+            </td>
+            <td style="max-width:220px;color:var(--text2);font-size:0.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.description || "—"}</td>
+            <td class="table-muted">${r.user_id ? `User #${r.user_id}` : "Anonymous"}</td>
+            <td class="table-muted">${fmtDate(r.created_at || new Date())}</td>
+            <td>
+                <button class="btn btn-outline btn-sm btn-icon" onclick='viewReport(${JSON.stringify(r).replace(/'/g, "&apos;")})'>👁</button>
+            </td>
+        </tr>`).join("");
+        }
+
+        function filterReports() {
+            const q = document.getElementById("searchInput").value.toLowerCase();
+            const tp = document.getElementById("typeFilter").value;
+            renderReports(allReports.filter(r =>
+                (!q || (r.description || "").toLowerCase().includes(q)) &&
+                (!tp || r.type === tp)
+            ));
+        }
+
+        function viewReport(r) {
+            document.getElementById("reportModalBody").innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:16px">
+            <div><div class="form-label">Type</div><div style="margin-top:6px"><span class="badge ${TYPE_BADGES[r.type] || 'badge-gray'}">${r.type.replace(/_/g, " ")}</span></div></div>
+            <div><div class="form-label">Description</div><div style="margin-top:6px;font-size:0.88rem;color:var(--text);line-height:1.7;background:var(--bg3);padding:12px;border-radius:8px">${r.description || "No description provided"}</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><div class="form-label">Reporter ID</div><div style="margin-top:4px;font-family:var(--mono);font-size:0.82rem">${r.user_id || "Anonymous"}</div></div>
+                <div><div class="form-label">Submitted</div><div style="margin-top:4px;font-size:0.82rem">${fmtDate(r.created_at || new Date())}</div></div>
+            </div>
+        </div>`;
+            openModal("viewReportModal");
+        }
+
+        loadReports();
+    </script>
+</body>
+
+</html>

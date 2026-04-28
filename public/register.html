@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartWaste · Create Account</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --glow: #4ade80;
+            --glow-dim: rgba(74, 222, 128, 0.14);
+            --glow-mid: rgba(74, 222, 128, 0.38);
+            --border: rgba(74, 222, 128, 0.18);
+            --text: #e2f5e8;
+            --muted: #7aaa88;
+            --danger: #f87171;
+            --head: 'Syne', sans-serif;
+            --body: 'DM Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+            font-family: var(--body);
+        }
+
+        .bg {
+            position: fixed;
+            inset: 0;
+            background: url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80") center/cover no-repeat;
+            z-index: 0;
+        }
+
+        .bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(3, 8, 4, 0.90) 0%, rgba(4, 12, 6, 0.82) 50%, rgba(3, 8, 4, 0.92) 100%);
+        }
+
+        .bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 64px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 52px;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--glow);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #060d08;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            font-family: var(--head);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--glow);
+            letter-spacing: -0.01em;
+        }
+
+        .brand-name span {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 400;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        .hero-headline {
+            font-family: var(--head);
+            font-size: clamp(2.2rem, 3.5vw, 3.4rem);
+            font-weight: 800;
+            line-height: 0.93;
+            letter-spacing: -0.04em;
+            color: var(--text);
+            margin-bottom: 20px;
+        }
+
+        .hero-headline em {
+            color: var(--glow);
+            font-style: normal;
+        }
+
+        .hero-sub {
+            font-size: 0.92rem;
+            font-weight: 300;
+            color: var(--muted);
+            line-height: 1.75;
+            max-width: 360px;
+            margin-bottom: 36px;
+        }
+
+        .resident-notice {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 16px 18px;
+            background: var(--glow-dim);
+            border: 1px solid var(--glow-mid);
+            border-radius: 12px;
+            max-width: 380px;
+        }
+
+        .notice-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .notice-title {
+            font-family: var(--head);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--glow);
+            margin-bottom: 4px;
+        }
+
+        .notice-text {
+            font-size: 0.8rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .right {
+            width: 460px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 40px;
+            background: rgba(4, 10, 5, 0.45);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 380px;
+            padding: 8px 0;
+        }
+
+        .card-title {
+            font-family: var(--head);
+            font-size: 1.7rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .card-sub {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 26px;
+            line-height: 1.55;
+        }
+
+        /* ── ROLE SELECTOR ── */
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .role-btn {
+            padding: 10px 8px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: rgba(4, 10, 5, 0.55);
+            color: var(--muted);
+            font-family: var(--head);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.18s;
+            text-align: center;
+        }
+
+        .role-btn:hover {
+            border-color: var(--glow-mid);
+            color: var(--text);
+        }
+
+        .role-btn.active {
+            border-color: var(--glow);
+            background: var(--glow-dim);
+            color: var(--glow);
+            box-shadow: 0 0 0 1px var(--glow-mid);
+        }
+
+        .role-btn .role-icon {
+            display: block;
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }
+
+        /* Admin warning banner — shown only when admin is selected */
+        .admin-warn {
+            display: none;
+            margin-bottom: 14px;
+            padding: 10px 13px;
+            border-radius: 8px;
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.28);
+            color: #fca5a5;
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+
+        .admin-warn.show {
+            display: block;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.67rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 11px 13px;
+            background: rgba(4, 10, 5, 0.65);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--body);
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .form-input::placeholder {
+            color: rgba(122, 170, 136, 0.4);
+        }
+
+        .form-input:focus {
+            border-color: var(--glow-mid);
+            background: rgba(4, 10, 5, 0.82);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            background: var(--glow);
+            color: #060d08;
+            font-family: var(--head);
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .btn:hover {
+            background: #86efac;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(74, 222, 128, 0.28);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .card-foot {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .card-foot a {
+            color: var(--glow);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .card-foot a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .alert.error {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            color: var(--danger);
+            display: block;
+        }
+
+        .alert.success {
+            background: var(--glow-dim);
+            border: 1px solid var(--glow-mid);
+            color: var(--glow);
+            display: block;
+        }
+
+        @media (max-width: 960px) {
+            .left {
+                display: none;
+            }
+
+            .right {
+                width: 100%;
+                border-left: none;
+                background: rgba(3, 8, 4, 0.72);
+                align-items: flex-start;
+                padding-top: 48px;
+            }
+
+            .card {
+                max-width: 420px;
+                margin: 0 auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .right {
+                padding: 36px 18px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg"></div>
+
+    <div class="page">
+        <!-- LEFT BRANDING -->
+        <div class="left">
+            <div class="brand-logo">
+                <div class="brand-icon">♻</div>
+                <div class="brand-name">
+                    SmartWaste
+                    <span>Jose Dalman · Zamboanga del Norte</span>
+                </div>
+            </div>
+            <h1 class="hero-headline">
+                Join Your<br>Community's<br><em>Clean Future.</em>
+            </h1>
+            <p class="hero-sub">
+                Create an account to track garbage collection, receive announcements, and report issues directly to your
+                local MENRO.
+            </p>
+            <div class="resident-notice">
+                <div class="notice-icon">🏘️</div>
+                <div>
+                    <div class="notice-title">Self-Registration Portal</div>
+                    <div class="notice-text">
+                        Residents can register freely. Driver and Admin accounts should only be created by authorized
+                        municipal staff.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT FORM -->
+        <div class="right">
+            <div class="card">
+                <div class="card-title">Create account</div>
+                <div class="card-sub">Register for SmartWaste — Jose Dalman, Zamboanga del Norte.</div>
+
+                <!-- ROLE SELECTOR -->
+                <div class="role-selector">
+                    <button class="role-btn active" onclick="selectRole('resident', this)">
+                        <span class="role-icon">🏘️</span>
+                        Resident
+                    </button>
+                    <button class="role-btn" onclick="selectRole('driver', this)">
+                        <span class="role-icon">🚛</span>
+                        Driver
+                    </button>
+                    <button class="role-btn" onclick="selectRole('admin', this)">
+                        <span class="role-icon">🛡️</span>
+                        Admin
+                    </button>
+                </div>
+
+                <!-- Admin warning -->
+                <div class="admin-warn" id="adminWarn">
+                    ⚠️ <strong>Admin access:</strong> Only create an admin account if you are authorized municipal
+                    staff. This account will have full system access.
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Full Name <span style="color:var(--danger)">*</span></label>
+                        <input type="text" id="name" class="form-input" placeholder="Juan dela Cruz"
+                            autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="text" id="phone" class="form-input" placeholder="+63 9XX XXX XXXX">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address <span style="color:var(--danger)">*</span></label>
+                    <input type="email" id="email" class="form-input" placeholder="you@example.com"
+                        autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password <span style="color:var(--danger)">*</span></label>
+                    <input type="password" id="password" class="form-input" placeholder="Min. 8 characters"
+                        autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Home Address</label>
+                    <input type="text" id="address" class="form-input" placeholder="Brgy. Poblacion, Jose Dalman, ZDN">
+                </div>
+
+                <button class="btn" id="regBtn" onclick="register()">Create Account →</button>
+
+                <div class="alert" id="alertBox"></div>
+
+                <div class="card-foot">
+                    Already have an account? <a href="login.html">Sign in →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedRole = 'resident';
+
+        function selectRole(role, el) {
+            selectedRole = role;
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('adminWarn').classList.toggle('show', role === 'admin');
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
+
+        async function register() {
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const phone = document.getElementById("phone").value.trim();
+            const address = document.getElementById("address").value.trim();
+            const btn = document.getElementById("regBtn");
+
+            clearAlert();
+
+            if (!name) { showAlert("Full name is required.", "error"); return; }
+            if (!email) { showAlert("Email address is required.", "error"); return; }
+            if (!password) { showAlert("Password is required.", "error"); return; }
+            if (password.length < 8) { showAlert("Password must be at least 8 characters.", "error"); return; }
+
+            btn.disabled = true;
+            btn.textContent = "Creating account…";
+
+            try {
+                const res = await fetch("/api/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, password, phone, address, role: selectedRole })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showAlert(`✓ ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} account created! Redirecting to login…`, "success");
+                    setTimeout(() => window.location = "login.html", 1800);
+                } else {
+                    showAlert(data.message || "Registration failed. Please try again.", "error");
+                    btn.disabled = false;
+                    btn.textContent = "Create Account →";
+                }
+            } catch {
+                showAlert("Connection error. Please try again.", "error");
+                btn.disabled = false;
+                btn.textContent = "Create Account →";
+            }
+        }
+
+        function showAlert(msg, type) {
+            const el = document.getElementById("alertBox");
+            el.textContent = msg;
+            el.className = "alert " + type;
+        }
+
+        function clearAlert() {
+            const el = document.getElementById("alertBox");
+            el.className = "alert";
+            el.textContent = "";
+        }
+    </script>
+</body>
+
+</html>

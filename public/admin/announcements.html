@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Announcements · SmartWaste Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .ann-card {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: all 0.22s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ann-card:hover {
+            border-color: var(--gold-mid);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .ann-card-img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            filter: saturate(0.6) brightness(0.65);
+        }
+
+        .ann-card-body {
+            padding: 18px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ann-card-date {
+            font-size: 0.68rem;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+        }
+
+        .ann-card-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text);
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .ann-card-msg {
+            font-size: 0.82rem;
+            color: var(--text2);
+            line-height: 1.7;
+            flex: 1;
+        }
+
+        .ann-card-footer {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ann-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <div class="nav-section-label">Management</div>
+            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <div class="nav-section-label">Community</div>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="announcements.html" class="nav-item active"><span class="nav-icon">📢</span>Announcements</a>
+            <div class="nav-section-label">Analytics</div>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+            </div>
+            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+        </div>
+    </aside>
+
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+            <div class="topbar-left">
+                <div class="topbar-title">Announcements</div>
+                <div class="topbar-breadcrumb">SmartWaste / Community / <span>Announcements</span></div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="topbar-btn" onclick="openModal('addAnnModal')">+ New Announcement</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <!-- COMPOSE INLINE PANEL -->
+        <div class="panel reveal section-gap">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">✍️</div>Compose Announcement
+                </div>
+                <button class="btn btn-gold" onclick="createAnnouncement()">Publish →</button>
+            </div>
+            <div class="panel-body">
+                <div class="form-grid form-grid-3" style="align-items:end">
+                    <div class="form-group"><label class="form-label">Title</label><input class="form-control"
+                            id="annTitle" placeholder="Announcement title…"></div>
+                    <div class="form-group"><label class="form-label">Pickup Date (optional)</label><input
+                            class="form-control" type="date" id="annDate"></div>
+                    <div class="form-group"><label class="form-label">Image URL (optional)</label><input
+                            class="form-control" id="annImg" placeholder="https://…"></div>
+                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Message</label><textarea
+                            class="form-control" id="annMsg" placeholder="Write your message to residents…"
+                            style="min-height:80px"></textarea></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANNOUNCEMENTS GRID -->
+        <div class="panel reveal">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">📢</div>Published Announcements
+                </div>
+                <span class="badge badge-gold" id="annCount">0</span>
+            </div>
+            <div style="padding:20px">
+                <div class="ann-grid" id="annGrid">
+                    <div style="text-align:center;padding:28px;color:var(--text2);grid-column:1/-1"><span
+                            class="loading-spinner"></span></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="../js/style.js"></script>
+    <script>
+        async function loadAnnouncements() {
+            try {
+                const res = await API.get("/api/admin/announcements");
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                document.getElementById("annCount").textContent = data.length;
+                const grid = document.getElementById("annGrid");
+                if (!data.length) {
+                    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📢</div><div class="empty-state-text">No announcements yet. Create one above!</div></div>';
+                    return;
+                }
+                grid.innerHTML = data.map(a => `
+            <div class="ann-card">
+                ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div style="height:8px;background:linear-gradient(90deg,var(--gold),transparent)"></div>`}
+                <div class="ann-card-body">
+                    <div class="ann-card-date">${fmtDate(a.created_at)} · ${a.admin_name || "Admin"}</div>
+                    <div class="ann-card-title">${a.title}</div>
+                    <div class="ann-card-msg">${a.message}</div>
+                    ${a.pickup_date ? `<div style="margin-top:10px;font-size:0.74rem;color:var(--gold);font-family:var(--mono)">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
+                </div>
+                <div class="ann-card-footer">
+                    <span class="badge badge-gold" style="font-size:0.62rem">Published</span>
+                    <button class="btn btn-danger btn-sm" onclick="deleteAnn(${a.id})">🗑 Delete</button>
+                </div>
+            </div>`).join("");
+            } catch { showToast("Failed to load announcements", "error"); }
+        }
+
+        async function createAnnouncement() {
+            const title = document.getElementById("annTitle").value.trim();
+            const msg = document.getElementById("annMsg").value.trim();
+            const date = document.getElementById("annDate").value;
+            const imgUrl = document.getElementById("annImg").value.trim();
+            if (!title || !msg) { showToast("Title and message required", "error"); return; }
+            try {
+                const res = await API.post("/api/admin/announcements", { title, message: msg, pickup_date: date || null, image_url: imgUrl || null });
+                if (!res.ok) throw new Error();
+                document.getElementById("annTitle").value = "";
+                document.getElementById("annMsg").value = "";
+                document.getElementById("annDate").value = "";
+                document.getElementById("annImg").value = "";
+                showToast("Announcement published!", "success");
+                loadAnnouncements();
+            } catch { showToast("Failed to create announcement", "error"); }
+        }
+
+        async function deleteAnn(id) {
+            if (!confirm("Delete this announcement?")) return;
+            try {
+                const res = await API.del(`/api/admin/announcements/${id}`);
+                if (!res.ok) throw new Error();
+                showToast("Deleted", "success");
+                loadAnnouncements();
+            } catch { showToast("Delete failed", "error"); }
+        }
+
+        loadAnnouncements();
+    </script>
+</body>
+
+</html>

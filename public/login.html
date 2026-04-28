@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartWaste · Login</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --glow: #4ade80;
+            --glow-dim: rgba(74, 222, 128, 0.14);
+            --glow-mid: rgba(74, 222, 128, 0.38);
+            --border: rgba(74, 222, 128, 0.18);
+            --text: #e2f5e8;
+            --muted: #7aaa88;
+            --danger: #f87171;
+            --head: 'Syne', sans-serif;
+            --body: 'DM Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: var(--body);
+            overflow: hidden;
+        }
+
+        /* ── BACKGROUND ── */
+        .bg {
+            position: fixed;
+            inset: 0;
+            background:
+                url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80") center/cover no-repeat;
+            z-index: 0;
+        }
+
+        .bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg,
+                    rgba(3, 8, 4, 0.88) 0%,
+                    rgba(4, 12, 6, 0.80) 50%,
+                    rgba(3, 8, 4, 0.90) 100%);
+        }
+
+        .bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        /* ── LAYOUT ── */
+        .page {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Left panel — branding */
+        .left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 64px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 52px;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--glow);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #060d08;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            font-family: var(--head);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--glow);
+            letter-spacing: -0.01em;
+        }
+
+        .brand-name span {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 400;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        .hero-headline {
+            font-family: var(--head);
+            font-size: clamp(2.4rem, 4vw, 3.8rem);
+            font-weight: 800;
+            line-height: 0.92;
+            letter-spacing: -0.04em;
+            color: var(--text);
+            margin-bottom: 20px;
+        }
+
+        .hero-headline em {
+            color: var(--glow);
+            font-style: normal;
+        }
+
+        .hero-sub {
+            font-size: 0.95rem;
+            font-weight: 300;
+            color: var(--muted);
+            line-height: 1.75;
+            max-width: 360px;
+            margin-bottom: 40px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 32px;
+        }
+
+        .stat-num {
+            font-family: var(--head);
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--glow);
+            line-height: 1;
+        }
+
+        .stat-lbl {
+            font-size: 0.68rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 3px;
+        }
+
+        /* Right panel — glass card */
+        .right {
+            width: 440px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 40px;
+            background: rgba(4, 10, 5, 0.45);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-left: 1px solid var(--border);
+        }
+
+        .card {
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .card-title {
+            font-family: var(--head);
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .card-sub {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 32px;
+            line-height: 1.55;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 7px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(4, 10, 5, 0.65);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--text);
+            font-family: var(--body);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .form-input::placeholder {
+            color: rgba(122, 170, 136, 0.45);
+        }
+
+        .form-input:focus {
+            border-color: var(--glow-mid);
+            background: rgba(4, 10, 5, 0.82);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            background: var(--glow);
+            color: #060d08;
+            font-family: var(--head);
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .btn:hover {
+            background: #86efac;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(74, 222, 128, 0.28);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .card-foot {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .card-foot a {
+            color: var(--glow);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .card-foot a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            margin-top: 14px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .alert.error {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            color: var(--danger);
+            display: block;
+        }
+
+        .alert.success {
+            background: var(--glow-dim);
+            border: 1px solid var(--glow-mid);
+            color: var(--glow);
+            display: block;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            color: var(--muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            .left {
+                display: none;
+            }
+
+            .right {
+                width: 100%;
+                border-left: none;
+                background: rgba(3, 8, 4, 0.72);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .right {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg"></div>
+
+    <div class="page">
+        <!-- LEFT BRANDING -->
+        <div class="left">
+            <div class="brand-logo">
+                <div class="brand-icon">♻</div>
+                <div class="brand-name">
+                    Waste Monitoring
+                    <span>Jose Dalman · Zamboanga del Norte</span>
+                </div>
+            </div>
+
+            <h1 class="hero-headline">
+                Clean City.<br>
+                <em>Smarter</em><br>
+                Collection.
+            </h1>
+            <p class="hero-sub">
+                Real-time garbage truck tracking, automated schedules, and community reporting — all in one platform for
+                residents, drivers, and administrators.
+            </p>
+            <div class="hero-stats">
+                <div>
+                    <div class="stat-num">24/7</div>
+                    <div class="stat-lbl">Live Tracking</div>
+                </div>
+                <div>
+                    <div class="stat-num">100%</div>
+                    <div class="stat-lbl">Coverage</div>
+                </div>
+                <div>
+                    <div class="stat-num">&lt;2min</div>
+                    <div class="stat-lbl">Report Time</div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="right">
+            <div class="card">
+                <div class="card-title">Welcome back</div>
+                <div class="card-sub">Sign in to access your SmartWaste portal.</div>
+
+                <div class="form-group">
+                    <label class="form-label">Email address</label>
+                    <input type="email" id="email" class="form-input" placeholder="you@example.com"
+                        autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••"
+                        autocomplete="current-password">
+                </div>
+
+                <button class="btn" id="loginBtn" onclick="login()">Sign In</button>
+
+                <div class="alert" id="alertBox"></div>
+
+                <div class="divider">or</div>
+
+                <div class="card-foot">
+                    Don't have an account?
+                    <a href="register.html">Create one →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+        async function login() {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const btn = document.getElementById("loginBtn");
+            const alert = document.getElementById("alertBox");
+
+            alert.className = "alert";
+            alert.textContent = "";
+
+            if (!email || !password) {
+                showAlert("Please enter your email and password.", "error");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Signing in…";
+
+            try {
+                const res = await fetch("http://localhost:5000/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("role", data.role);
+                    showAlert("Login successful! Redirecting…", "success");
+
+                    setTimeout(() => {
+                        if (data.role === "admin") window.location = "/admin/dashboard.html";
+                        else if (data.role === "resident") window.location = "/residents/resident.html";
+                        else if (data.role === "driver") window.location = "/driver/dashboard.html";
+                        else window.location = "/";
+                    }, 900);
+                } else {
+                    showAlert(data.message || "Invalid email or password.", "error");
+                    btn.disabled = false;
+                    btn.textContent = "Sign In";
+                }
+
+            } catch (err) {
+                console.error(err);
+                showAlert("Connection error. Please try again.", "error");
+                btn.disabled = false;
+                btn.textContent = "Sign In";
+            }
+        }
+        function showAlert(msg, type) {
+            const el = document.getElementById("alertBox");
+            el.textContent = msg;
+            el.className = "alert " + type;
+        }
+    </script>
+</body>
+
+</html>

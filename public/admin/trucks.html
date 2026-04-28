@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Trucks · SmartWaste Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        .truck-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .truck-card {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .truck-card:hover {
+            border-color: var(--gold-mid);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+        }
+
+        .truck-card::before {
+            content: '🚛';
+            position: absolute;
+            top: -8px;
+            right: 8px;
+            font-size: 4rem;
+            opacity: 0.04;
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        .truck-plate {
+            font-family: var(--mono);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 0.06em;
+        }
+
+        .truck-model {
+            font-size: 0.8rem;
+            color: var(--text2);
+            margin-top: 4px;
+        }
+
+        .truck-coords {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--text2);
+            margin-top: 10px;
+            background: var(--bg3);
+            padding: 8px 10px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .truck-coords-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .location-time {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.65rem;
+            color: var(--text2);
+            padding-top: 4px;
+            border-top: 1px solid var(--border);
+            margin-top: 4px;
+        }
+
+        .location-time.fresh {
+            color: #4ade80;
+        }
+
+        .location-time.stale {
+            color: #fbb034;
+        }
+
+        .location-time.old {
+            color: #f87171;
+        }
+
+        .location-time-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: currentColor;
+        }
+
+        .truck-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        #fleetMap {
+            height: 360px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border2);
+        }
+
+        .delete-confirm-name {
+            font-family: var(--mono);
+            color: var(--gold);
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: var(--bg3);
+            padding: 8px 14px;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 8px 0;
+        }
+
+        .danger-note {
+            font-size: 0.8rem;
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        .info-box {
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            font-size: 0.78rem;
+            color: var(--text2);
+            line-height: 1.75;
+        }
+
+        .info-box strong {
+            color: var(--gold);
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .info-box .legend {
+            display: flex;
+            gap: 18px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .info-box .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+        }
+
+        @media (max-width: 600px) {
+            .truck-card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            #fleetMap {
+                height: 240px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <div class="nav-section-label">Management</div>
+            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="trucks.html" class="nav-item active"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <div class="nav-section-label">Community</div>
+            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <div class="nav-section-label">Analytics</div>
+            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+            </div>
+            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+        </div>
+    </aside>
+
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+            <div class="topbar-left">
+                <div class="topbar-title">Trucks</div>
+                <div class="topbar-breadcrumb">SmartWaste / Management / <span>Trucks</span></div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="btn btn-gold" onclick="openModal('addTruckModal')">+ Add Truck</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <!-- FLEET CARDS -->
+        <div class="truck-card-grid reveal" id="truckCards">
+            <div style="color:var(--text2);padding:20px"><span class="loading-spinner"></span></div>
+        </div>
+
+        <!-- FLEET MAP -->
+        <div class="panel reveal section-gap">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">🗺️</div>Fleet Map
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:0.72rem;color:var(--text2)">
+                    <span class="pulse-dot"></span>Last known positions
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="info-box">
+                    <strong>📍 GPS Coordinates &amp; Location Timestamps — What do they mean?</strong>
+                    <p>Each truck stores a <strong>latitude</strong>, <strong>longitude</strong>, and a
+                        <strong>location_updated_at</strong> timestamp. The coordinates pin the truck on the
+                        map below and on the resident's live tracking view. The timestamp tells you
+                        <em>how fresh</em> that position is — so you can tell whether a truck is actively
+                        moving right now or whether the dot on the map is hours old.
+                    </p>
+                    <p style="margin-top:8px">Coordinates are updated in two ways: <strong>(1)</strong> automatically
+                        every 15 seconds
+                        when a driver has GPS sharing turned on in the Driver Portal, or
+                        <strong>(2)</strong> manually via the "📍 Location" button on each truck card below.
+                    </p>
+                    <div class="legend">
+                        <div class="legend-item"><span style="color:#4ade80;font-size:1rem">●</span> <strong
+                                style="color:#4ade80">Green</strong> — updated &lt; 1 hour ago (driver likely active)
+                        </div>
+                        <div class="legend-item"><span style="color:#fbb034;font-size:1rem">●</span> <strong
+                                style="color:#fbb034">Amber</strong> — 1–12 hours ago</div>
+                        <div class="legend-item"><span style="color:#f87171;font-size:1rem">●</span> <strong
+                                style="color:#f87171">Red</strong> — over 12 hours (position likely stale)</div>
+                    </div>
+                </div>
+                <div id="fleetMap"></div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="panel reveal">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">🚛</div>All Trucks
+                </div>
+                <div style="font-size:0.72rem;color:var(--text2)" id="truckCount">—</div>
+            </div>
+            <div class="panel-body-flush">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Plate</th>
+                            <th>Model</th>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>Last Location Update</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trucksBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ADD TRUCK -->
+    <div class="modal-overlay" id="addTruckModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">🚛 Add New Truck</div>
+                <button class="modal-close" onclick="closeModal('addTruckModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Plate Number <span style="color:#f87171">*</span></label>
+                        <input class="form-control" id="tPlate" placeholder="e.g. ABC-1234">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model</label>
+                        <input class="form-control" id="tModel" placeholder="e.g. Isuzu NMR 71">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addTruckModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="addTruck()">Add Truck</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT TRUCK -->
+    <div class="modal-overlay" id="editTruckModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">✏️ Edit Truck</div>
+                <button class="modal-close" onclick="closeModal('editTruckModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editTruckId">
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Plate Number <span style="color:#f87171">*</span></label>
+                        <input class="form-control" id="editPlate" placeholder="e.g. ABC-1234">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model</label>
+                        <input class="form-control" id="editModel" placeholder="e.g. Isuzu NMR 71">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editTruckModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="saveTruckEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPDATE LOCATION -->
+    <div class="modal-overlay" id="updateLocModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">📍 Update Location</div>
+                <button class="modal-close" onclick="closeModal('updateLocModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="locTruckId">
+                <div class="info-box" style="margin-bottom:16px">
+                    <strong>ℹ️ Manual location entry</strong>
+                    Use this when a driver reports their position verbally, or when a truck has no
+                    GPS device. In normal operation the Driver Portal pushes coordinates automatically
+                    — you rarely need to do this manually. The server will stamp the current time on save.
+                    <br><br>
+                    <span style="color:var(--text2);font-size:0.72rem">Tip: Right-click any spot on Google Maps →
+                        "What's here?" to copy coordinates.</span>
+                </div>
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Latitude</label>
+                        <input class="form-control" id="locLat" placeholder="14.5995" type="number" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Longitude</label>
+                        <input class="form-control" id="locLng" placeholder="120.9842" type="number" step="any">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('updateLocModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="updateLocation()">Update Location</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRM -->
+    <div class="modal-overlay" id="deleteTruckModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" style="color:#f87171">🗑️ Delete Truck</div>
+                <button class="modal-close" onclick="closeModal('deleteTruckModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deleteTruckId">
+                <p style="color:var(--text2);font-size:0.88rem">You are about to permanently delete:</p>
+                <div class="delete-confirm-name" id="deleteTruckName">—</div>
+                <div class="danger-note">
+                    ⚠️ This action <strong>cannot be undone</strong>. Trucks currently assigned to an
+                    <strong>active or pending route cannot be deleted</strong> — complete or cancel
+                    those assignments first.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteTruckModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteTruck()">Yes, Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="../js/style.js"></script>
+
+    <script>
+        let fleetMap, mapMarkers = [], trucks = [];
+
+        /* ── LOAD ── */
+        async function loadTrucks() {
+            try {
+                const res = await API.get("/api/admin/trucks");
+                if (!res.ok) throw new Error();
+                trucks = await res.json();
+                document.getElementById("truckCount").textContent =
+                    `${trucks.length} truck${trucks.length !== 1 ? "s" : ""}`;
+                renderCards(trucks);
+                renderTable(trucks);
+                renderMap(trucks);
+            } catch {
+                showToast("Failed to load trucks", "error");
+            }
+        }
+
+        /* ── HELPERS ── */
+        function escHtml(str) {
+            return String(str ?? "").replace(/[&<>"']/g, c =>
+                ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+
+        function fmtDateTime(d) {
+            if (!d) return "—";
+            return new Date(d).toLocaleString("en-US", {
+                month: "short", day: "numeric",
+                hour: "2-digit", minute: "2-digit"
+            });
+        }
+
+        function hoursAgo(d) {
+            if (!d) return null;
+            return (Date.now() - new Date(d).getTime()) / 36e5;
+        }
+
+        function freshnessClass(d) {
+            const h = hoursAgo(d);
+            if (h === null) return "";
+            if (h < 1) return "fresh";
+            if (h < 12) return "stale";
+            return "old";
+        }
+
+        function freshnessLabel(d) {
+            const h = hoursAgo(d);
+            if (h === null) return "No position recorded";
+            if (h < 1) return `Updated ${Math.round(h * 60)}m ago`;
+            if (h < 24) return `Updated ${Math.round(h)}h ago`;
+            return `Updated ${Math.round(h / 24)}d ago — likely stale`;
+        }
+
+        function dotColor(d) {
+            const h = hoursAgo(d);
+            if (h === null) return "#555";
+            if (h < 1) return "#4ade80";
+            if (h < 12) return "#fbb034";
+            return "#f87171";
+        }
+
+        /* ── RENDER CARDS ── */
+        function renderCards(data) {
+            document.getElementById("truckCards").innerHTML = data.length
+                ? data.map(t => `
+                    <div class="truck-card">
+                        <div class="truck-plate">${escHtml(t.plate_number)}</div>
+                        <div class="truck-model">${escHtml(t.model || "Unknown model")}</div>
+                        <div class="truck-coords">
+                            <div class="truck-coords-row">
+                                <span>LAT: ${t.latitude != null ? Number(t.latitude).toFixed(5) : "—"}</span>
+                                <span>LNG: ${t.longitude != null ? Number(t.longitude).toFixed(5) : "—"}</span>
+                            </div>
+                            <div class="location-time ${freshnessClass(t.location_updated_at)}">
+                                <div class="location-time-dot"></div>
+                                ${freshnessLabel(t.location_updated_at)}
+                            </div>
+                        </div>
+                        <div class="truck-card-actions">
+                            <button class="btn btn-outline btn-sm" onclick="openEditModal(${t.id})">✏️ Edit</button>
+                            <button class="btn btn-outline btn-sm" onclick="openLocModal(${t.id})">📍 Location</button>
+                            <button class="btn btn-danger  btn-sm" onclick="openDeleteModal(${t.id}, '${escHtml(t.plate_number)}')">🗑️</button>
+                        </div>
+                    </div>`)
+                    .join("")
+                : `<div class="empty-state" style="grid-column:1/-1">
+                       <div class="empty-state-icon">🚛</div>
+                       <div class="empty-state-text">No trucks added yet</div>
+                   </div>`;
+        }
+
+        /* ── RENDER TABLE ── */
+        function renderTable(data) {
+            document.getElementById("trucksBody").innerHTML = data.length
+                ? data.map((t, i) => `
+                    <tr>
+                        <td class="table-mono table-muted">${String(i + 1).padStart(2, "0")}</td>
+                        <td class="table-mono text-gold">${escHtml(t.plate_number)}</td>
+                        <td>${escHtml(t.model || "—")}</td>
+                        <td class="table-mono table-muted">${t.latitude != null ? Number(t.latitude).toFixed(6) : "—"}</td>
+                        <td class="table-mono table-muted">${t.longitude != null ? Number(t.longitude).toFixed(6) : "—"}</td>
+                        <td>
+                            <span class="location-time ${freshnessClass(t.location_updated_at)}" style="display:inline-flex;">
+                                <span class="location-time-dot"></span>
+                                ${fmtDateTime(t.location_updated_at)}
+                            </span>
+                        </td>
+                        <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm" onclick="openEditModal(${t.id})">✏️ Edit</button>
+                            <button class="btn btn-outline btn-sm" onclick="openLocModal(${t.id})">📍 Location</button>
+                            <button class="btn btn-danger  btn-sm" onclick="openDeleteModal(${t.id}, '${escHtml(t.plate_number)}')">🗑️ Delete</button>
+                        </td>
+                    </tr>`)
+                    .join("")
+                : `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text2)">No trucks found</td></tr>`;
+        }
+
+        /* ── RENDER MAP ── */
+        function renderMap(data) {
+            if (!fleetMap) {
+                fleetMap = L.map("fleetMap").setView([14.5995, 120.9842], 12);
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "" }).addTo(fleetMap);
+            }
+            mapMarkers.forEach(m => fleetMap.removeLayer(m));
+            mapMarkers = [];
+
+            const positioned = data.filter(t => t.latitude != null && t.longitude != null);
+            positioned.forEach(t => {
+                const color = dotColor(t.location_updated_at);
+                const icon = L.divIcon({
+                    html: `<div style="background:#1a1e24;border:2px solid ${color};color:${color};font-size:10px;font-weight:700;font-family:monospace;padding:3px 7px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.5)">${escHtml(t.plate_number)}</div>`,
+                    className: "",
+                    iconAnchor: [0, 0]
+                });
+                const m = L.marker([t.latitude, t.longitude], { icon })
+                    .addTo(fleetMap)
+                    .bindPopup(`
+                        <strong style="font-family:monospace">${escHtml(t.plate_number)}</strong><br>
+                        ${escHtml(t.model || "")}<br>
+                        <span style="font-size:11px;color:#888">
+                            Last update: ${fmtDateTime(t.location_updated_at)}
+                        </span>`);
+                mapMarkers.push(m);
+            });
+
+            if (positioned.length === 1) {
+                fleetMap.setView([positioned[0].latitude, positioned[0].longitude], 14);
+            } else if (positioned.length > 1) {
+                try { fleetMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.25)); } catch { }
+            }
+        }
+
+        /* ── ADD ── */
+        async function addTruck() {
+            const plate = document.getElementById("tPlate").value.trim();
+            const model = document.getElementById("tModel").value.trim();
+            if (!plate) { showToast("Plate number is required", "error"); return; }
+            try {
+                const res = await API.post("/api/admin/trucks", { plate_number: plate, model });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+                closeModal("addTruckModal");
+                document.getElementById("tPlate").value = "";
+                document.getElementById("tModel").value = "";
+                showToast("Truck added successfully", "success");
+                loadTrucks();
+            } catch (e) { showToast(e.message || "Failed to add truck", "error"); }
+        }
+
+        /* ── EDIT ── */
+        function openEditModal(id) {
+            const truck = trucks.find(t => t.id === id);
+            if (!truck) return;
+            document.getElementById("editTruckId").value = id;
+            document.getElementById("editPlate").value = truck.plate_number;
+            document.getElementById("editModel").value = truck.model || "";
+            openModal("editTruckModal");
+        }
+
+        async function saveTruckEdit() {
+            const id = document.getElementById("editTruckId").value;
+            const plate = document.getElementById("editPlate").value.trim();
+            const model = document.getElementById("editModel").value.trim();
+            if (!plate) { showToast("Plate number is required", "error"); return; }
+            try {
+                const res = await API.put(`/api/admin/trucks/${id}`, { plate_number: plate, model });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+                closeModal("editTruckModal");
+                showToast("Truck updated successfully", "success");
+                loadTrucks();
+            } catch (e) { showToast(e.message || "Update failed", "error"); }
+        }
+
+        /* ── DELETE ── */
+        function openDeleteModal(id, plate) {
+            document.getElementById("deleteTruckId").value = id;
+            document.getElementById("deleteTruckName").textContent = plate;
+            openModal("deleteTruckModal");
+        }
+
+        async function confirmDeleteTruck() {
+            const id = document.getElementById("deleteTruckId").value;
+            try {
+                const res = await API.del(`/api/admin/trucks/${id}`);
+                if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+                closeModal("deleteTruckModal");
+                showToast("Truck deleted", "success");
+                loadTrucks();
+            } catch (e) { showToast(e.message || "Delete failed", "error"); }
+        }
+
+        /* ── LOCATION ── */
+        function openLocModal(id) {
+            document.getElementById("locTruckId").value = id;
+            document.getElementById("locLat").value = "";
+            document.getElementById("locLng").value = "";
+            openModal("updateLocModal");
+        }
+
+        async function updateLocation() {
+            const id = document.getElementById("locTruckId").value;
+            const lat = parseFloat(document.getElementById("locLat").value);
+            const lng = parseFloat(document.getElementById("locLng").value);
+            if (isNaN(lat) || isNaN(lng)) { showToast("Both fields are required", "error"); return; }
+            if (lat < -90 || lat > 90) { showToast("Latitude must be -90 to 90", "error"); return; }
+            if (lng < -180 || lng > 180) { showToast("Longitude must be -180 to 180", "error"); return; }
+            try {
+                const res = await API.put(`/api/admin/trucks/${id}/location`, { latitude: lat, longitude: lng });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
+                closeModal("updateLocModal");
+                showToast("Location updated — timestamp recorded", "success");
+                loadTrucks();
+            } catch (e) { showToast(e.message || "Update failed", "error"); }
+        }
+
+        loadTrucks();
+    </script>
+</body>
+
+</html>
