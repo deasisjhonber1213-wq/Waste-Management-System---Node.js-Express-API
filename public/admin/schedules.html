@@ -192,11 +192,86 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        const API = {
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
+        };
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkAuth();
+
+        function fmtDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function statusBadge(status) {
+            const map = {
+                'pending': 'badge-warning',
+                'in_progress': 'badge-info',
+                'completed': 'badge-success',
+                'missed': 'badge-danger',
+                'cancelled': 'badge-danger'
+            };
+            return `<span class="badge ${map[status] || 'badge-gray'}">${status.replace('_', ' ').toUpperCase()}</span>`;
+        }
+
         let allSchedules = [];
 
         async function loadSchedules() {
             try {
-                const res = await API.get("/api/admin/pickups");
+                const res = await API.get("/admin/pickups");
                 if (!res.ok) throw new Error();
                 allSchedules = await res.json();
                 renderSchedules(allSchedules);
@@ -242,7 +317,9 @@
         async function loadFormData() {
             try {
                 const [uRes, tRes, rRes] = await Promise.all([
-                    API.get("/api/admin/users"), API.get("/api/admin/trucks"), API.get("/api/admin/routes")
+                    API.get("/admin/users"),
+                    API.get("/admin/trucks"),
+                    API.get("/admin/routes")
                 ]);
                 const users = await uRes.json();
                 const trucks = await tRes.json();
@@ -265,10 +342,11 @@
                 pickup_type: document.getElementById("aType").value,
             };
             if (!body.driver_id || !body.truck_id || !body.route_id || !body.assigned_date) {
-                showToast("Fill all fields", "error"); return;
+                showToast("Fill all fields", "error");
+                return;
             }
             try {
-                const res = await API.post("/api/admin/assign-route", body);
+                const res = await API.post("/admin/assign-route", body);
                 if (!res.ok) throw new Error();
                 closeModal("assignModal");
                 showToast("Route assigned successfully", "success");
@@ -288,7 +366,7 @@
             const status = document.getElementById("editStatus").value;
             const date = document.getElementById("editDate").value;
             try {
-                const res = await API.put(`/api/admin/pickups/${id}`, { status, assigned_date: date });
+                const res = await API.put(`/admin/pickups/${id}`, { status, assigned_date: date });
                 if (!res.ok) throw new Error();
                 closeModal("editModal");
                 showToast("Schedule updated", "success");
@@ -299,23 +377,39 @@
         async function deleteSchedule(id) {
             if (!confirm("Delete this schedule?")) return;
             try {
-                const res = await API.del(`/api/admin/pickups/${id}`);
+                const res = await API.del(`/admin/pickups/${id}`);
                 if (!res.ok) throw new Error();
                 showToast("Schedule deleted", "success");
                 loadSchedules();
             } catch { showToast("Delete failed", "error"); }
         }
+
         async function loadAdminProfile() {
             try {
-                const res = await API.get("/api/admin/profile");
+                const res = await API.get("/admin/profile");
                 if (res.ok) {
                     const data = await res.json();
                     document.getElementById("adminName").textContent = data.name || "Admin";
                 }
             } catch { }
         }
+
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
         // Pre-fill today's date
         document.getElementById("aDate").value = new Date().toISOString().slice(0, 10);
+
+        // Expose globals
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.assignRoute = assignRoute;
+        window.openEdit = openEdit;
+        window.updateSchedule = updateSchedule;
+        window.deleteSchedule = deleteSchedule;
+        window.filterSchedules = filterSchedules;
+
         loadAdminProfile();
         loadSchedules();
         loadFormData();

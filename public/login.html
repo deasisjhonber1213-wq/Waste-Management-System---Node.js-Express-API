@@ -542,6 +542,10 @@
     </style>
 
     <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
             if (!input) return;
@@ -574,13 +578,16 @@
             btn.textContent = "Signing in…";
 
             try {
-                const res = await fetch("http://localhost:5000/api/auth/login", {
+                console.log('📤 Sending login request to:', API_URL + '/auth/login');
+
+                const res = await fetch(API_URL + "/auth/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, password })
                 });
 
                 const data = await res.json();
+                console.log('📥 Response:', data);
 
                 if (res.ok) {
                     localStorage.setItem("token", data.token);
@@ -600,7 +607,7 @@
                 }
 
             } catch (err) {
-                console.error(err);
+                console.error('❌ Login error:', err);
                 showAlert("Connection error. Please try again.", "error");
                 btn.disabled = false;
                 btn.textContent = "Sign In";
@@ -612,6 +619,21 @@
             el.textContent = msg;
             el.className = "alert " + type;
         }
+
+        // Test API connection on page load
+        async function testConnection() {
+            try {
+                const response = await fetch(API_URL + '/health');
+                if (response.ok) {
+                    console.log('✅ API is reachable');
+                } else {
+                    console.warn('⚠️ API returned:', response.status);
+                }
+            } catch (error) {
+                console.warn('⚠️ API not reachable:', error);
+            }
+        }
+        testConnection();
     </script>
 </body>
 

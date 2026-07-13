@@ -535,6 +535,10 @@
     </div>
 
     <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
         const selectedRole = 'resident';
 
         function togglePassword(inputId, btn) {
@@ -570,13 +574,16 @@
             btn.textContent = "Creating account…";
 
             try {
-                const res = await fetch("/api/auth/register", {
+                console.log('📤 Sending registration request to:', API_URL + '/auth/register');
+
+                const res = await fetch(API_URL + "/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ name, email, password, phone, address, role: selectedRole })
                 });
 
                 const data = await res.json();
+                console.log('📥 Response:', data);
 
                 if (res.ok) {
                     showAlert("✓ Resident account created! Redirecting to login…", "success");
@@ -586,7 +593,8 @@
                     btn.disabled = false;
                     btn.textContent = "Create Account →";
                 }
-            } catch {
+            } catch (err) {
+                console.error('❌ Registration error:', err);
                 showAlert("Connection error. Please try again.", "error");
                 btn.disabled = false;
                 btn.textContent = "Create Account →";
@@ -604,6 +612,21 @@
             el.className = "alert";
             el.textContent = "";
         }
+
+        // Test API connection on page load
+        async function testConnection() {
+            try {
+                const response = await fetch(API_URL + '/health');
+                if (response.ok) {
+                    console.log('✅ API is reachable');
+                } else {
+                    console.warn('⚠️ API returned:', response.status);
+                }
+            } catch (error) {
+                console.warn('⚠️ API not reachable:', error);
+            }
+        }
+        testConnection();
     </script>
 </body>
 

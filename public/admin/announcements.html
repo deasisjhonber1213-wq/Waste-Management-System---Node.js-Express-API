@@ -169,9 +169,64 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        const API = {
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
+        };
+
+        function fmtDate(date) {
+            if (!date) return '—';
+            const d = new Date(date);
+            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkAuth();
+
         async function loadAnnouncements() {
             try {
-                const res = await API.get("/api/admin/announcements");
+                const res = await API.get("/admin/announcements");
                 if (!res.ok) throw new Error();
                 const data = await res.json();
                 document.getElementById("annCount").textContent = data.length;
@@ -204,7 +259,7 @@
             const imgUrl = document.getElementById("annImg").value.trim();
             if (!title || !msg) { showToast("Title and message required", "error"); return; }
             try {
-                const res = await API.post("/api/admin/announcements", { title, message: msg, pickup_date: date || null, image_url: imgUrl || null });
+                const res = await API.post("/admin/announcements", { title, message: msg, pickup_date: date || null, image_url: imgUrl || null });
                 if (!res.ok) throw new Error();
                 document.getElementById("annTitle").value = "";
                 document.getElementById("annMsg").value = "";
@@ -218,20 +273,23 @@
         async function deleteAnn(id) {
             if (!confirm("Delete this announcement?")) return;
             try {
-                const res = await API.del(`/api/admin/announcements/${id}`);
+                const res = await API.del(`/admin/announcements/${id}`);
                 if (!res.ok) throw new Error();
                 showToast("Deleted", "success");
                 loadAnnouncements();
             } catch { showToast("Delete failed", "error"); }
-        } async function loadAdminProfile() {
+        }
+
+        async function loadAdminProfile() {
             try {
-                const res = await API.get("/api/admin/profile");
+                const res = await API.get("/admin/profile");
                 if (res.ok) {
                     const data = await res.json();
                     document.getElementById("adminName").textContent = data.name || "Admin";
                 }
             } catch { }
         }
+
         loadAdminProfile();
         loadAnnouncements();
     </script>

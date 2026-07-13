@@ -474,10 +474,70 @@
     <script src="../js/style.js"></script>
 
     <script>
-        let fleetMap, mapMarkers = [], trucks = [];
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        const API = {
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
+        };
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkAuth();
+
+        let fleetMap, mapMarkers = [],
+            trucks = [];
         let isFleetMapSatellite = false;
 
-        // Map tile layers (same as driver)
+        // Map tile layers
         const darkTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
             attribution: "&copy; OSM & CARTO",
             subdomains: "abcd",
@@ -527,22 +587,6 @@
             showToast(`Centered on ${positioned.length} truck${positioned.length !== 1 ? 's' : ''}`, "success");
         }
 
-        /* ── LOAD ── */
-        async function loadTrucks() {
-            try {
-                const res = await API.get("/api/admin/trucks");
-                if (!res.ok) throw new Error();
-                trucks = await res.json();
-                document.getElementById("truckCount").textContent =
-                    `${trucks.length} truck${trucks.length !== 1 ? "s" : ""}`;
-                renderCards(trucks);
-                renderTable(trucks);
-                renderMap(trucks);
-            } catch {
-                showToast("Failed to load trucks", "error");
-            }
-        }
-
         /* ── HELPERS ── */
         function escHtml(str) {
             return String(str ?? "").replace(/[&<>"']/g, c =>
@@ -552,8 +596,10 @@
         function fmtDateTime(d) {
             if (!d) return "—";
             return new Date(d).toLocaleString("en-US", {
-                month: "short", day: "numeric",
-                hour: "2-digit", minute: "2-digit"
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
             });
         }
 
@@ -586,19 +632,26 @@
             return "#f87171";
         }
 
-        function showToast(msg, type = "info") {
-            const container = document.getElementById("toastContainer");
-            const toast = document.createElement("div");
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span>${msg}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+        /* ── LOAD ── */
+        async function loadTrucks() {
+            try {
+                const res = await API.get("/admin/trucks");
+                if (!res.ok) throw new Error();
+                trucks = await res.json();
+                document.getElementById("truckCount").textContent =
+                    `${trucks.length} truck${trucks.length !== 1 ? "s" : ""}`;
+                renderCards(trucks);
+                renderTable(trucks);
+                renderMap(trucks);
+            } catch {
+                showToast("Failed to load trucks", "error");
+            }
         }
 
         /* ── RENDER CARDS ── */
         function renderCards(data) {
-            document.getElementById("truckCards").innerHTML = data.length
-                ? data.map(t => `
+            document.getElementById("truckCards").innerHTML = data.length ?
+                data.map(t => `
                     <div class="truck-card">
                         <div class="truck-plate">${escHtml(t.plate_number)}</div>
                         <div class="truck-model">${escHtml(t.model || "Unknown model")}</div>
@@ -618,8 +671,8 @@
                             <button class="btn btn-danger  btn-sm" onclick="openDeleteModal(${t.id}, '${escHtml(t.plate_number)}')">🗑️</button>
                         </div>
                     </div>`)
-                    .join("")
-                : `<div class="empty-state" style="grid-column:1/-1">
+                    .join("") :
+                `<div class="empty-state" style="grid-column:1/-1">
                        <div class="empty-state-icon">🚛</div>
                        <div class="empty-state-text">No trucks added yet</div>
                    </div>`;
@@ -627,8 +680,8 @@
 
         /* ── RENDER TABLE ── */
         function renderTable(data) {
-            document.getElementById("trucksBody").innerHTML = data.length
-                ? data.map((t, i) => `
+            document.getElementById("trucksBody").innerHTML = data.length ?
+                data.map((t, i) => `
                     <tr>
                         <td class="table-mono table-muted">${String(i + 1).padStart(2, "0")}</td>
                         <td class="table-mono text-gold">${escHtml(t.plate_number)}</td>
@@ -647,8 +700,8 @@
                             <button class="btn btn-danger  btn-sm" onclick="openDeleteModal(${t.id}, '${escHtml(t.plate_number)}')">🗑️ Delete</button>
                         </td>
                     </tr>`)
-                    .join("")
-                : `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text2)">No trucks found</td></tr>`;
+                    .join("") :
+                `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text2)">No trucks found</td></tr>`;
         }
 
         /* ── RENDER MAP ── */
@@ -690,7 +743,7 @@
             const model = document.getElementById("tModel").value.trim();
             if (!plate) { showToast("Plate number is required", "error"); return; }
             try {
-                const res = await API.post("/api/admin/trucks", { plate_number: plate, model });
+                const res = await API.post("/admin/trucks", { plate_number: plate, model });
                 if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
                 closeModal("addTruckModal");
                 document.getElementById("tPlate").value = "";
@@ -716,7 +769,7 @@
             const model = document.getElementById("editModel").value.trim();
             if (!plate) { showToast("Plate number is required", "error"); return; }
             try {
-                const res = await API.put(`/api/admin/trucks/${id}`, { plate_number: plate, model });
+                const res = await API.put(`/admin/trucks/${id}`, { plate_number: plate, model });
                 if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
                 closeModal("editTruckModal");
                 showToast("Truck updated successfully", "success");
@@ -730,20 +783,11 @@
             document.getElementById("deleteTruckName").textContent = plate;
             openModal("deleteTruckModal");
         }
-        async function loadAdminProfile() {
-            try {
-                const res = await API.get("/api/admin/profile");
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById("adminName").textContent = data.name || "Admin";
-                }
-            } catch { }
-        }
 
         async function confirmDeleteTruck() {
             const id = document.getElementById("deleteTruckId").value;
             try {
-                const res = await API.del(`/api/admin/trucks/${id}`);
+                const res = await API.del(`/admin/trucks/${id}`);
                 if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
                 closeModal("deleteTruckModal");
                 showToast("Truck deleted", "success");
@@ -767,7 +811,7 @@
             if (lat < -90 || lat > 90) { showToast("Latitude must be -90 to 90", "error"); return; }
             if (lng < -180 || lng > 180) { showToast("Longitude must be -180 to 180", "error"); return; }
             try {
-                const res = await API.put(`/api/admin/trucks/${id}/location`, { latitude: lat, longitude: lng });
+                const res = await API.put(`/admin/trucks/${id}/location`, { latitude: lat, longitude: lng });
                 if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
                 closeModal("updateLocModal");
                 showToast("Location updated — timestamp recorded", "success");
@@ -775,8 +819,18 @@
             } catch (e) { showToast(e.message || "Update failed", "error"); }
         }
 
-        // Modal helpers
+        async function loadAdminProfile() {
+            try {
+                const res = await API.get("/admin/profile");
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("adminName").textContent = data.name || "Admin";
+                }
+            } catch { }
+        }
+
         function openModal(id) { document.getElementById(id).classList.add("open"); }
+
         function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
         // Expose globals
@@ -791,6 +845,7 @@
         window.confirmDeleteTruck = confirmDeleteTruck;
         window.centerMapOnTrucks = centerMapOnTrucks;
         window.toggleFleetMapSatellite = toggleFleetMapSatellite;
+
         loadAdminProfile();
         loadTrucks();
     </script>

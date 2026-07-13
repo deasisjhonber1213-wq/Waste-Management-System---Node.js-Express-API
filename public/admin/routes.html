@@ -546,6 +546,65 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        const API = {
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
+        };
+
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.innerHTML = `<span>${msg}</span>`;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
+
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkAuth();
+
         /* ════════════════════════════════════════════════════
            STATE
            The route now stores THREE independent layers:
@@ -609,18 +668,11 @@
         /* ════════════════════════════════════════════════════
            HELPERS
         ════════════════════════════════════════════════════ */
-        function showToast(msg, type = 'info') {
-            const c = document.getElementById('toastContainer');
-            const t = document.createElement('div');
-            t.className = `toast ${type}`;
-            t.innerHTML = `<span>${msg}</span>`;
-            c.appendChild(t);
-            setTimeout(() => t.remove(), 3500);
-        }
         function escHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c =>
                 ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
+
         function fmtDate(d) {
             if (!d) return '—';
             return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -654,7 +706,7 @@
         ════════════════════════════════════════════════════ */
         async function loadRoutes() {
             try {
-                const res = await API.get('/api/admin/routes');
+                const res = await API.get('/admin/routes');
                 if (!res.ok) throw new Error();
                 allRoutes = await res.json();
                 renderRouteList(allRoutes);
@@ -822,6 +874,7 @@
            MODAL HELPERS
         ════════════════════════════════════════════════════ */
         function openModal(id) { document.getElementById(id).classList.add('open'); }
+
         function closeModal(id) {
             document.getElementById(id).classList.remove('open');
             if (id === 'addRouteModal') {
@@ -890,9 +943,14 @@
             if (markingMap) { markingMap.remove(); markingMap = null; }
 
             // Reset all layers
-            roadPoints = []; roadMarkers = []; ghostMarkers = []; roadPolyline = null;
-            pinPoints = []; pinMarkers = [];
-            mrfPoints = []; mrfMarkers = [];
+            roadPoints = [];
+            roadMarkers = [];
+            ghostMarkers = [];
+            roadPolyline = null;
+            pinPoints = [];
+            pinMarkers = [];
+            mrfPoints = [];
+            mrfMarkers = [];
 
             markingMap = L.map('markingMap', { zoomControl: true }).setView([8.2317, 123.4018], 14);
             markingTiles = makeTiles();
@@ -975,8 +1033,10 @@
             ghostMarkers.forEach(m => markingMap.removeLayer(m));
             ghostMarkers = [];
             for (let i = 0; i < roadPoints.length - 1; i++) {
-                const a = roadPoints[i], b = roadPoints[i + 1];
-                const midLat = (a.lat + b.lat) / 2, midLng = (a.lng + b.lng) / 2;
+                const a = roadPoints[i],
+                    b = roadPoints[i + 1];
+                const midLat = (a.lat + b.lat) / 2,
+                    midLng = (a.lng + b.lng) / 2;
                 const insertAfter = i;
                 const icon = L.divIcon({
                     html: `<div class="ghost-handle"></div>`,
@@ -1012,7 +1072,10 @@
                 .bindPopup(`<strong>Stop ${n}</strong>`).addTo(markingMap);
             m.on('dragend', () => {
                 const idx = pinMarkers.indexOf(m);
-                if (idx >= 0) { pinPoints[idx] = { lat: m.getLatLng().lat, lng: m.getLatLng().lng }; updateUI(); }
+                if (idx >= 0) {
+                    pinPoints[idx] = { lat: m.getLatLng().lat, lng: m.getLatLng().lng };
+                    updateUI();
+                }
             });
             pinMarkers.push(m);
             updateUI();
@@ -1051,7 +1114,10 @@
                 .bindPopup(`<b>🏭 MRF Stop ${n}</b>`).addTo(markingMap);
             m.on('dragend', () => {
                 const idx = mrfMarkers.indexOf(m);
-                if (idx >= 0) { mrfPoints[idx] = { lat: m.getLatLng().lat, lng: m.getLatLng().lng }; updateUI(); }
+                if (idx >= 0) {
+                    mrfPoints[idx] = { lat: m.getLatLng().lat, lng: m.getLatLng().lng };
+                    updateUI();
+                }
             });
             mrfMarkers.push(m);
             updateUI();
@@ -1082,27 +1148,40 @@
         function clearActiveLayer() {
             if (activeLayer === 'road') {
                 roadPoints = [];
-                roadMarkers.forEach(m => markingMap?.removeLayer(m)); roadMarkers = [];
-                ghostMarkers.forEach(m => markingMap?.removeLayer(m)); ghostMarkers = [];
-                if (roadPolyline) { markingMap?.removeLayer(roadPolyline); roadPolyline = null; }
+                roadMarkers.forEach(m => markingMap?.removeLayer(m));
+                roadMarkers = [];
+                ghostMarkers.forEach(m => markingMap?.removeLayer(m));
+                ghostMarkers = [];
+                if (roadPolyline) {
+                    markingMap?.removeLayer(roadPolyline);
+                    roadPolyline = null;
+                }
             } else if (activeLayer === 'pin') {
                 pinPoints = [];
-                pinMarkers.forEach(m => markingMap?.removeLayer(m)); pinMarkers = [];
+                pinMarkers.forEach(m => markingMap?.removeLayer(m));
+                pinMarkers = [];
             }
             updateUI();
         }
 
         function clearAll() {
             roadPoints = [];
-            roadMarkers.forEach(m => markingMap?.removeLayer(m)); roadMarkers = [];
-            ghostMarkers.forEach(m => markingMap?.removeLayer(m)); ghostMarkers = [];
-            if (roadPolyline) { markingMap?.removeLayer(roadPolyline); roadPolyline = null; }
+            roadMarkers.forEach(m => markingMap?.removeLayer(m));
+            roadMarkers = [];
+            ghostMarkers.forEach(m => markingMap?.removeLayer(m));
+            ghostMarkers = [];
+            if (roadPolyline) {
+                markingMap?.removeLayer(roadPolyline);
+                roadPolyline = null;
+            }
 
             pinPoints = [];
-            pinMarkers.forEach(m => markingMap?.removeLayer(m)); pinMarkers = [];
+            pinMarkers.forEach(m => markingMap?.removeLayer(m));
+            pinMarkers = [];
 
             mrfPoints = [];
-            mrfMarkers.forEach(m => markingMap?.removeLayer(m)); mrfMarkers = [];
+            mrfMarkers.forEach(m => markingMap?.removeLayer(m));
+            mrfMarkers = [];
 
             updateUI();
         }
@@ -1135,7 +1214,9 @@
         ════════════════════════════════════════════════════ */
         function updateUI() {
             // Count label
-            const roadN = roadPoints.length, pinN = pinPoints.length, mrfN = mrfPoints.length;
+            const roadN = roadPoints.length,
+                pinN = pinPoints.length,
+                mrfN = mrfPoints.length;
             document.getElementById('wpCountLabel').textContent =
                 `🛣️ ${roadN} road · 📍 ${pinN} stop${pinN !== 1 ? 's' : ''} · 🏭 ${mrfN} MRF`;
 
@@ -1149,13 +1230,20 @@
             // Mini list — show whichever layer is active
             const mini = document.getElementById('wpMiniList');
             let pts, numClass, label;
-            if (activeLayer === 'road') { pts = roadPoints; numClass = 'road-num'; label = 'Vertex'; }
-            else { pts = pinPoints; numClass = ''; label = 'Stop'; }
+            if (activeLayer === 'road') {
+                pts = roadPoints;
+                numClass = 'road-num';
+                label = 'Vertex';
+            } else {
+                pts = pinPoints;
+                numClass = '';
+                label = 'Stop';
+            }
 
             if (!pts.length && !mrfPoints.length) {
-                const tip = activeLayer === 'road'
-                    ? 'Click map to add road vertices · right-click vertex to delete'
-                    : 'Click map to drop a stop marker';
+                const tip = activeLayer === 'road' ?
+                    'Click map to add road vertices · right-click vertex to delete' :
+                    'Click map to drop a stop marker';
                 mini.innerHTML = `<div class="text-muted" style="padding:8px 0;">${tip}</div>`;
                 return;
             }
@@ -1202,9 +1290,9 @@
             try {
                 let res;
                 if (isEditingId) {
-                    res = await API.put(`/api/admin/routes/${isEditingId}`, body);
+                    res = await API.put(`/admin/routes/${isEditingId}`, body);
                 } else {
-                    res = await API.post('/api/admin/routes', body);
+                    res = await API.post('/admin/routes', body);
                 }
                 if (!res.ok) throw new Error();
                 const total = roadPoints.length + pinPoints.length + mrfPoints.length;
@@ -1230,7 +1318,7 @@
         async function confirmDeleteRoute() {
             const id = document.getElementById('deleteRouteId').value;
             try {
-                const res = await API.del(`/api/admin/routes/${id}`);
+                const res = await API.del(`/admin/routes/${id}`);
                 if (!res.ok) throw new Error();
                 showToast('Route deleted', 'success');
                 closeModal('deleteRouteModal');
@@ -1250,7 +1338,7 @@
         ════════════════════════════════════════════════════ */
         async function loadAdminProfile() {
             try {
-                const res = await API.get('/api/admin/profile');
+                const res = await API.get('/admin/profile');
                 if (res.ok) {
                     const d = await res.json();
                     document.getElementById('adminName').textContent = d.name || 'Admin';
@@ -1259,11 +1347,23 @@
         }
 
         Object.assign(window, {
-            openAddModal, openEditModal, selectRoute, filterRoutes,
-            openDeleteModal, confirmDeleteRoute, closeModal, saveRoute,
-            setActiveLayer, undoLast, clearActiveLayer, clearAll,
-            gotoMyLocation, toggleMarkingMapSatellite, toggleDetailMapSatellite,
-            markMRFManual
+            openAddModal,
+            openEditModal,
+            selectRoute,
+            filterRoutes,
+            openDeleteModal,
+            confirmDeleteRoute,
+            closeModal,
+            saveRoute,
+            setActiveLayer,
+            undoLast,
+            clearActiveLayer,
+            clearAll,
+            gotoMyLocation,
+            toggleMarkingMapSatellite,
+            toggleDetailMapSatellite,
+            markMRFManual,
+            openModal
         });
 
         loadAdminProfile();

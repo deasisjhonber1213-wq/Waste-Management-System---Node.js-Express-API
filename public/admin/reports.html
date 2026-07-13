@@ -593,6 +593,39 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        const API = {
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
+        };
+
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.innerHTML = `<span>${msg}</span>`;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
+
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkAuth();
+
         /* ════════════════════════════════════════════════════
            STATE
         ════════════════════════════════════════════════════ */
@@ -622,18 +655,6 @@
             overflowing_bin: 'Overflowing Bin',
             illegal_dumping: 'Illegal Dumping'
         };
-
-        /* ════════════════════════════════════════════════════
-           HELPERS
-        ════════════════════════════════════════════════════ */
-        function showToast(msg, type = 'info') {
-            const c = document.getElementById('toastContainer');
-            const t = document.createElement('div');
-            t.className = `toast ${type}`;
-            t.innerHTML = `<span>${msg}</span>`;
-            c.appendChild(t);
-            setTimeout(() => t.remove(), 3500);
-        }
 
         function fmtDate(d) {
             if (!d) return '—';
@@ -818,7 +839,7 @@
         ════════════════════════════════════════════════════ */
         async function loadReports() {
             try {
-                const res = await API.get('/api/admin/reports');
+                const res = await API.get('/admin/reports');
                 if (!res.ok) throw new Error();
                 allReports = await res.json();
                 updateStatCards(allReports);
@@ -831,7 +852,7 @@
 
         async function loadResidents() {
             try {
-                const res = await API.get('/api/admin/resident-locations');
+                const res = await API.get('/admin/resident-locations');
                 if (!res.ok) throw new Error();
                 allResidents = await res.json();
                 document.getElementById('c-residents').textContent = allResidents.length;
@@ -1032,6 +1053,14 @@
             openModal('viewResidentModal');
         }
 
+        function openModal(id) {
+            document.getElementById(id).classList.add('open');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
+
         /* ════════════════════════════════════════════════════
            TAB SWITCHING
         ════════════════════════════════════════════════════ */
@@ -1070,7 +1099,7 @@
         ════════════════════════════════════════════════════ */
         async function loadAdminProfile() {
             try {
-                const res = await API.get('/api/admin/profile');
+                const res = await API.get('/admin/profile');
                 if (res.ok) {
                     const d = await res.json();
                     document.getElementById('adminName').textContent = d.name || 'Admin';
@@ -1081,7 +1110,7 @@
         // Expose functions globally
         Object.assign(window, {
             viewReport, viewResident, flyToReport, flyToResident, openLightbox, closeLightbox,
-            setDateFilter, applyFilters, toggleSat, switchTab, fitAllPins
+            setDateFilter, applyFilters, toggleSat, switchTab, fitAllPins, openModal, closeModal
         });
 
         // Initialize

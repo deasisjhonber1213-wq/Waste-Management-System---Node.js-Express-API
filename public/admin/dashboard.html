@@ -288,6 +288,74 @@
 
     <script src="../js/style.js"></script>
     <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        // Helper functions for API calls
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        const API = {
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
+        };
+
+        function fmtDate(date) {
+            if (!date) return '—';
+            const d = new Date(date);
+            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function statusBadge(status) {
+            const map = {
+                'pending': 'badge-warning',
+                'in_progress': 'badge-info',
+                'completed': 'badge-success',
+                'cancelled': 'badge-danger'
+            };
+            return `<span class="badge ${map[status] || 'badge-secondary'}">${status.replace('_', ' ')}</span>`;
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
         (() => {
             // Clock
             function updateClock() {
@@ -304,7 +372,7 @@
             // Load stats
             async function loadStats() {
                 try {
-                    const res = await API.get("/api/admin/dashboard");
+                    const res = await API.get("/admin/dashboard");
                     if (!res.ok) throw new Error();
                     const d = await res.json();
                     document.getElementById("s-users").textContent = d.totalUsers ?? "—";
@@ -322,7 +390,7 @@
             // Load report analytics chart
             async function loadChart() {
                 try {
-                    const res = await API.get("/api/admin/analytics");
+                    const res = await API.get("/admin/analytics");
                     if (!res.ok) throw new Error();
                     const data = await res.json();
                     new Chart(document.getElementById("reportChart"), {
@@ -359,7 +427,7 @@
             // Load recent reports
             async function loadRecentReports() {
                 try {
-                    const res = await API.get("/api/admin/reports");
+                    const res = await API.get("/admin/reports");
                     if (!res.ok) throw new Error();
                     const data = await res.json();
                     const el = document.getElementById("recentReports");
@@ -382,7 +450,7 @@
             // Load upcoming pickups
             async function loadPickups() {
                 try {
-                    const res = await API.get("/api/admin/pickups");
+                    const res = await API.get("/admin/pickups");
                     if (!res.ok) throw new Error();
                     const data = await res.json();
                     const tbody = document.getElementById("pickupBody");
@@ -404,12 +472,21 @@
             // Load admin name
             async function loadProfile() {
                 try {
-                    const res = await API.get("/api/admin/profile");
+                    const res = await API.get("/admin/profile");
                     if (!res.ok) throw new Error();
                     const d = await res.json();
                     document.getElementById("adminName").textContent = d.name || "Admin";
                 } catch { }
             }
+
+            // Check auth on load
+            function checkAuth() {
+                const token = getToken();
+                if (!token) {
+                    window.location.href = '/login.html';
+                }
+            }
+            checkAuth();
 
             // Initialize dashboard
             loadStats();
