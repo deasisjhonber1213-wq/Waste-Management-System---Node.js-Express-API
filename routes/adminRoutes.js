@@ -69,7 +69,7 @@ router.get("/export-analytics", ctrl.exportAnalytics);
 router.get("/announcements", ctrl.getAnnouncements);
 router.post("/announcements", ctrl.createAnnouncement);
 router.delete("/announcements/:id", ctrl.deleteAnnouncement);
-
+router.get("/resident-locations", protect, adminOnly, ctrl.getResidentLocations);
 // Profile
 router.get("/profile", ctrl.getProfile);
 router.put("/profile", ctrl.updateProfile);

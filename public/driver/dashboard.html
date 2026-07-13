@@ -4,46 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SmartWaste · Driver</title>
+    <title>SmartWaste · Driver Portal</title>
 
-    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
-    <!-- Fonts -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
 
     <style>
-        :root {
-            --bg: #0d0f12;
-            --bg2: #131720;
-            --bg3: #1a1f2e;
-            --panel: #1e2435;
-            --border: rgba(255, 255, 255, 0.06);
-            --border2: rgba(255, 255, 255, 0.12);
-            --amber: #f5a623;
-            --amber2: #ffc355;
-            --amber-dim: rgba(245, 166, 35, 0.1);
-            --amber-mid: rgba(245, 166, 35, 0.3);
-            --green: #2dd4a0;
-            --green-dim: rgba(45, 212, 160, 0.1);
-            --red: #ff5e5e;
-            --red-dim: rgba(255, 94, 94, 0.1);
-            --blue: #5b9cf6;
-            --blue-dim: rgba(91, 156, 246, 0.1);
-            --text: #e8ecf2;
-            --text2: #7a8499;
-            --text3: #3d4558;
-            --sidebar-w: 260px;
-            --topbar-h: 56px;
-            --font: 'Syne', sans-serif;
-            --mono: 'DM Mono', monospace;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -51,21 +21,44 @@
         }
 
         body {
-            font-family: var(--font);
-            background: var(--bg);
-            color: var(--text);
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #0d0f12;
+            color: #e8ecf2;
             min-height: 100vh;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ── SCROLLBAR ── */
+        :root {
+            --bg: #0d0f12;
+            --bg2: #131720;
+            --bg3: #1a1f2e;
+            --panel: #1e2435;
+            --border: rgba(255, 255, 255, .06);
+            --border2: rgba(255, 255, 255, .12);
+            --amber: #f5a623;
+            --amber2: #ffc355;
+            --amber-dim: rgba(245, 166, 35, .1);
+            --amber-mid: rgba(245, 166, 35, .3);
+            --green: #2dd4a0;
+            --green-dim: rgba(45, 212, 160, .1);
+            --red: #ff5e5e;
+            --red-dim: rgba(255, 94, 94, .1);
+            --blue: #5b9cf6;
+            --blue-dim: rgba(91, 156, 246, .1);
+            --text: #e8ecf2;
+            --text2: #7a8499;
+            --text3: #3d4558;
+            --sidebar-w: 280px;
+            --topbar-h: 60px;
+            --font: 'Inter', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
         ::-webkit-scrollbar {
-            width: 3px;
-            height: 3px
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent
+            width: 4px;
+            height: 4px
         }
 
         ::-webkit-scrollbar-thumb {
@@ -73,9 +66,118 @@
             border-radius: 4px
         }
 
-        /* ══════════════════════════════════════════
-   SIDEBAR
-══════════════════════════════════════════ */
+        /* ── TYPOGRAPHY FIXES ── */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+            text-transform: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border)
+        }
+
+        .today-route {
+            font-size: 1.8rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            text-transform: none;
+            color: var(--text);
+        }
+
+        .logo-text {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+            color: var(--text)
+        }
+
+        .nav-item {
+            font-size: .82rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .stat-val {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--amber);
+            line-height: 1.1;
+        }
+
+        .today-meta .chip {
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+
+        .topbar-title {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            flex: 1;
+        }
+
+        .driver-name {
+            font-size: .85rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .sched-zone {
+            font-weight: 700;
+            font-size: .85rem;
+            letter-spacing: -0.01em;
+        }
+
+        .sched-date {
+            font-weight: 800;
+            font-size: .85rem;
+            letter-spacing: -0.01em;
+        }
+
+        .profile-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            text-transform: none;
+        }
+
+        .ann-title {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            text-transform: none;
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .status-badge {
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        .badge {
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
         .sidebar {
             position: fixed;
             left: 0;
@@ -87,101 +189,87 @@
             z-index: 300;
             display: flex;
             flex-direction: column;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
+            transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+            overflow: hidden
         }
 
         .sidebar-logo {
-            padding: 20px 20px 16px;
+            padding: 28px 20px 24px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             gap: 12px;
-            flex-shrink: 0;
+            flex-shrink: 0
         }
 
         .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--amber);
-            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--amber), var(--amber2));
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 22px;
             color: var(--bg);
             font-weight: 800;
             flex-shrink: 0;
-        }
-
-        .logo-text {
-            font-size: 1rem;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            line-height: 1.1;
-            color: var(--text);
+            box-shadow: 0 4px 12px rgba(245, 166, 35, .2)
         }
 
         .logo-sub {
-            font-size: 0.65rem;
-            color: var(--amber);
-            letter-spacing: 0.12em;
+            font-size: .6rem;
+            color: var(--text2);
+            letter-spacing: .12em;
             text-transform: uppercase;
             font-family: var(--mono);
+            margin-top: 2px;
+            font-weight: 500
         }
 
-        /* Driver card */
         .driver-card {
-            margin: 14px 14px 0;
-            padding: 12px;
+            margin: 16px 16px 0;
+            padding: 14px;
             background: var(--bg3);
             border: 1px solid var(--border2);
-            border-radius: 12px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
+            gap: 12px;
+            flex-shrink: 0
         }
 
         .driver-avatar {
-            width: 36px;
-            height: 36px;
+            width: 42px;
+            height: 42px;
             background: var(--amber-dim);
             border: 2px solid var(--amber-mid);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 800;
             color: var(--amber);
-            flex-shrink: 0;
+            flex-shrink: 0
         }
 
         .driver-info {
             flex: 1;
-            min-width: 0;
-        }
-
-        .driver-name {
-            font-size: 0.82rem;
-            font-weight: 700;
-            truncate: ellipsis;
-            white-space: nowrap;
-            overflow: hidden;
+            min-width: 0
         }
 
         .driver-role {
-            font-size: 0.62rem;
+            font-size: .6rem;
             color: var(--amber);
-            letter-spacing: 0.1em;
+            letter-spacing: .08em;
             text-transform: uppercase;
             font-family: var(--mono);
+            font-weight: 600
         }
 
-        /* GPS toggle */
         .gps-toggle {
-            margin: 12px 14px;
+            margin: 12px 16px;
             padding: 10px 14px;
             border-radius: 10px;
             border: 1px solid var(--border2);
@@ -190,23 +278,24 @@
             align-items: center;
             gap: 10px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all .2s;
             flex-shrink: 0;
             font-family: var(--mono);
-            font-size: 0.72rem;
-            letter-spacing: 0.06em;
+            font-size: .7rem;
+            letter-spacing: .04em;
             color: var(--text2);
+            font-weight: 500
         }
 
         .gps-toggle:hover {
             border-color: var(--amber-mid);
-            color: var(--text);
+            color: var(--text)
         }
 
         .gps-toggle.on {
             border-color: var(--green);
             color: var(--green);
-            background: var(--green-dim);
+            background: var(--green-dim)
         }
 
         .gps-dot {
@@ -214,119 +303,120 @@
             height: 8px;
             border-radius: 50%;
             background: var(--text3);
-            flex-shrink: 0;
+            flex-shrink: 0
         }
 
         .gps-toggle.on .gps-dot {
             background: var(--green);
-            box-shadow: 0 0 0 3px rgba(45, 212, 160, 0.25);
-            animation: gpsPulse 1.5s infinite;
+            box-shadow: 0 0 0 3px rgba(45, 212, 160, .25);
+            animation: gpsPulse 1.5s infinite
         }
 
         @keyframes gpsPulse {
 
             0%,
             100% {
-                box-shadow: 0 0 0 3px rgba(45, 212, 160, 0.25)
+                box-shadow: 0 0 0 3px rgba(45, 212, 160, .25)
             }
 
             50% {
-                box-shadow: 0 0 0 6px rgba(45, 212, 160, 0.05)
+                box-shadow: 0 0 0 6px rgba(45, 212, 160, .05)
             }
         }
 
         .gps-accuracy {
             margin-left: auto;
-            font-size: 0.6rem;
+            font-size: .55rem;
             padding: 2px 6px;
             border-radius: 4px;
             background: var(--bg);
             color: var(--text2);
+            font-weight: 500
         }
 
-        /* Nav */
         .sidebar-nav {
             flex: 1;
             overflow-y: auto;
-            padding: 8px 10px;
+            padding: 12px
         }
 
         .nav-label {
-            font-size: 0.6rem;
-            letter-spacing: 0.14em;
+            font-size: .6rem;
+            letter-spacing: .1em;
             text-transform: uppercase;
             color: var(--text3);
             font-family: var(--mono);
-            padding: 14px 10px 6px;
+            padding: 16px 12px 8px;
+            font-weight: 600
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 0.82rem;
+            border-radius: 10px;
+            font-size: .82rem;
             font-weight: 600;
+            letter-spacing: -.01em;
             color: var(--text2);
             cursor: pointer;
             border: none;
             background: none;
             width: 100%;
             text-align: left;
-            transition: all 0.15s;
-            position: relative;
+            transition: all .15s;
+            position: relative
         }
 
         .nav-item:hover {
             background: var(--bg3);
-            color: var(--text);
+            color: var(--text)
         }
 
         .nav-item.active {
             background: var(--amber-dim);
             color: var(--amber);
-            border: 1px solid var(--amber-mid);
+            border: 1px solid var(--amber-mid)
         }
 
         .nav-item.active::before {
             content: '';
             position: absolute;
-            left: 0;
+            left: -12px;
             top: 20%;
             bottom: 20%;
             width: 3px;
             background: var(--amber);
-            border-radius: 0 3px 3px 0;
+            border-radius: 0 3px 3px 0
         }
 
         .nav-icon {
-            font-size: 1rem;
-            width: 20px;
+            font-size: 1.1rem;
+            width: 24px;
             text-align: center;
-            flex-shrink: 0;
+            flex-shrink: 0
         }
 
         .nav-badge {
             margin-left: auto;
-            min-width: 18px;
-            height: 18px;
+            min-width: 20px;
+            height: 20px;
             background: var(--amber);
             color: var(--bg);
-            border-radius: 9px;
-            font-size: 0.6rem;
+            border-radius: 10px;
+            font-size: .6rem;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 5px;
+            padding: 0 6px
         }
 
-        /* Sidebar footer */
         .sidebar-footer {
-            padding: 12px 14px;
+            padding: 16px;
             border-top: 1px solid var(--border);
-            flex-shrink: 0;
+            flex-shrink: 0
         }
 
         .btn-logout {
@@ -334,63 +424,59 @@
             align-items: center;
             gap: 8px;
             width: 100%;
-            padding: 9px 14px;
+            padding: 10px 14px;
             background: var(--bg3);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-family: var(--font);
-            font-size: 0.75rem;
+            font-size: .75rem;
             font-weight: 600;
+            letter-spacing: .02em;
             color: var(--text2);
             cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
+            transition: all .2s;
+            text-decoration: none
         }
 
         .btn-logout:hover {
             border-color: var(--red);
             color: var(--red);
-            background: var(--red-dim);
+            background: var(--red-dim)
         }
 
-        /* Sidebar overlay */
         .sb-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, .6);
             z-index: 299;
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px)
         }
 
         .sb-overlay.visible {
-            display: block;
+            display: block
         }
 
-        /* ══════════════════════════════════════════
-   MAIN LAYOUT
-══════════════════════════════════════════ */
         .layout {
             margin-left: var(--sidebar-w);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            flex-direction: column
         }
 
-        /* Topbar */
         .topbar {
             height: var(--topbar-h);
-            background: rgba(13, 15, 18, 0.9);
+            background: rgba(13, 15, 18, .95);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding: 0 24px;
-            gap: 16px;
+            padding: 0 28px;
+            gap: 20px;
             position: sticky;
             top: 0;
             z-index: 100;
-            flex-shrink: 0;
+            flex-shrink: 0
         }
 
         .hamburger {
@@ -401,55 +487,45 @@
             border: none;
             cursor: pointer;
             padding: 6px;
-            border-radius: 6px;
+            border-radius: 6px
         }
 
         .hamburger span {
             display: block;
-            width: 18px;
+            width: 20px;
             height: 2px;
             background: var(--text2);
-            border-radius: 2px;
-            transition: all 0.2s;
-        }
-
-        .topbar-title {
-            font-size: 0.95rem;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            flex: 1;
+            border-radius: 2px
         }
 
         .topbar-date {
             font-family: var(--mono);
-            font-size: 0.7rem;
+            font-size: .7rem;
             color: var(--text2);
+            font-weight: 500
         }
 
-        /* ══════════════════════════════════════════
-   CONTENT AREA
-══════════════════════════════════════════ */
         .content {
             flex: 1;
-            padding: 24px;
-            max-width: 1200px;
+            padding: 28px;
+            max-width: 1400px;
             width: 100%;
-            margin: 0 auto;
+            margin: 0 auto
         }
 
         .tab-panel {
             display: none;
-            animation: fadeUp 0.25s ease;
+            animation: fadeUp .3s ease
         }
 
         .tab-panel.active {
-            display: block;
+            display: block
         }
 
         @keyframes fadeUp {
             from {
                 opacity: 0;
-                transform: translateY(12px)
+                transform: translateY(15px)
             }
 
             to {
@@ -458,87 +534,43 @@
             }
         }
 
-        /* ══════════════════════════════════════════
-   SECTION TITLE
-══════════════════════════════════════════ */
-        .section-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .section-title::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        /* ══════════════════════════════════════════
-   STATS GRID
-══════════════════════════════════════════ */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 20px;
+            gap: 16px;
+            margin-bottom: 24px
         }
 
         .stat-card {
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px 20px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s, border-color 0.2s;
+            border-radius: 16px;
+            padding: 20px;
+            transition: transform .2s, border-color .2s
         }
 
         .stat-card:hover {
             transform: translateY(-2px);
-            border-color: var(--border2);
-        }
-
-        .stat-card::after {
-            content: attr(data-icon);
-            position: absolute;
-            right: 10px;
-            bottom: 6px;
-            font-size: 2.8rem;
-            opacity: 0.05;
-        }
-
-        .stat-val {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--amber);
-            line-height: 1;
+            border-color: var(--border2)
         }
 
         .stat-label {
-            font-size: 0.65rem;
-            letter-spacing: 0.1em;
+            font-size: .65rem;
+            letter-spacing: .08em;
             text-transform: uppercase;
             color: var(--text2);
             margin-top: 8px;
             font-family: var(--mono);
+            font-weight: 600
         }
 
-        /* ══════════════════════════════════════════
-   TODAY ASSIGNMENT
-══════════════════════════════════════════ */
         .today-card {
             background: var(--panel);
             border: 1px solid var(--border2);
-            border-radius: 16px;
+            border-radius: 18px;
             overflow: hidden;
-            margin-bottom: 20px;
-            position: relative;
+            margin-bottom: 24px;
+            position: relative
         }
 
         .today-card::before {
@@ -548,745 +580,701 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(90deg, var(--amber), transparent);
+            background: linear-gradient(90deg, var(--amber), transparent)
         }
 
         .today-inner {
-            padding: 20px 24px;
-        }
-
-        .today-route {
-            font-size: 1.6rem;
-            font-weight: 800;
-            line-height: 1.1;
-            text-transform: uppercase;
+            padding: 24px 28px
         }
 
         .today-meta {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
-            margin-top: 10px;
+            margin-top: 12px
         }
 
         .chip {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.68rem;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: .68rem;
             font-weight: 600;
+            letter-spacing: .04em;
             background: var(--bg3);
             border: 1px solid var(--border);
             color: var(--text2);
-            letter-spacing: 0.06em;
             text-transform: uppercase;
-            font-family: var(--mono);
+            font-family: var(--mono)
         }
 
         .chip.amber {
             background: var(--amber-dim);
             border-color: var(--amber-mid);
-            color: var(--amber);
+            color: var(--amber)
         }
 
         .today-footer {
-            padding: 14px 24px;
+            padding: 16px 28px;
             background: var(--bg3);
             border-top: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 12px;
+            flex-wrap: wrap
         }
 
         .status-badge {
-            padding: 6px 16px;
-            border-radius: 8px;
-            font-size: 0.72rem;
+            padding: 6px 18px;
+            border-radius: 10px;
+            font-size: .7rem;
             font-weight: 700;
-            letter-spacing: 0.1em;
+            letter-spacing: .06em;
             text-transform: uppercase;
-            font-family: var(--mono);
+            font-family: var(--mono)
         }
 
         .status-pending {
             background: var(--amber-dim);
             border: 1px solid var(--amber-mid);
-            color: var(--amber);
+            color: var(--amber)
         }
 
         .status-in_progress {
             background: var(--blue-dim);
-            border: 1px solid rgba(91, 156, 246, 0.3);
-            color: var(--blue);
+            border: 1px solid rgba(91, 156, 246, .3);
+            color: var(--blue)
         }
 
         .status-completed {
             background: var(--green-dim);
-            border: 1px solid rgba(45, 212, 160, 0.3);
-            color: var(--green);
+            border: 1px solid rgba(45, 212, 160, .3);
+            color: var(--green)
         }
 
-        /* ══════════════════════════════════════════
-   BUTTONS
-══════════════════════════════════════════ */
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 9px 18px;
-            border-radius: 8px;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
             font-family: var(--font);
-            font-size: 0.78rem;
+            font-size: .75rem;
             font-weight: 700;
-            letter-spacing: 0.06em;
+            letter-spacing: .04em;
             text-transform: uppercase;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all .2s
         }
 
         .btn-primary {
             background: var(--amber);
-            color: var(--bg);
+            color: var(--bg)
         }
 
         .btn-primary:hover {
             background: var(--amber2);
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(245, 166, 35, 0.3);
+            box-shadow: 0 6px 20px rgba(245, 166, 35, .3)
         }
 
         .btn-success {
             background: var(--green-dim);
             color: var(--green);
-            border: 1px solid rgba(45, 212, 160, 0.3);
+            border: 1px solid rgba(45, 212, 160, .3)
         }
 
         .btn-success:hover {
             background: var(--green);
-            color: var(--bg);
+            color: var(--bg)
         }
 
         .btn-ghost {
             background: transparent;
             border: 1px solid var(--border2);
             color: var(--text2);
+            font-weight: 600
         }
 
         .btn-ghost:hover {
             border-color: var(--amber-mid);
             color: var(--amber);
-            background: var(--amber-dim);
+            background: var(--amber-dim)
         }
 
-        .btn-danger {
-            background: var(--red-dim);
-            color: var(--red);
-            border: 1px solid rgba(255, 94, 94, 0.3);
-        }
-
-        .btn-danger:hover {
-            background: var(--red);
-            color: #fff;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.68rem;
-        }
-
-        /* ══════════════════════════════════════════
-   MAP
-══════════════════════════════════════════ */
         .map-card {
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 18px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 24px
         }
 
         .map-toolbar {
-            padding: 10px 16px;
+            padding: 12px 20px;
             background: var(--bg3);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             gap: 8px;
-            flex-wrap: wrap;
+            flex-wrap: wrap
         }
 
         .map-toolbar-title {
-            font-size: 0.72rem;
+            font-size: .7rem;
             font-weight: 700;
-            letter-spacing: 0.12em;
+            letter-spacing: .08em;
             text-transform: uppercase;
             color: var(--amber);
             margin-right: auto;
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
+            font-family: var(--mono)
         }
 
         .map-btn {
-            padding: 5px 11px;
-            border-radius: 6px;
-            font-size: 0.67rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: .65rem;
             font-weight: 600;
-            letter-spacing: 0.05em;
+            letter-spacing: .04em;
             background: var(--bg);
             border: 1px solid var(--border2);
             color: var(--text2);
             cursor: pointer;
-            transition: all 0.18s;
-            font-family: var(--mono);
+            transition: all .18s;
+            font-family: var(--mono)
         }
 
         .map-btn:hover {
             border-color: var(--amber);
-            color: var(--amber);
+            color: var(--amber)
         }
 
         .map-btn.active {
             background: var(--amber-dim);
             border-color: var(--amber);
-            color: var(--amber);
+            color: var(--amber)
+        }
+
+        .map-btn.blue-btn {
+            border-color: rgba(91, 156, 246, .3);
+            color: var(--blue)
+        }
+
+        .map-btn.blue-btn:hover {
+            background: var(--blue-dim);
+            border-color: var(--blue)
         }
 
         #driverMap {
-            height: 420px;
+            height: 480px;
             width: 100%;
-            background: var(--bg3);
+            background: var(--bg3)
         }
 
-        /* Location bar below map */
+        .map-legend {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            padding: 8px 16px;
+            background: var(--bg3);
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            font-family: var(--mono);
+            font-size: .6rem;
+            font-weight: 500
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text2)
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+        .legend-dot.truck {
+            background: #f5a623
+        }
+
+        .legend-dot.mrf {
+            background: #2dd4a0;
+            border-radius: 3px
+        }
+
+        .legend-dot.resident {
+            background: #5b9cf6
+        }
+
+        .legend-dot.remaining {
+            background: #f5a623
+        }
+
+        .legend-dot.driven {
+            background: #3d4558
+        }
+
+        .legend-dot.stop {
+            background: #5b9cf6
+        }
+
+        .hud-residents {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(91, 156, 246, .1);
+            border: 1px solid rgba(91, 156, 246, .2);
+            color: var(--blue);
+            cursor: pointer;
+            font-size: .6rem;
+            font-weight: 600
+        }
+
         .location-bar {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 10px 16px;
+            gap: 16px;
+            padding: 10px 20px;
             border-top: 1px solid var(--border);
             background: var(--bg3);
             font-family: var(--mono);
-            font-size: 0.72rem;
+            font-size: .7rem;
             flex-wrap: wrap;
+            font-weight: 500
         }
 
         .loc-coords {
             color: var(--amber);
-            font-weight: 500;
-        }
-
-        .loc-accuracy {
-            color: var(--text2);
+            font-weight: 600
         }
 
         .loc-time {
             margin-left: auto;
-            color: var(--text3);
+            color: var(--text3)
         }
 
-        /* Route info */
         .route-info-box {
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            margin-top: 16px;
-            display: none;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none
         }
 
         .route-info-box.show {
             display: block;
-            animation: fadeUp 0.3s ease;
+            animation: fadeUp .3s ease
         }
 
         .route-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 14px;
+            margin-bottom: 18px
         }
 
         .route-stat {
             background: var(--bg3);
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 14px
         }
 
         .route-stat-val {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: 800;
-            color: var(--amber);
+            letter-spacing: -.01em;
+            color: var(--amber)
         }
 
         .route-stat-label {
-            font-size: 0.62rem;
+            font-size: .6rem;
             color: var(--text2);
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: .06em;
             font-family: var(--mono);
+            font-weight: 600
         }
 
-        /* Waypoint list */
         .wp-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            max-height: 180px;
-            overflow-y: auto;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto
         }
 
         .wp-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
+            gap: 12px;
+            padding: 10px 14px;
             background: var(--bg3);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.78rem;
+            border-radius: 10px;
+            font-size: .8rem;
+            transition: border-color .2s
+        }
+
+        .wp-item.reached {
+            border-color: rgba(45, 212, 160, .3)
         }
 
         .wp-num {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            background: var(--amber-dim);
-            border: 1px solid var(--amber-mid);
+            background: var(--blue-dim);
+            border: 1px solid rgba(91, 156, 246, .35);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.68rem;
+            font-size: .7rem;
             font-weight: 700;
-            color: var(--amber);
+            color: var(--blue);
             flex-shrink: 0;
+            transition: all .3s
+        }
+
+        .wp-num.mrf-stop {
+            background: rgba(45, 212, 160, .15);
+            border-color: rgba(45, 212, 160, .4);
+            color: var(--green)
+        }
+
+        .wp-num.done {
+            background: var(--green);
+            border-color: var(--green);
+            color: var(--bg)
         }
 
         .wp-name {
             flex: 1;
             color: var(--text2);
             font-family: var(--mono);
-            font-size: 0.72rem;
+            font-size: .7rem;
+            font-weight: 500
         }
 
-        .wp-done {
-            color: var(--green);
-            font-size: 0.8rem;
-        }
-
-        /* ══════════════════════════════════════════
-   SCHEDULE / LIST CARDS
-══════════════════════════════════════════ */
         .list-stack {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px
         }
 
         .sched-card {
             display: grid;
-            grid-template-columns: 88px 1fr auto;
+            grid-template-columns: 100px 1fr auto;
             align-items: center;
-            gap: 14px;
-            padding: 14px 18px;
+            gap: 16px;
+            padding: 16px 20px;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            transition: all 0.2s;
-        }
-
-        .sched-card:hover {
-            border-color: var(--border2);
+            border-radius: 14px
         }
 
         .sched-card.today-row {
-            border-left: 3px solid var(--amber);
-        }
-
-        .sched-date {
-            font-weight: 800;
-            font-size: 0.88rem;
+            border-left: 4px solid var(--amber)
         }
 
         .sched-date-sub {
-            font-size: 0.62rem;
+            font-size: .6rem;
             color: var(--text2);
             font-family: var(--mono);
-        }
-
-        .sched-zone {
-            font-weight: 700;
-            font-size: 0.85rem;
+            margin-top: 2px;
+            font-weight: 500
         }
 
         .sched-meta {
-            font-size: 0.65rem;
+            font-size: .65rem;
             color: var(--text2);
             font-family: var(--mono);
-            margin-top: 3px;
+            margin-top: 4px;
+            font-weight: 500
         }
 
-        /* Badges */
         .badge {
             display: inline-flex;
             align-items: center;
-            padding: 3px 10px;
-            border-radius: 5px;
-            font-size: 0.65rem;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: .65rem;
             font-weight: 700;
-            letter-spacing: 0.08em;
+            letter-spacing: .04em;
             text-transform: uppercase;
-            font-family: var(--mono);
+            font-family: var(--mono)
         }
 
         .badge-amber {
             background: var(--amber-dim);
             border: 1px solid var(--amber-mid);
-            color: var(--amber);
+            color: var(--amber)
         }
 
         .badge-green {
             background: var(--green-dim);
-            border: 1px solid rgba(45, 212, 160, 0.3);
-            color: var(--green);
+            border: 1px solid rgba(45, 212, 160, .3);
+            color: var(--green)
         }
 
         .badge-blue {
             background: var(--blue-dim);
-            border: 1px solid rgba(91, 156, 246, 0.3);
-            color: var(--blue);
+            border: 1px solid rgba(91, 156, 246, .3);
+            color: var(--blue)
         }
 
-        .badge-muted {
-            background: var(--bg3);
-            border: 1px solid var(--border);
-            color: var(--text3);
-        }
-
-        /* ══════════════════════════════════════════
-   FORMS
-══════════════════════════════════════════ */
         .form-card {
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 28px
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 20px
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px
         }
 
         .form-label {
             display: block;
-            font-size: 0.65rem;
+            font-size: .65rem;
             font-weight: 700;
-            letter-spacing: 0.12em;
+            letter-spacing: .08em;
             text-transform: uppercase;
             color: var(--text2);
-            margin-bottom: 7px;
-            font-family: var(--mono);
+            margin-bottom: 8px;
+            font-family: var(--mono)
         }
 
         .form-control {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 16px;
             background: var(--bg3);
             border: 1px solid var(--border2);
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text);
             font-family: var(--mono);
-            font-size: 0.82rem;
+            font-size: .8rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color .2s;
+            font-weight: 500
         }
 
         .form-control:focus {
-            border-color: var(--amber-mid);
+            border-color: var(--amber-mid)
         }
 
         textarea.form-control {
             resize: vertical;
-            min-height: 90px;
+            min-height: 100px
         }
 
-        /* ══════════════════════════════════════════
-   REPORT CARDS
-══════════════════════════════════════════ */
         .report-card {
             display: flex;
-            gap: 14px;
+            gap: 16px;
             align-items: flex-start;
-            padding: 16px 18px;
+            padding: 18px 20px;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            flex-wrap: wrap;
+            border-radius: 14px;
+            flex-wrap: wrap
         }
 
         .report-icon {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             padding: 8px;
             background: var(--amber-dim);
-            border-radius: 10px;
-            flex-shrink: 0;
+            border-radius: 12px;
+            flex-shrink: 0
         }
 
         .report-body {
-            flex: 1;
+            flex: 1
         }
 
         .report-desc {
-            font-size: 0.82rem;
+            font-size: .8rem;
             color: var(--text2);
-            margin-top: 5px;
+            margin-top: 6px;
             line-height: 1.5;
+            font-weight: 400
         }
 
         .report-note {
-            font-size: 0.68rem;
+            font-size: .65rem;
             color: var(--text3);
-            margin-top: 4px;
+            margin-top: 5px;
             font-family: var(--mono);
+            font-weight: 500
         }
 
         .report-ts {
-            font-size: 0.65rem;
+            font-size: .65rem;
             color: var(--text3);
             text-align: right;
             font-family: var(--mono);
             white-space: nowrap;
+            font-weight: 500
         }
 
-        /* ══════════════════════════════════════════
-   ANNOUNCEMENTS
-══════════════════════════════════════════ */
         .ann-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            overflow: hidden;
-            margin-bottom: 14px;
-        }
-
-        .ann-img {
-            width: 100%;
-            height: 140px;
-            object-fit: cover;
-            filter: saturate(0.4) brightness(0.6);
-        }
-
-        .ann-body {
-            padding: 18px 22px;
-        }
-
-        .ann-meta {
-            font-size: 0.65rem;
-            color: var(--amber);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            font-family: var(--mono);
-            margin-bottom: 7px;
-        }
-
-        .ann-title {
-            font-size: 1rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-bottom: 7px;
-        }
-
-        .ann-msg {
-            font-size: 0.82rem;
-            color: var(--text2);
-            line-height: 1.6;
-        }
-
-        /* ══════════════════════════════════════════
-   PROFILE
-══════════════════════════════════════════ */
-        .profile-header-card {
             background: var(--panel);
             border: 1px solid var(--border);
             border-radius: 16px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 16px
+        }
+
+        .ann-body {
+            padding: 20px 24px
+        }
+
+        .ann-meta {
+            font-size: .65rem;
+            color: var(--amber);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-family: var(--mono);
+            margin-bottom: 8px;
+            font-weight: 600
+        }
+
+        .ann-msg {
+            font-size: .8rem;
+            color: var(--text2);
+            line-height: 1.6;
+            font-weight: 400
+        }
+
+        .trip-card {
+            display: grid;
+            grid-template-columns: 90px 1fr auto;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px
+        }
+
+        .trip-date {
+            font-weight: 800;
+            font-size: .8rem;
+            letter-spacing: -.01em
+        }
+
+        .trip-sub {
+            font-size: .6rem;
+            color: var(--text2);
+            font-family: var(--mono);
+            font-weight: 500
+        }
+
+        .profile-header-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            margin-bottom: 24px
         }
 
         .profile-cover {
-            height: 80px;
-            background: linear-gradient(135deg, var(--amber-dim), rgba(91, 156, 246, 0.05));
-            position: relative;
+            height: 100px;
+            background: linear-gradient(135deg, var(--amber-dim), rgba(91, 156, 246, .05));
+            position: relative
         }
 
         .profile-avatar-wrap {
             position: absolute;
-            bottom: -28px;
-            left: 24px;
-            width: 60px;
-            height: 60px;
+            bottom: -32px;
+            left: 28px;
+            width: 70px;
+            height: 70px;
             background: var(--amber);
-            border-radius: 14px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: var(--bg);
-            border: 3px solid var(--panel);
+            border: 4px solid var(--panel)
         }
 
         .profile-info {
-            padding: 40px 24px 24px;
-        }
-
-        .profile-name {
-            font-size: 1.4rem;
-            font-weight: 800;
-            text-transform: uppercase;
+            padding: 48px 28px 28px
         }
 
         .profile-role-tag {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 12px;
-            border-radius: 6px;
+            padding: 5px 14px;
+            border-radius: 8px;
             background: var(--amber-dim);
             border: 1px solid var(--amber-mid);
             color: var(--amber);
-            font-size: 0.68rem;
+            font-size: .65rem;
             font-weight: 700;
-            letter-spacing: 0.08em;
+            letter-spacing: .06em;
             text-transform: uppercase;
             font-family: var(--mono);
-            margin-top: 7px;
+            margin-top: 10px
         }
 
-        /* ══════════════════════════════════════════
-   TRIP CARDS
-══════════════════════════════════════════ */
-        .trip-card {
-            display: grid;
-            grid-template-columns: 80px 1fr auto;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 18px;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            transition: all 0.2s;
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 28px 0
         }
 
-        .trip-card:hover {
-            border-color: var(--border2);
-        }
-
-        .trip-date {
-            font-weight: 800;
-            font-size: 0.82rem;
-        }
-
-        .trip-sub {
-            font-size: 0.6rem;
-            color: var(--text2);
-            font-family: var(--mono);
-        }
-
-        /* ══════════════════════════════════════════
-   EMPTY STATE
-══════════════════════════════════════════ */
         .empty {
             text-align: center;
-            padding: 48px 24px;
-            color: var(--text3);
+            padding: 60px 24px;
+            color: var(--text3)
         }
 
         .empty-icon {
-            font-size: 3rem;
-            opacity: 0.3;
-            margin-bottom: 12px;
+            font-size: 3.5rem;
+            opacity: .3;
+            margin-bottom: 16px
         }
 
         .empty-title {
             font-size: 1rem;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: -.01em;
+            text-transform: none
         }
 
         .empty-sub {
-            font-size: 0.78rem;
-            margin-top: 6px;
+            font-size: .75rem;
+            margin-top: 8px;
+            font-weight: 400
         }
 
-        /* ══════════════════════════════════════════
-   DIVIDER
-══════════════════════════════════════════ */
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 24px 0;
-        }
-
-        /* ══════════════════════════════════════════
-   TOAST
-══════════════════════════════════════════ */
-        #toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(60px);
-            z-index: 9999;
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            pointer-events: none;
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            white-space: nowrap;
-            font-family: var(--mono);
-        }
-
-        #toast.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-
-        #toast.success {
-            background: var(--green);
-            color: var(--bg);
-        }
-
-        #toast.error {
-            background: var(--red);
-            color: #fff;
-        }
-
-        #toast.info {
-            background: var(--amber);
-            color: var(--bg);
-        }
-
-        /* ══════════════════════════════════════════
-   SKELETON
-══════════════════════════════════════════ */
         .skel {
             background: linear-gradient(90deg, var(--panel) 25%, var(--bg3) 50%, var(--panel) 75%);
             background-size: 200% 100%;
             animation: shimmer 1.4s infinite;
-            border-radius: 10px;
+            border-radius: 12px
         }
 
         @keyframes shimmer {
@@ -1299,112 +1287,252 @@
             }
         }
 
-        /* ══════════════════════════════════════════
-   LEAFLET OVERRIDES
-══════════════════════════════════════════ */
+        .truck-marker {
+            width: 34px;
+            height: 34px;
+            background: #f5a623;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 4px rgba(245, 166, 35, .35), 0 0 18px rgba(245, 166, 35, .6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: truckPulse 2s ease-in-out infinite
+        }
+
+        @keyframes truckPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 4px rgba(245, 166, 35, .35), 0 0 18px rgba(245, 166, 35, .6)
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(245, 166, 35, .15), 0 0 28px rgba(245, 166, 35, .4)
+            }
+        }
+
+        .mrf-wrap {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .mrf-pulse-ring {
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px solid rgba(45, 212, 160, .45);
+            animation: mrfRing 2.4s ease-out infinite
+        }
+
+        @keyframes mrfRing {
+            0% {
+                transform: scale(.7);
+                opacity: .8
+            }
+
+            100% {
+                transform: scale(1.6);
+                opacity: 0
+            }
+        }
+
+        .mrf-pin {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #2dd4a0, #1aad82);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, .2);
+            box-shadow: 0 4px 14px rgba(45, 212, 160, .45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2
+        }
+
+        .stop-pin {
+            width: 28px;
+            height: 28px;
+            background: #1e2435;
+            border: 2px solid #5b9cf6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #5b9cf6;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: 0 2px 8px rgba(91, 156, 246, .35);
+            transition: all .3s
+        }
+
+        .stop-pin.done {
+            background: #2dd4a0;
+            border-color: #2dd4a0;
+            color: #0d0f12;
+            box-shadow: 0 2px 12px rgba(45, 212, 160, .5)
+        }
+
+        .resident-marker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, .15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform .15s
+        }
+
+        .resident-marker.fresh {
+            background: rgba(91, 156, 246, .25);
+            box-shadow: 0 0 10px rgba(91, 156, 246, .5);
+            border-color: rgba(91, 156, 246, .5)
+        }
+
+        .resident-marker.stale {
+            background: rgba(61, 69, 88, .5);
+            opacity: .6
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            z-index: 9999;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: .75rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            pointer-events: none;
+            opacity: 0;
+            transition: all .3s cubic-bezier(.34, 1.56, .64, 1);
+            white-space: nowrap;
+            font-family: var(--mono)
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1
+        }
+
+        #toast.success {
+            background: var(--green);
+            color: var(--bg)
+        }
+
+        #toast.error {
+            background: var(--red);
+            color: #fff
+        }
+
+        #toast.info {
+            background: var(--amber);
+            color: var(--bg)
+        }
+
         .leaflet-container {
-            background: #131720 !important;
+            background: #131720 !important
         }
 
         .leaflet-routing-container {
-            background: rgba(19, 23, 32, 0.96) !important;
-            border: 1px solid var(--border) !important;
+            display: none !important
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: rgba(19, 23, 32, .97) !important;
+            border: 1px solid rgba(255, 255, 255, .1) !important;
             border-radius: 10px !important;
-            color: var(--text) !important;
-            font-family: var(--mono) !important;
-            font-size: 0.68rem !important;
-            max-width: 280px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .5) !important
         }
 
-        .leaflet-routing-container h2 {
-            color: var(--amber) !important;
-            font-size: 0.82rem !important;
+        .leaflet-popup-tip {
+            background: rgba(19, 23, 32, .97) !important
         }
 
-        .leaflet-routing-alt {
-            max-height: 200px !important;
+        .leaflet-popup-content {
+            color: #e8ecf2 !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 12px !important;
+            margin: 10px 14px !important;
+            font-weight: 500
         }
 
-        .leaflet-routing-collapse-btn {
-            color: var(--amber) !important;
-        }
-
-        /* ══════════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════════ */
-        @media (max-width: 900px) {
+        @media(max-width:968px) {
             .sidebar {
-                transform: translateX(calc(-1 * var(--sidebar-w)));
+                transform: translateX(calc(-1 * var(--sidebar-w)))
             }
 
             .sidebar.open {
-                transform: translateX(0);
+                transform: translateX(0)
             }
 
             .layout {
-                margin-left: 0;
+                margin-left: 0
             }
 
             .hamburger {
-                display: flex;
+                display: flex
             }
 
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr)
             }
         }
 
-        @media (max-width: 600px) {
+        @media(max-width:640px) {
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr 1fr
             }
 
-            .sched-card {
-                grid-template-columns: 1fr;
-            }
-
+            .sched-card,
             .trip-card {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr
             }
 
             .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            #driverMap {
-                height: 320px;
+                grid-template-columns: 1fr
             }
 
             .content {
-                padding: 16px;
+                padding: 16px
+            }
+
+            #driverMap {
+                height: 350px
             }
 
             .route-stats {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .today-route {
+                font-size: 1.3rem
             }
         }
     </style>
 </head>
 
 <body>
-
-    <!-- Sidebar overlay -->
     <div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
 
-    <!-- ════════════════════════════════
-     SIDEBAR
-════════════════════════════════ -->
     <aside class="sidebar" id="sidebar">
-        <!-- Logo -->
         <div class="sidebar-logo">
             <div class="logo-icon">♻</div>
             <div>
-                <div class="logo-text">SmartWaste</div>
+                <div class="logo-text">Jose Dalman WM</div>
                 <div class="logo-sub">Driver Portal</div>
             </div>
         </div>
-
-        <!-- Driver card -->
         <div class="driver-card">
             <div class="driver-avatar" id="sidebarAvatar">?</div>
             <div class="driver-info">
@@ -1412,209 +1540,191 @@
                 <div class="driver-role">Collector · Driver</div>
             </div>
         </div>
-
-        <!-- GPS Toggle -->
         <div class="gps-toggle" id="gpsToggle" onclick="toggleGPS()">
-            <div class="gps-dot"></div>
-            <span id="gpsLabel">GPS OFF</span>
-            <span class="gps-accuracy" id="gpsAccBadge">—</span>
+            <div class="gps-dot"></div><span id="gpsLabel">GPS OFF</span><span class="gps-accuracy"
+                id="gpsAccBadge">—</span>
         </div>
-
-        <!-- Nav -->
         <nav class="sidebar-nav">
             <div class="nav-label">Today</div>
-            <button class="nav-item active" data-tab="today" onclick="switchTab('today',this)">
-                <span class="nav-icon">📋</span> Today's Route
-            </button>
-
+            <button class="nav-item active" data-tab="today" onclick="switchTab('today',this)"><span
+                    class="nav-icon">📋</span> Today's Route</button>
             <div class="nav-label">Schedule</div>
-            <button class="nav-item" data-tab="schedule" onclick="switchTab('schedule',this)">
-                <span class="nav-icon">📅</span> My Schedule
-            </button>
-
+            <button class="nav-item" data-tab="schedule" onclick="switchTab('schedule',this)"><span
+                    class="nav-icon">📅</span> My Schedule</button>
             <div class="nav-label">Operations</div>
-            <button class="nav-item" data-tab="report" onclick="switchTab('report',this)">
-                <span class="nav-icon">⚠️</span> File Report
-            </button>
-            <button class="nav-item" data-tab="announcements" onclick="switchTab('announcements',this)">
-                <span class="nav-icon">📢</span> Notices
-                <span class="nav-badge" id="annBadge" style="display:none">0</span>
-            </button>
-
+            <button class="nav-item" data-tab="report" onclick="switchTab('report',this)"><span
+                    class="nav-icon">⚠️</span> File Report</button>
+            <button class="nav-item" data-tab="announcements" onclick="switchTab('announcements',this)"><span
+                    class="nav-icon">📢</span> Notices<span class="nav-badge" id="annBadge"
+                    style="display:none">0</span></button>
             <div class="nav-label">History & Profile</div>
-            <button class="nav-item" data-tab="trips" onclick="switchTab('trips',this)">
-                <span class="nav-icon">🗂️</span> Trip History
-            </button>
-            <button class="nav-item" data-tab="profile" onclick="switchTab('profile',this)">
-                <span class="nav-icon">👤</span> My Profile
-            </button>
+            <button class="nav-item" data-tab="trips" onclick="switchTab('trips',this)"><span
+                    class="nav-icon">🗂️</span> Trip History</button>
+            <button class="nav-item" data-tab="profile" onclick="switchTab('profile',this)"><span
+                    class="nav-icon">👤</span> My Profile</button>
         </nav>
-
-        <div class="sidebar-footer">
-            <a href="/login.html" class="btn-logout">⎋ &nbsp;Sign Out</a>
-        </div>
+        <div class="sidebar-footer"><a href="/login.html" class="btn-logout">⎋ &nbsp;Sign Out</a></div>
     </aside>
 
-    <!-- ════════════════════════════════
-     MAIN LAYOUT
-════════════════════════════════ -->
     <div class="layout">
-
-        <!-- Topbar -->
         <div class="topbar">
-            <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
-                <span></span><span></span><span></span>
-            </button>
+            <button class="hamburger" id="hamburger"
+                onclick="toggleSidebar()"><span></span><span></span><span></span></button>
             <div class="topbar-title" id="topbarTitle">Today's Route</div>
             <div class="topbar-date" id="topbarDate">—</div>
         </div>
 
         <div class="content">
-
-            <!-- ════ TODAY ════ -->
+            <!-- TODAY TAB -->
             <div class="tab-panel active" id="tab-today">
-                <!-- Assignment -->
                 <div id="assignmentCard">
                     <div class="skel" style="height:180px;margin-bottom:20px"></div>
                 </div>
-
-                <!-- Stats -->
-                <div class="stats-grid" style="margin-bottom:20px">
-                    <div class="stat-card" data-icon="✓">
+                <div class="stats-grid">
+                    <div class="stat-card">
                         <div class="stat-val" id="statCompleted">—</div>
                         <div class="stat-label">Completed</div>
                     </div>
-                    <div class="stat-card" data-icon="🗺">
+                    <div class="stat-card">
                         <div class="stat-val" id="statTotal">—</div>
                         <div class="stat-label">Total Trips</div>
                     </div>
-                    <div class="stat-card" data-icon="⏳">
+                    <div class="stat-card">
                         <div class="stat-val" id="statPending">—</div>
                         <div class="stat-label">Pending</div>
                     </div>
-                    <div class="stat-card" data-icon="📏">
+                    <div class="stat-card">
                         <div class="stat-val" id="statDist">—</div>
-                        <div class="stat-label">Today's KM</div>
+                        <div class="stat-label">Route KM</div>
                     </div>
                 </div>
 
-                <!-- Map -->
                 <div class="map-card">
                     <div class="map-toolbar">
                         <span class="map-toolbar-title">🗺️ Live Navigation</span>
-                        <button class="map-btn" onclick="centerMe()">📍 Center Me</button>
-                        <button class="map-btn" id="lockBtn" onclick="toggleLock()">🔒 Lock View</button>
-                        <button class="map-btn" id="satBtn" onclick="toggleSat()">🛰️ Satellite</button>
-                        <button class="map-btn" onclick="toggleRoutePanel()">📍 Route Info</button>
+                        <button class="map-btn" onclick="centerMe()">📍 Me</button>
+                        <button class="map-btn" id="lockBtn" onclick="toggleLock()">🔒 Lock</button>
+                        <button class="map-btn" id="satBtn" onclick="toggleSat()">🛰️ Sat</button>
+                        <button class="map-btn" onclick="toggleRoutePanel()">📋 Stops</button>
+                        <button class="map-btn blue-btn" onclick="loadResidents();toast('Refreshed','success')">🏠
+                            Residents</button>
+                        <button class="map-btn" onclick="goToMRF()">🏭 MRF</button>
                     </div>
                     <div id="driverMap"></div>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot truck"></div>Your Truck
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot mrf"></div>MRF
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot stop"></div>Pickup Stop
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot resident"></div>Residents
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot remaining"></div>Route Ahead
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot driven"></div>Route Done
+                        </div>
+                        <div class="hud-residents" onclick="loadResidents()">🏠 <span id="residentCountHUD">0</span>
+                            online</div>
+                    </div>
                     <div class="location-bar">
-                        <span
-                            style="color:var(--text2);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;">📍
-                            Position:</span>
-                        <span class="loc-coords" id="coordsText">Waiting for GPS…</span>
-                        <span class="loc-accuracy" id="accText">—</span>
+                        <span>📍 Position:</span><span class="loc-coords" id="coordsText">Waiting for GPS…</span><span
+                            id="accText">—</span>
                         <span class="loc-time" id="locTime">—</span>
                     </div>
                 </div>
 
-                <!-- Route info panel -->
                 <div class="route-info-box" id="routePanel">
                     <div
-                        style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-                        <strong style="color:var(--amber);font-size:0.85rem;letter-spacing:0.04em;">📍 ROUTE
-                            DETAILS</strong>
-                        <button class="btn btn-ghost btn-sm" onclick="optimizeRoute()">🚀 Optimize</button>
+                        style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+                        <strong style="color:var(--amber);font-size:.85rem;font-weight:700;letter-spacing:-.01em;">📋
+                            ROUTE STOPS</strong>
+                        <div style="display:flex;gap:8px">
+                            <button class="btn btn-ghost" onclick="fitAllStops()"
+                                style="padding:6px 14px;font-size:.65rem">🗺️ Fit Map</button>
+                            <button class="btn btn-ghost" onclick="optimizeRoute()"
+                                style="padding:6px 14px;font-size:.65rem">🚀 Optimize</button>
+                        </div>
                     </div>
                     <div class="route-stats">
                         <div class="route-stat">
                             <div class="route-stat-val" id="routeDist">—</div>
-                            <div class="route-stat-label">Distance</div>
+                            <div class="route-stat-label">Route Length</div>
                         </div>
                         <div class="route-stat">
-                            <div class="route-stat-val" id="routeTime">—</div>
-                            <div class="route-stat-label">Est. Duration</div>
+                            <div class="route-stat-val" id="routeStops">0</div>
+                            <div class="route-stat-label">Pin Stops</div>
                         </div>
                         <div class="route-stat">
                             <div class="route-stat-val" id="routeWpCount">0</div>
-                            <div class="route-stat-label">Waypoints</div>
+                            <div class="route-stat-label">Road Points</div>
                         </div>
                     </div>
                     <div class="wp-list" id="wpList"></div>
                 </div>
             </div>
 
-            <!-- ════ SCHEDULE ════ -->
+            <!-- SCHEDULE TAB -->
             <div class="tab-panel" id="tab-schedule">
                 <div class="section-title">My Schedule</div>
                 <div class="list-stack" id="scheduleList">
-                    <div class="skel" style="height:72px"></div>
-                    <div class="skel" style="height:72px"></div>
-                    <div class="skel" style="height:72px"></div>
+                    <div class="skel" style="height:80px"></div>
+                    <div class="skel" style="height:80px"></div>
                 </div>
             </div>
 
-            <!-- ════ REPORT ════ -->
+            <!-- REPORT TAB -->
             <div class="tab-panel" id="tab-report">
                 <div class="section-title">File a Report</div>
                 <div class="form-card">
                     <form id="reportForm">
-                        <div class="form-group">
-                            <label class="form-label">Issue Type</label>
+                        <div class="form-group"><label class="form-label">Issue Type</label>
                             <select id="repType" class="form-control">
                                 <option value="missed_pickup">🚮 Missed Pickup</option>
                                 <option value="illegal_dumping">🚨 Illegal Dumping</option>
                                 <option value="overflowing_bin">♻️ Overflowing Bin</option>
                                 <option value="road_blocked">🚧 Road Blocked</option>
-                                <option value="equipment_fault">🔧 Equipment / Truck Fault</option>
+                                <option value="equipment_fault">🔧 Equipment Fault</option>
                                 <option value="other">📝 Other</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Location</label>
-                            <div style="display:flex;gap:8px;align-items:center">
+                        <div class="form-group"><label class="form-label">Location</label>
+                            <div style="display:flex;gap:10px;align-items:center">
                                 <input type="text" id="repLocation" class="form-control"
                                     placeholder="e.g. Corner of Rizal & Mabini St">
-                                <button type="button" class="btn btn-ghost btn-sm" onclick="useCurrentLoc()"
+                                <button type="button" class="btn btn-ghost" onclick="useCurrentLoc()"
                                     style="white-space:nowrap">📍 Use GPS</button>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Description</label>
-                            <textarea id="repDesc" class="form-control"
-                                placeholder="Describe the issue clearly…"></textarea>
-                        </div>
+                        <div class="form-group"><label class="form-label">Description</label><textarea id="repDesc"
+                                class="form-control" placeholder="Describe the issue clearly…"></textarea></div>
                         <button type="submit" class="btn btn-primary">⚠️ Submit Report</button>
                     </form>
                 </div>
-
                 <div class="divider"></div>
                 <div class="section-title">My Reports</div>
-                <div class="list-stack" id="myReportsList">
-                    <div class="skel" style="height:80px"></div>
-                    <div class="skel" style="height:80px"></div>
-                </div>
+                <div class="list-stack" id="myReportsList"></div>
             </div>
 
-            <!-- ════ ANNOUNCEMENTS ════ -->
+            <!-- ANNOUNCEMENTS TAB -->
             <div class="tab-panel" id="tab-announcements">
                 <div class="section-title">Notices</div>
-                <div id="annList">
-                    <div class="skel" style="height:130px;margin-bottom:14px"></div>
-                    <div class="skel" style="height:130px"></div>
-                </div>
+                <div id="annList"></div>
             </div>
 
-            <!-- ════ TRIPS ════ -->
+            <!-- TRIPS TAB -->
             <div class="tab-panel" id="tab-trips">
                 <div class="section-title">Trip History</div>
-                <div class="list-stack" id="tripList">
-                    <div class="skel" style="height:64px"></div>
-                    <div class="skel" style="height:64px"></div>
-                </div>
+                <div class="list-stack" id="tripList"></div>
             </div>
 
-            <!-- ════ PROFILE ════ -->
+            <!-- PROFILE TAB -->
             <div class="tab-panel" id="tab-profile">
                 <div class="section-title">My Profile</div>
                 <div class="profile-header-card">
@@ -1624,42 +1734,33 @@
                     <div class="profile-info">
                         <div class="profile-name" id="profNameDisplay">—</div>
                         <div class="profile-role-tag">🚛 Driver · Collector</div>
-                        <div style="font-size:0.72rem;color:var(--text2);margin-top:8px;font-family:var(--mono)"
+                        <div style="font-size:.7rem;color:var(--text2);margin-top:10px;font-family:var(--mono);font-weight:500"
                             id="profEmailDisplay">—</div>
                     </div>
                 </div>
-
                 <div class="form-card">
                     <form id="profileForm">
                         <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" id="profName" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Phone</label>
-                                <input type="text" id="profPhone" class="form-control">
-                            </div>
+                            <div class="form-group"><label class="form-label">Full Name</label><input type="text"
+                                    id="profName" class="form-control"></div>
+                            <div class="form-group"><label class="form-label">Phone</label><input type="text"
+                                    id="profPhone" class="form-control"></div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Address</label>
-                            <input type="text" id="profAddress" class="form-control">
-                        </div>
+                        <div class="form-group"><label class="form-label">Address</label><input type="text"
+                                id="profAddress" class="form-control"></div>
                         <button type="submit" class="btn btn-primary">💾 Save Changes</button>
                     </form>
                 </div>
             </div>
-
         </div><!-- /content -->
     </div><!-- /layout -->
 
     <div id="toast"></div>
 
-    <!-- ════════════════════════════════
-     SCRIPTS
-════════════════════════════════ -->
     <script>
-        /* ── AUTH ── */
+        // ═══════════════════════════════════════
+        // AUTH & API
+        // ═══════════════════════════════════════
         const token = localStorage.getItem("token");
         if (!token) window.location.href = "/login.html";
         const BASE = "/driver/api";
@@ -1670,34 +1771,27 @@
             if (body) opts.body = JSON.stringify(body);
             const res = await fetch(BASE + path, opts);
             if (res.status === 401) { localStorage.removeItem("token"); window.location.href = "/login.html"; }
-            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || "Request failed"); }
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Request failed");
             return res.json();
         }
 
-        /* ── TOAST ── */
         function toast(msg, type = "info") {
             const el = document.getElementById("toast");
             el.textContent = msg; el.className = `show ${type}`;
             clearTimeout(el._t);
-            el._t = setTimeout(() => el.className = "", 3000);
+            el._t = setTimeout(() => el.className = "", 3200);
         }
 
-        /* ── HELPERS ── */
         const fmtDate = d => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         const fmtShort = d => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
         const fmtTime = d => new Date(d).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
-        function statusBadge(s) {
-            const m = { pending: ["badge-amber", "PENDING"], in_progress: ["badge-blue", "IN PROGRESS"], completed: ["badge-green", "COMPLETED"] };
-            const [cls, lbl] = m[s] || ["badge-muted", s.toUpperCase()];
-            return `<span class="badge ${cls}">${lbl}</span>`;
-        }
+        document.getElementById("topbarDate").textContent =
+            new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
-        // Date display
-        const now = new Date();
-        document.getElementById("topbarDate").textContent = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-
-        /* ── SIDEBAR ── */
+        // ═══════════════════════════════════════
+        // SIDEBAR / TABS
+        // ═══════════════════════════════════════
         function toggleSidebar() {
             document.getElementById("sidebar").classList.toggle("open");
             document.getElementById("sbOverlay").classList.toggle("visible");
@@ -1707,7 +1801,6 @@
             document.getElementById("sbOverlay").classList.remove("visible");
         }
 
-        /* ── TABS ── */
         let loadFlags = { schedule: false, report: false, announcements: false, trips: false, profile: false };
         const tabTitles = { today: "Today's Route", schedule: "My Schedule", report: "File Report", announcements: "Notices", trips: "Trip History", profile: "My Profile" };
 
@@ -1717,8 +1810,7 @@
             document.getElementById("tab-" + id).classList.add("active");
             btn.classList.add("active");
             document.getElementById("topbarTitle").textContent = tabTitles[id] || id;
-            if (window.innerWidth <= 900) closeSidebar();
-
+            if (window.innerWidth <= 968) closeSidebar();
             if (id === "schedule" && !loadFlags.schedule) loadSchedule();
             if (id === "report" && !loadFlags.report) loadMyReports();
             if (id === "announcements" && !loadFlags.announcements) loadAnnouncements();
@@ -1726,272 +1818,415 @@
             if (id === "profile" && !loadFlags.profile) loadProfile();
         }
 
-        /* ══════════════════════════════════════════
-           MAP SETUP
-        ══════════════════════════════════════════ */
-        let dMap, dMarker, accCircle, routeCtrl;
-        let locked = false, currentMapStyle = "light";
-        let lastPos = null;
-        let mapView = { lat: 8.2317, lng: 123.4018, zoom: 14 };
-        let routePanelOpen = false;
+        // ═══════════════════════════════════════
+        // MAP STATE
+        // ═══════════════════════════════════════
+        let dMap, dMarker, accCircle;
+        let mrfMarkers = [];
+        let fallbackMRF = null;
+        let residentMarkers = {};
+        let pinMarkers = [];
+        let roadPolyline = null;
+        let progressPolyline = null;
+        let trailPolyline = null;
+        let drawnCoords = [];
+        let progressIndex = 0;
+        let pinStops = [];
 
-        function initMap(lat = 8.2317, lng = 123.4018, zoom = 14) {
-            if (dMap) return;
+        let locked = false, currentMapStyle = "light", lastPos = null;
+        let mapView = { lat: 8.2380, lng: 123.0, zoom: 14 };
+
+        const MRF_FALLBACK = { name: "Jose Dalman MRF", latitude: 8.2317, longitude: 123.4018 };
+
+        function initMap(lat = 8.2380, lng = 123.0, zoom = 14) {
+            if (dMap) { dMap.setView([lat, lng], zoom); return; }
             mapView = { lat, lng, zoom };
-
             dMap = L.map("driverMap", { zoomControl: true }).setView([lat, lng], zoom);
-
             addTileLayer("light");
-
             L.control.scale({ metric: true, imperial: false, position: "bottomleft" }).addTo(dMap);
-
             dMap.on("moveend zoomend", () => {
-                if (!locked) {
-                    const c = dMap.getCenter();
-                    mapView = { lat: c.lat, lng: c.lng, zoom: dMap.getZoom() };
-                }
+                if (!locked) { const c = dMap.getCenter(); mapView = { lat: c.lat, lng: c.lng, zoom: dMap.getZoom() }; }
             });
+            loadFallbackMRF();
+            loadResidents();
+            setInterval(loadResidents, 30000);
         }
 
         function addTileLayer(style) {
+            if (!dMap) return;
             dMap.eachLayer(l => { if (l._url) dMap.removeLayer(l); });
-            if (style === "satellite") {
-                L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-                    attribution: "Esri", maxZoom: 19
-                }).addTo(dMap);
-            } else {
-                L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-                    attribution: "© OSM © CARTO", subdomains: "abcd", maxZoom: 20
-                }).addTo(dMap);
-            }
+            if (style === "satellite")
+                L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                    { attribution: "Esri", maxZoom: 19 }).addTo(dMap);
+            else
+                L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+                    { attribution: "© OSM © CARTO", subdomains: "abcd", maxZoom: 20 }).addTo(dMap);
         }
 
         function toggleSat() {
             currentMapStyle = currentMapStyle === "light" ? "satellite" : "light";
             addTileLayer(currentMapStyle);
             document.getElementById("satBtn").classList.toggle("active", currentMapStyle === "satellite");
-            toast(currentMapStyle === "satellite" ? "Satellite view" : "Map view", "info");
+            toast(currentMapStyle === "satellite" ? "Satellite view" : "Dark map", "info");
         }
-
         function toggleLock() {
             locked = !locked;
             const btn = document.getElementById("lockBtn");
             btn.classList.toggle("active", locked);
-            btn.textContent = locked ? "🔓 Unlock" : "🔒 Lock View";
+            btn.textContent = locked ? "🔓 Unlock" : "🔒 Lock";
             toast(locked ? "View locked" : "View unlocked", "info");
         }
-
-        function toggleRoutePanel() {
-            routePanelOpen = !routePanelOpen;
-            document.getElementById("routePanel").classList.toggle("show", routePanelOpen);
-        }
-
+        function toggleRoutePanel() { document.getElementById("routePanel").classList.toggle("show"); }
         function centerMe() {
             if (!lastPos) { toast("Waiting for GPS…", "info"); return; }
-            dMap.setView([lastPos.lat, lastPos.lng], 16);
+            dMap.setView([lastPos.lat, lastPos.lng], 17);
             toast("Centered on your location", "success");
         }
-
-        /* Truck marker */
-        function setMarker(lat, lng, accuracy) {
-            if (!dMap) initMap(lat, lng);
-
-            // Accuracy circle
-            if (accCircle) { dMap.removeLayer(accCircle); accCircle = null; }
-            if (accuracy && accuracy < 150) {
-                const color = accuracy < 20 ? "#2dd4a0" : accuracy < 60 ? "#f5a623" : "#ff5e5e";
-                accCircle = L.circle([lat, lng], {
-                    radius: accuracy, color, weight: 1.5, opacity: 0.6,
-                    fillOpacity: 0.08
-                }).addTo(dMap);
-            }
-
-            // Marker
-            const icon = L.divIcon({
-                html: `<div style="
-      width:28px;height:28px;border-radius:50%;
-      background:var(--amber,#f5a623);
-      border:3px solid #fff;
-      box-shadow:0 0 14px rgba(245,166,35,0.7), 0 0 28px rgba(245,166,35,0.3);
-      display:flex;align-items:center;justify-content:center;
-      font-size:14px;
-      animation:truckPulse 2s infinite;
-    ">🚛</div>`,
-                iconSize: [28, 28], iconAnchor: [14, 14], className: ""
-            });
-
-            if (dMarker) dMap.removeLayer(dMarker);
-            dMarker = L.marker([lat, lng], { icon }).addTo(dMap)
-                .bindPopup(`<strong style="color:#f5a623">Your Position</strong><br>
-      <span style="font-size:0.72rem">${lat.toFixed(6)}, ${lng.toFixed(6)}</span><br>
-      <span style="font-size:0.68rem;color:#7a8499">Accuracy: ±${Math.round(accuracy || 0)}m</span>`);
-
-            // Update UI
-            document.getElementById("coordsText").textContent = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
-            document.getElementById("accText").textContent = accuracy ? `±${Math.round(accuracy)}m` : "";
-            document.getElementById("locTime").textContent = new Date().toLocaleTimeString();
-
-            // Accuracy badge in sidebar
-            const ab = document.getElementById("gpsAccBadge");
-            if (accuracy) {
-                ab.textContent = `±${Math.round(accuracy)}m`;
-                ab.style.color = accuracy < 20 ? "var(--green)" : accuracy < 60 ? "var(--amber)" : "var(--red)";
-            }
-
-            if (!locked) dMap.setView([lat, lng], mapView.zoom || 15);
-            lastPos = { lat, lng, accuracy };
+        function fitAllStops() {
+            if (!dMap) return;
+            const pts = [...pinStops.map(p => [p.lat, p.lng]), ...drawnCoords.map(c => [c.lat, c.lng])];
+            if (pts.length) dMap.fitBounds(L.latLngBounds(pts).pad(0.15));
         }
-
-        /* Route display */
-        function showRoute(waypoints) {
-            if (!dMap || !waypoints.length) return;
-            if (routeCtrl) { dMap.removeControl(routeCtrl); routeCtrl = null; }
-
-            // Draw waypoint markers
-            waypoints.forEach((wp, i) => {
-                L.marker([wp.lat, wp.lng], {
-                    icon: L.divIcon({
-                        html: `<div style="background:#5b9cf6;color:#fff;width:20px;height:20px;border-radius:50%;
-          display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
-          border:2px solid rgba(255,255,255,0.7);box-shadow:0 2px 8px rgba(0,0,0,0.4)">${i + 1}</div>`,
-                        iconSize: [20, 20], iconAnchor: [10, 10], className: ""
-                    })
-                }).addTo(dMap).bindPopup(`<strong>Stop ${i + 1}</strong><br>${wp.name || "Pickup"}`);
-            });
-
-            // Route line via OSRM
-            routeCtrl = L.Routing.control({
-                waypoints: waypoints.map(w => L.latLng(w.lat, w.lng)),
-                routeWhileDragging: false, showAlternatives: false,
-                fitSelectedRoutes: !locked,
-                lineOptions: { styles: [{ color: "#f5a623", weight: 4, opacity: 0.85 }] },
-                router: L.Routing.osrmv1({ serviceUrl: "https://router.project-osrm.org/route/v1" }),
-                show: false
-            }).addTo(dMap);
-
-            routeCtrl.on("routesfound", e => {
-                const r = e.routes[0];
-                const km = (r.summary.totalDistance / 1000).toFixed(1);
-                const min = Math.round(r.summary.totalTime / 60);
-                document.getElementById("routeDist").textContent = `${km} km`;
-                document.getElementById("routeTime").textContent = `${min} min`;
-                document.getElementById("statDist").textContent = km;
-                toast(`Route: ${km} km · ~${min} min`, "success");
-            });
-
-            // Waypoints list in panel
-            document.getElementById("routeWpCount").textContent = waypoints.length;
-            document.getElementById("wpList").innerHTML = waypoints.map((wp, i) => `
-    <div class="wp-item">
-      <div class="wp-num">${i + 1}</div>
-      <span class="wp-name">${wp.name || `Stop ${i + 1}`}</span>
-    </div>`).join("");
+        function goToMRF() {
+            if (!dMap) return;
+            const m = mrfMarkers[0] || fallbackMRF;
+            if (m) { dMap.setView(m.getLatLng(), 17); m.openPopup(); }
         }
-
-        /* ── GPS TRACKING ── */
-        let gpsActive = false, gpsInterval = null;
-
-        function toggleGPS() {
-            gpsActive ? stopGPS() : startGPS();
-        }
-
-        function startGPS() {
-            if (!navigator.geolocation) { toast("GPS not supported", "error"); return; }
-            gpsActive = true;
-            const el = document.getElementById("gpsToggle");
-            el.classList.add("on");
-            document.getElementById("gpsLabel").textContent = "GPS ON";
-            sendLoc();
-            gpsInterval = setInterval(sendLoc, 10000);
-            toast("GPS tracking started", "success");
-        }
-
-        function stopGPS() {
-            gpsActive = false;
-            clearInterval(gpsInterval);
-            const el = document.getElementById("gpsToggle");
-            el.classList.remove("on");
-            document.getElementById("gpsLabel").textContent = "GPS OFF";
-            document.getElementById("gpsAccBadge").textContent = "—";
-            document.getElementById("coordsText").textContent = "GPS off";
-            toast("GPS stopped", "info");
-        }
-
-        async function sendLoc() {
-            navigator.geolocation.getCurrentPosition(async pos => {
-                let { latitude: lat, longitude: lng, accuracy, heading, speed } = pos.coords;
-                if (accuracy > 60 && lastPos) {
-                    lat = lastPos.lat * 0.7 + lat * 0.3;
-                    lng = lastPos.lng * 0.7 + lng * 0.3;
-                }
-                setMarker(lat, lng, accuracy);
-                try {
-                    await api("POST", "/location", { latitude: lat, longitude: lng, accuracy, heading, speed });
-                } catch { }
-            }, err => {
-                if (err.code === 1) { toast("Enable GPS permissions", "error"); stopGPS(); }
-            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 });
-        }
-
+        function optimizeRoute() { toast("Route optimization coming soon", "info"); }
         function useCurrentLoc() {
             if (!lastPos) { toast("GPS not active", "info"); return; }
             document.getElementById("repLocation").value = `${lastPos.lat.toFixed(5)}, ${lastPos.lng.toFixed(5)}`;
             toast("Location added", "success");
         }
 
-        function optimizeRoute() { toast("Route optimization: coming soon", "info"); }
+        async function loadFallbackMRF() {
+            let mrf = MRF_FALLBACK;
+            try { const r = await fetch("/resident/api/mrf", { headers: hdrs() }); if (r.ok) mrf = await r.json(); } catch (_) { }
 
-        /* ── TODAY ── */
+            const icon = L.divIcon({
+                className: "",
+                html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:18px">🏭</span></div></div>`,
+                iconSize: [42, 42], iconAnchor: [21, 21]
+            });
+            fallbackMRF = L.marker([mrf.latitude, mrf.longitude], { icon, zIndexOffset: 500, opacity: 0.5 })
+                .addTo(dMap)
+                .bindPopup(`<strong style="color:#2dd4a0">🏭 ${mrf.name}</strong><br><span style="color:#7a8499">Fallback MRF location</span>`);
+        }
+
+        function parseWaypointsJson(raw) {
+            if (!raw) return { road: [], pins: [], mrfs: [] };
+            try {
+                let data = typeof raw === "string" ? JSON.parse(raw) : raw;
+                if (Array.isArray(data)) {
+                    return {
+                        road: [],
+                        pins: data.map((wp, i) => ({
+                            lat: parseFloat(wp.lat),
+                            lng: parseFloat(wp.lng),
+                            name: wp.name || `Stop ${i + 1}`,
+                            num: wp.stopNumber || (i + 1)
+                        })),
+                        mrfs: []
+                    };
+                }
+                const road = (data.road_path || data.road || []).map(v => ({
+                    lat: parseFloat(v.lat),
+                    lng: parseFloat(v.lng)
+                }));
+                const pins = (data.pin_stops || data.pins || []).map((p, i) => ({
+                    lat: parseFloat(p.lat),
+                    lng: parseFloat(p.lng),
+                    name: p.name || `Stop ${i + 1}`,
+                    num: p.stopNumber || (i + 1)
+                }));
+                const mrfs = (data.mrf_stops || data.mrf || []).map((m, i) => ({
+                    lat: parseFloat(m.lat),
+                    lng: parseFloat(m.lng),
+                    name: m.name || "MRF Stop"
+                }));
+                return { road, pins, mrfs };
+            } catch (e) {
+                console.error("parseWaypointsJson error:", e);
+                return { road: [], pins: [], mrfs: [] };
+            }
+        }
+
+        function showRouteFromData(routeData) {
+            if (!dMap) return;
+
+            pinMarkers.forEach(m => dMap.removeLayer(m)); pinMarkers = [];
+            mrfMarkers.forEach(m => dMap.removeLayer(m)); mrfMarkers = [];
+            if (roadPolyline) { dMap.removeLayer(roadPolyline); roadPolyline = null; }
+            if (progressPolyline) { dMap.removeLayer(progressPolyline); progressPolyline = null; }
+            if (trailPolyline) { dMap.removeLayer(trailPolyline); trailPolyline = null; }
+            drawnCoords = []; progressIndex = 0; pinStops = [];
+
+            const { road, pins, mrfs } = routeData;
+
+            if (road.length >= 2) {
+                drawnCoords = road.map(v => L.latLng(v.lat, v.lng));
+                progressPolyline = L.polyline(drawnCoords, {
+                    color: "#f5a623", weight: 5, opacity: .9, dashArray: "10 6"
+                }).addTo(dMap);
+                trailPolyline = L.polyline([], {
+                    color: "#3d4558", weight: 4, opacity: .55
+                }).addTo(dMap);
+
+                let totalM = 0;
+                for (let i = 1; i < drawnCoords.length; i++)
+                    totalM += drawnCoords[i - 1].distanceTo(drawnCoords[i]);
+                document.getElementById("routeDist").textContent = totalM > 1000
+                    ? (totalM / 1000).toFixed(2) + " km"
+                    : Math.round(totalM) + " m";
+                document.getElementById("statDist").textContent = totalM > 1000
+                    ? (totalM / 1000).toFixed(1)
+                    : "<1";
+                document.getElementById("routeWpCount").textContent = road.length;
+            } else {
+                document.getElementById("routeDist").textContent = "—";
+                document.getElementById("routeWpCount").textContent = "0";
+            }
+
+            pinStops = pins;
+            pins.forEach((p, i) => {
+                const icon = L.divIcon({
+                    className: "",
+                    html: `<div class="stop-pin" id="mapPin${i}">${p.num}</div>`,
+                    iconSize: [28, 28], iconAnchor: [14, 14]
+                });
+                const m = L.marker([p.lat, p.lng], { icon, zIndexOffset: 300 })
+                    .addTo(dMap)
+                    .bindPopup(`<strong>Stop ${p.num}</strong><br>${p.name}`);
+                pinMarkers.push(m);
+            });
+            document.getElementById("routeStops").textContent = pins.length;
+
+            mrfs.forEach((m, i) => {
+                const icon = L.divIcon({
+                    className: "",
+                    html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:18px">🏭</span></div></div>`,
+                    iconSize: [42, 42], iconAnchor: [21, 21]
+                });
+                const marker = L.marker([m.lat, m.lng], { icon, zIndexOffset: 600 })
+                    .addTo(dMap)
+                    .bindPopup(`<strong style="color:#2dd4a0">🏭 ${m.name}</strong><br><span style="color:#7a8499">MRF Collection Point</span>`);
+                mrfMarkers.push(marker);
+                if (fallbackMRF) fallbackMRF.setOpacity(0);
+            });
+
+            const items = [
+                ...pins.map((p, i) => `
+      <div class="wp-item" id="wpItem${i}">
+        <div class="wp-num" id="wpNum${i}">${p.num}</div>
+        <span class="wp-name">${p.name || `Stop ${p.num}`}</span>
+      </div>`),
+                ...mrfs.map((m, i) => `
+      <div class="wp-item">
+        <div class="wp-num mrf-stop">🏭</div>
+        <span class="wp-name" style="color:var(--green)">${m.name}</span>
+      </div>`)
+            ];
+            document.getElementById("wpList").innerHTML = items.length
+                ? items.join("")
+                : `<div class="empty" style="padding:20px"><div class="empty-title">No stops defined</div></div>`;
+
+            const allPts = [
+                ...road.map(v => [v.lat, v.lng]),
+                ...pins.map(p => [p.lat, p.lng]),
+                ...mrfs.map(m => [m.lat, m.lng])
+            ];
+            if (allPts.length) {
+                dMap.fitBounds(L.latLngBounds(allPts).pad(0.15));
+            }
+        }
+
+        function updateRouteProgress(lat, lng) {
+            if (!drawnCoords.length || !progressPolyline || !trailPolyline) return;
+            const dPt = L.latLng(lat, lng);
+            let nearest = progressIndex, minDist = Infinity;
+            const start = Math.max(0, progressIndex - 5);
+            for (let i = start; i < drawnCoords.length; i++) {
+                const d = dPt.distanceTo(drawnCoords[i]);
+                if (d < minDist) { minDist = d; nearest = i; }
+                if (d > minDist + 200 && i > progressIndex + 10) break;
+            }
+            if (nearest <= progressIndex) return;
+            progressIndex = nearest;
+            trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
+            progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+
+            pinStops.forEach((p, i) => {
+                if (dPt.distanceTo(L.latLng(p.lat, p.lng)) < 80) {
+                    const el = document.getElementById(`wpNum${i}`);
+                    const row = document.getElementById(`wpItem${i}`);
+                    const pin = document.getElementById(`mapPin${i}`);
+                    if (el && !el.classList.contains("done")) {
+                        el.classList.add("done"); el.textContent = "✓";
+                        if (pin) { pin.classList.add("done"); pin.textContent = "✓"; }
+                        if (row) row.classList.add("reached");
+                        toast(`Stop ${p.num} reached! ✓`, "success");
+                    }
+                }
+            });
+        }
+
+        function setMarker(lat, lng, accuracy) {
+            if (!dMap) initMap(lat, lng);
+            if (accCircle) { dMap.removeLayer(accCircle); accCircle = null; }
+            if (accuracy && accuracy < 150) {
+                const color = accuracy < 20 ? "#2dd4a0" : accuracy < 60 ? "#f5a623" : "#ff5e5e";
+                accCircle = L.circle([lat, lng], { radius: accuracy, color, weight: 1.5, fillOpacity: .07 }).addTo(dMap);
+            }
+            const icon = L.divIcon({
+                className: "",
+                html: `<div class="truck-marker"><span style="font-size:16px">🚛</span></div>`,
+                iconSize: [34, 34], iconAnchor: [17, 17]
+            });
+            if (dMarker) dMap.removeLayer(dMarker);
+            dMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 })
+                .addTo(dMap)
+                .bindPopup(`<strong>Your Truck</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+
+            document.getElementById("coordsText").textContent = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
+            document.getElementById("accText").textContent = accuracy ? `±${Math.round(accuracy)}m` : "";
+            document.getElementById("locTime").textContent = new Date().toLocaleTimeString();
+            if (!locked) dMap.setView([lat, lng], mapView.zoom || 15);
+            lastPos = { lat, lng, accuracy };
+            updateRouteProgress(lat, lng);
+        }
+
+        async function loadResidents() {
+            if (!dMap) return;
+            try {
+                let residents = [];
+                try {
+                    const r = await fetch("/resident/api/resident-locations", { headers: hdrs() });
+                    if (r.ok) residents = await r.json();
+                } catch (_) {
+                    const r2 = await fetch("/driver/api/resident-locations", { headers: hdrs() }).catch(() => null);
+                    if (r2 && r2.ok) residents = await r2.json();
+                }
+                const seen = new Set();
+                residents.forEach(r => {
+                    if (!r.latitude || !r.longitude) return;
+                    seen.add(r.id);
+                    const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
+                    const icon = L.divIcon({
+                        className: "",
+                        html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:13px">🏠</span></div>`,
+                        iconSize: [30, 30], iconAnchor: [15, 15]
+                    });
+                    if (residentMarkers[r.id]) {
+                        residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon);
+                    } else {
+                        residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon })
+                            .addTo(dMap)
+                            .bindPopup(`<strong style="color:#5b9cf6">🏠 ${r.name || "Resident"}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`);
+                    }
+                });
+                Object.keys(residentMarkers).forEach(id => {
+                    if (!seen.has(Number(id))) { dMap.removeLayer(residentMarkers[id]); delete residentMarkers[id]; }
+                });
+                const hud = document.getElementById("residentCountHUD");
+                if (hud) hud.textContent = seen.size;
+            } catch (e) { console.warn("loadResidents:", e); }
+        }
+
+        let gpsActive = false, gpsInterval = null;
+        function toggleGPS() { gpsActive ? stopGPS() : startGPS(); }
+        function startGPS() {
+            if (!navigator.geolocation) { toast("GPS not supported", "error"); return; }
+            gpsActive = true;
+            document.getElementById("gpsToggle").classList.add("on");
+            document.getElementById("gpsLabel").textContent = "GPS ON";
+            sendLoc(); gpsInterval = setInterval(sendLoc, 10000);
+            toast("GPS tracking started", "success");
+        }
+        function stopGPS() {
+            gpsActive = false; clearInterval(gpsInterval);
+            document.getElementById("gpsToggle").classList.remove("on");
+            document.getElementById("gpsLabel").textContent = "GPS OFF";
+            document.getElementById("gpsAccBadge").textContent = "—";
+            toast("GPS stopped", "info");
+        }
+        async function sendLoc() {
+            if (!gpsActive) return;
+            navigator.geolocation.getCurrentPosition(async pos => {
+                let { latitude: lat, longitude: lng, accuracy } = pos.coords;
+                if (accuracy > 60 && lastPos) { lat = lastPos.lat * .7 + lat * .3; lng = lastPos.lng * .7 + lng * .3; }
+                document.getElementById("gpsAccBadge").textContent = `±${Math.round(accuracy)}m`;
+                setMarker(lat, lng, accuracy);
+                try { await api("POST", "/location", { latitude: lat, longitude: lng, accuracy }); } catch (e) { }
+            }, err => { if (err.code === 1) { toast("Enable GPS permissions", "error"); stopGPS(); } },
+                { enableHighAccuracy: true, timeout: 10000 });
+        }
+
         async function loadToday() {
             try {
-                const data = await api("GET", "/today");
-                renderAssignment(data);
+                const assignment = await api("GET", "/today");
+                renderAssignment(assignment);
                 loadStats();
-                initMap(data?.latitude || 8.2317, data?.longitude || 123.4018, 14);
-                loadWaypoints();
-            } catch {
-                document.getElementById("assignmentCard").innerHTML = `
-      <div class="empty" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;margin-bottom:20px">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title">No Assignment Today</div>
-        <div class="empty-sub">Check back later or contact your supervisor.</div>
-      </div>`;
-                initMap();
+
+                if (assignment && assignment.route_id) {
+                    const routeData = await api("GET", `/route-waypoints?route_id=${assignment.route_id}`);
+                    const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json || routeData.waypoints);
+
+                    if (!parsed.road.length && parsed.pins.length === 0 && routeData.waypoints && routeData.waypoints.length) {
+                        parsed.pins = routeData.waypoints.map((w, i) => ({
+                            lat: parseFloat(w.lat), lng: parseFloat(w.lng),
+                            name: w.name || `Stop ${i + 1}`, num: i + 1
+                        }));
+                    }
+
+                    const hasAnything = parsed.road.length || parsed.pins.length || parsed.mrfs.length;
+
+                    if (hasAnything) {
+                        const first = parsed.road[0] || parsed.pins[0];
+                        initMap(first.lat, first.lng, 15);
+                        showRouteFromData(parsed);
+                        document.getElementById("routePanel").classList.add("show");
+                    } else {
+                        initMap(8.2380, 123.0, 14);
+                    }
+                } else {
+                    initMap(8.2380, 123.0, 14);
+                }
+            } catch (e) {
+                console.error("loadToday:", e);
+                document.getElementById("assignmentCard").innerHTML =
+                    `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No Assignment Today</div><div class="empty-sub">Check your schedule for upcoming routes</div></div>`;
+                initMap(8.2380, 123.0, 14);
                 loadStats();
             }
         }
 
         function renderAssignment(data) {
             if (!data) {
-                document.getElementById("assignmentCard").innerHTML = `
-      <div class="empty" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;margin-bottom:20px">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title">No Assignment Today</div>
-      </div>`;
+                document.getElementById("assignmentCard").innerHTML =
+                    `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No Assignment Today</div><div class="empty-sub">You have no scheduled route for today</div></div>`;
                 return;
             }
             const btns = data.status === "completed"
-                ? `<span style="color:var(--green);font-size:0.8rem;font-family:var(--mono)">✓ COMPLETED</span>`
+                ? `<span style="color:var(--green);font-weight:700;">✓ COMPLETED</span>`
                 : data.status === "in_progress"
-                    ? `<button class="btn btn-success" onclick="updateStatus(${data.id},'completed')">✓ Mark Complete</button>
-       <button class="btn btn-ghost" onclick="updateStatus(${data.id},'pending')">↩ Revert</button>`
+                    ? `<button class="btn btn-success" onclick="updateStatus(${data.id},'completed')">✓ Mark Complete</button>`
                     : `<button class="btn btn-primary" onclick="updateStatus(${data.id},'in_progress')">▶ Start Route</button>`;
 
             document.getElementById("assignmentCard").innerHTML = `
-    <div class="today-card" style="margin-bottom:20px">
+    <div class="today-card">
       <div class="today-inner">
-        <div class="today-route">📍 ${data.zone_name}</div>
-        ${data.zone_description ? `<div style="font-size:0.78rem;color:var(--text2);margin-top:8px">${data.zone_description}</div>` : ""}
+        <div class="today-route">📍 ${data.zone_name || "Unknown Zone"}</div>
+        ${data.zone_description ? `<div style="font-size:.78rem;color:var(--text2);margin-top:8px;font-weight:400">${data.zone_description}</div>` : ""}
         <div class="today-meta">
-          <span class="chip amber">🚛 ${data.plate_number}</span>
-          <span class="chip">${data.model || "Truck"}</span>
+          <span class="chip amber">🚛 ${data.plate_number || "Truck"}</span>
+          <span class="chip">${data.model || "Vehicle"}</span>
           <span class="chip">${(data.pickup_type || "REGULAR").replace(/_/g, " ").toUpperCase()}</span>
-          <span class="chip">${fmtDate(data.assigned_date)}</span>
+          <span class="chip">${data.assigned_date ? fmtDate(data.assigned_date) : "Today"}</span>
         </div>
       </div>
       <div class="today-footer">
         ${btns}
-        <span class="status-badge status-${data.status}" style="margin-left:auto">${data.status.replace("_", " ").toUpperCase()}</span>
+        <span class="status-badge status-${data.status}">${(data.status || "pending").replace("_", " ").toUpperCase()}</span>
       </div>
     </div>`;
         }
@@ -1999,11 +2234,10 @@
         async function updateStatus(id, status) {
             try {
                 await api("PATCH", `/assignment/${id}/status`, { status });
-                toast(`Status: ${status.replace("_", " ")}`, "success");
-                loadToday();
+                toast(`Route ${status === "completed" ? "completed! 🎉" : "started"}`, "success");
+                loadToday(); loadStats(); if (loadFlags.schedule) loadSchedule();
             } catch (e) { toast(e.message, "error"); }
         }
-        window.updateStatus = updateStatus;
 
         async function loadStats() {
             try {
@@ -2011,21 +2245,9 @@
                 document.getElementById("statCompleted").textContent = data.filter(r => r.status === "completed").length;
                 document.getElementById("statTotal").textContent = data.length;
                 document.getElementById("statPending").textContent = data.filter(r => r.status === "pending").length;
-            } catch { }
+            } catch (e) { }
         }
 
-        async function loadWaypoints() {
-            try {
-                const data = await api("GET", "/route-waypoints");
-                if (data.waypoints?.length) {
-                    showRoute(data.waypoints);
-                    document.getElementById("routePanel").classList.add("show");
-                    routePanelOpen = true;
-                }
-            } catch { }
-        }
-
-        /* ── SCHEDULE ── */
         async function loadSchedule() {
             loadFlags.schedule = true;
             const today = new Date().toISOString().slice(0, 10);
@@ -2035,38 +2257,24 @@
                 if (!data.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No Schedules</div></div>`; return; }
                 el.innerHTML = data.map(s => {
                     const isToday = s.assigned_date.slice(0, 10) === today;
-                    return `<div class="sched-card ${isToday ? "today-row" : ""}">
-        <div>
-          <div class="sched-date">${fmtShort(s.assigned_date)}${isToday ? ` <span style="color:var(--amber);font-size:0.6rem">TODAY</span>` : ""}</div>
-          <div class="sched-date-sub">${new Date(s.assigned_date).toLocaleDateString("en-US", { weekday: "short" })}</div>
-        </div>
-        <div>
-          <div class="sched-zone">📍 ${s.zone_name}</div>
-          <div class="sched-meta">🚛 ${s.plate_number} · ${(s.pickup_type || "REGULAR").replace(/_/g, " ")}</div>
-        </div>
-        ${statusBadge(s.status)}
+                    return `<div class="sched-card ${isToday ? 'today-row' : ''}">
+        <div><div class="sched-date">${fmtShort(s.assigned_date)}${isToday ? ` <span style="color:var(--amber);font-size:.6rem;font-weight:600">TODAY</span>` : ""}</div>
+        <div class="sched-date-sub">${new Date(s.assigned_date).toLocaleDateString("en-US", { weekday: "short" })}</div></div>
+        <div><div class="sched-zone">📍 ${s.zone_name}</div><div class="sched-meta">🚛 ${s.plate_number} · ${(s.pickup_type || "REGULAR").replace(/_/g, " ")}</div></div>
+        <span class="badge ${s.status === 'pending' ? 'badge-amber' : s.status === 'completed' ? 'badge-green' : 'badge-blue'}">${s.status === 'in_progress' ? 'IN PROGRESS' : s.status.toUpperCase()}</span>
       </div>`;
                 }).join("");
-            } catch (e) {
-                document.getElementById("scheduleList").innerHTML = `<div class="empty"><div class="empty-sub">${e.message}</div></div>`;
-            }
+            } catch (e) { document.getElementById("scheduleList").innerHTML = `<div class="empty">Failed to load schedule</div>`; }
         }
 
-        /* ── REPORTS ── */
         document.getElementById("reportForm").addEventListener("submit", async e => {
             e.preventDefault();
             const btn = e.target.querySelector("button[type=submit]");
             btn.textContent = "⏳ Submitting…";
             try {
-                await api("POST", "/reports", {
-                    type: document.getElementById("repType").value,
-                    description: document.getElementById("repDesc").value,
-                    location_note: document.getElementById("repLocation").value,
-                });
-                toast("Report submitted", "success");
-                e.target.reset();
-                loadFlags.report = false;
-                loadMyReports();
+                await api("POST", "/reports", { type: document.getElementById("repType").value, description: document.getElementById("repDesc").value, location_note: document.getElementById("repLocation").value });
+                toast("Report submitted", "success"); e.target.reset();
+                loadFlags.report = false; loadMyReports();
             } catch (err) { toast(err.message, "error"); }
             finally { btn.textContent = "⚠️ Submit Report"; }
         });
@@ -2080,17 +2288,13 @@
                 el.innerHTML = data.map(r => `
       <div class="report-card">
         <div class="report-icon">⚠️</div>
-        <div class="report-body">
-          <span class="badge badge-amber">${(r.type || "").replace(/_/g, " ").toUpperCase()}</span>
-          <div class="report-desc">${r.description}</div>
-          ${r.location_note ? `<div class="report-note">📍 ${r.location_note}</div>` : ""}
-        </div>
+        <div class="report-body"><span class="badge badge-amber">${(r.type || "").replace(/_/g, " ").toUpperCase()}</span>
+        <div class="report-desc">${r.description}</div>${r.location_note ? `<div class="report-note">📍 ${r.location_note}</div>` : ""}</div>
         <div class="report-ts">${fmtShort(r.created_at)}<br>${fmtTime(r.created_at)}</div>
       </div>`).join("");
-            } catch { }
+            } catch (e) { }
         }
 
-        /* ── ANNOUNCEMENTS ── */
         async function loadAnnouncements() {
             loadFlags.announcements = true;
             try {
@@ -2100,18 +2304,14 @@
                 const el = document.getElementById("annList");
                 if (!data.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">📢</div><div class="empty-title">No Announcements</div></div>`; return; }
                 el.innerHTML = data.map(a => `
-      <div class="ann-card">
-        ${a.image_url ? `<img class="ann-img" src="${a.image_url}" alt="">` : ""}
-        <div class="ann-body">
-          <div class="ann-meta">${a.created_at ? fmtDate(a.created_at) : "—"} · ${a.admin_name || "Admin"}</div>
-          <div class="ann-title">${a.title}</div>
-          <div class="ann-msg">${a.message}</div>
-        </div>
-      </div>`).join("");
-            } catch { }
+      <div class="ann-card"><div class="ann-body">
+        <div class="ann-meta">${a.created_at ? fmtDate(a.created_at) : "—"} · ${a.admin_name || "Admin"}</div>
+        <div class="ann-title">${a.title}</div>
+        <div class="ann-msg">${a.message}</div>
+      </div></div>`).join("");
+            } catch (e) { }
         }
 
-        /* ── TRIPS ── */
         async function loadTrips() {
             loadFlags.trips = true;
             try {
@@ -2120,20 +2320,13 @@
                 if (!data.length) { el.innerHTML = `<div class="empty"><div class="empty-icon">🗺️</div><div class="empty-title">No Completed Trips</div></div>`; return; }
                 el.innerHTML = data.map(t => `
       <div class="trip-card">
-        <div>
-          <div class="trip-date">${fmtShort(t.assigned_date)}</div>
-          <div class="trip-sub">${t.completed_at ? fmtTime(t.completed_at) : "Completed"}</div>
-        </div>
-        <div>
-          <div class="sched-zone">📍 ${t.zone_name}</div>
-          <div class="sched-meta">🚛 ${t.plate_number} · ${(t.pickup_type || "—").replace(/_/g, " ").toUpperCase()}</div>
-        </div>
+        <div><div class="trip-date">${fmtShort(t.assigned_date)}</div><div class="trip-sub">${t.completed_at ? fmtTime(t.completed_at) : "Completed"}</div></div>
+        <div><div class="sched-zone">📍 ${t.zone_name}</div><div class="sched-meta">🚛 ${t.plate_number}</div></div>
         <span class="badge badge-green">DONE</span>
       </div>`).join("");
-            } catch { }
+            } catch (e) { }
         }
 
-        /* ── PROFILE ── */
         async function loadProfile() {
             loadFlags.profile = true;
             try {
@@ -2147,7 +2340,7 @@
                 document.getElementById("profName").value = data.name || "";
                 document.getElementById("profPhone").value = data.phone || "";
                 document.getElementById("profAddress").value = data.address || "";
-            } catch { toast("Failed to load profile", "error"); }
+            } catch (e) { toast("Failed to load profile", "error"); }
         }
 
         document.getElementById("profileForm").addEventListener("submit", async e => {
@@ -2155,30 +2348,24 @@
             const btn = e.target.querySelector("button[type=submit]");
             btn.textContent = "⏳ Saving…";
             try {
-                await api("PUT", "/profile", {
-                    name: document.getElementById("profName").value,
-                    phone: document.getElementById("profPhone").value,
-                    address: document.getElementById("profAddress").value,
-                });
-                toast("Profile saved", "success");
-                await loadProfile();
+                await api("PUT", "/profile", { name: document.getElementById("profName").value, phone: document.getElementById("profPhone").value, address: document.getElementById("profAddress").value });
+                toast("Profile saved", "success"); await loadProfile();
             } catch (err) { toast(err.message, "error"); }
             finally { btn.textContent = "💾 Save Changes"; }
         });
 
-        /* ── EXPOSE GLOBALS ── */
+        window.updateStatus = updateStatus;
         window.useCurrentLoc = useCurrentLoc;
         window.optimizeRoute = optimizeRoute;
+        window.toggleLock = toggleLock;
+        window.toggleSat = toggleSat;
+        window.toggleRoutePanel = toggleRoutePanel;
+        window.centerMe = centerMe;
+        window.fitAllStops = fitAllStops;
+        window.goToMRF = goToMRF;
+        window.toggleGPS = toggleGPS;
+        window.loadResidents = loadResidents;
 
-        /* ── ANIMATION ── */
-        const style = document.createElement("style");
-        style.textContent = `@keyframes truckPulse {
-  0%,100%{box-shadow:0 0 14px rgba(245,166,35,0.7),0 0 28px rgba(245,166,35,0.3)}
-  50%{box-shadow:0 0 20px rgba(245,166,35,0.9),0 0 40px rgba(245,166,35,0.5)}
-}`;
-        document.head.appendChild(style);
-
-        /* ── INIT ── */
         loadToday();
         loadProfile();
     </script>

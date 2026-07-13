@@ -138,31 +138,29 @@ exports.updateTruckLocation = async (req, res) => {
 
 exports.addRoute = async (req, res) => {
     try {
-        const { zone_name, description, waypoints_json } = req.body;
+        const { zone_name, description, waypoints_json, path_mode } = req.body;
         if (!zone_name) return res.status(400).json({ error: "Zone name is required" });
         await db.query(
-            "INSERT INTO routes (zone_name, description, waypoints_json) VALUES (?, ?, ?)",
-            [zone_name, description || null, waypoints_json || null]
+            "INSERT INTO routes (zone_name, description, waypoints_json, path_mode) VALUES (?, ?, ?, ?)",
+            [zone_name, description || null, waypoints_json || null, path_mode || 'pin']
         );
         res.json({ message: "Route added successfully" });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
+        console.error(err); res.status(500).json({ error: err.message });
     }
 };
 
 exports.updateRoute = async (req, res) => {
     try {
-        const { zone_name, description, waypoints_json } = req.body;
+        const { zone_name, description, waypoints_json, path_mode } = req.body;
         if (!zone_name) return res.status(400).json({ error: "Zone name is required" });
         await db.query(
-            "UPDATE routes SET zone_name=?, description=?, waypoints_json=? WHERE id=?",
-            [zone_name, description || null, waypoints_json || null, req.params.id]
+            "UPDATE routes SET zone_name=?, description=?, waypoints_json=?, path_mode=? WHERE id=?",
+            [zone_name, description || null, waypoints_json || null, path_mode || 'pin', req.params.id]
         );
         res.json({ message: "Route updated successfully" });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
+        console.error(err); res.status(500).json({ error: err.message });
     }
 };
 
@@ -206,10 +204,77 @@ exports.assignRoute = async (req, res) => {
 
 exports.getReports = async (req, res) => {
     try {
-        const [reports] = await db.query(
-            "SELECT * FROM reports ORDER BY created_at DESC"
+        // First, check what columns exist in the reports table
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
         );
-        res.json(reports);
+        const colNames = columns.map(c => c.COLUMN_NAME);
+
+        // Check if resident_id column exists
+        const hasResidentId = colNames.includes('resident_id');
+
+        let query = `
+            SELECT
+                r.id,
+                r.type,
+                r.description,
+                r.latitude,
+                r.longitude,
+                r.image_url,
+                r.created_at
+        `;
+
+        // Add resident_id if it exists
+        if (hasResidentId) {
+            query += `, r.resident_id AS user_id, u.name AS resident_name`;
+        } else {
+            query += `, NULL AS user_id, NULL AS resident_name`;
+        }
+
+        query += ` FROM reports r`;
+
+        // Add JOIN if resident_id exists
+        if (hasResidentId) {
+            query += ` LEFT JOIN users u ON u.id = r.resident_id`;
+        }
+
+        query += ` ORDER BY r.created_at DESC`;
+
+        const [reports] = await db.query(query);
+
+        // Process each report to ensure image_url is properly formatted
+        const processedReports = reports.map(report => {
+            // If image_url exists and is a base64 string, make sure it has the proper prefix
+            if (report.image_url) {
+                // Check if it's already a data URL
+                if (!report.image_url.startsWith('data:image') && !report.image_url.startsWith('http')) {
+                    // Assume it's raw base64, add the prefix
+                    report.image_url = `data:image/jpeg;base64,${report.image_url}`;
+                }
+            }
+            return report;
+        });
+
+        res.json(processedReports);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getResidentLocations = async (req, res) => {
+    try {
+        const [residents] = await db.query(
+            `SELECT id, name, latitude, longitude, location_updated_at, address
+             FROM users
+             WHERE role = 'resident'
+               AND latitude IS NOT NULL
+               AND longitude IS NOT NULL
+               AND location_updated_at > NOW() - INTERVAL 2 HOUR
+             ORDER BY location_updated_at DESC`
+        );
+        res.json(residents);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });

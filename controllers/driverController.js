@@ -1,37 +1,50 @@
-const path = require("path");
 const db = require("../config/db");
-
 
 exports.getTodayAssignment = async (req, res) => {
     try {
-        const today = new Date().toISOString().slice(0, 10);
-        const [[assignment]] = await db.query(
+        console.log("=== getTodayAssignment Debug ===");
+        console.log("Driver ID:", req.user?.id);
+
+        if (!req.user || !req.user.id) {
+            console.error("No user ID in request");
+            return res.status(401).json({ error: "User not authenticated" });
+        }
+
+        // Fix timezone issue - get Philippine time
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        console.log("Today's date (Philippines):", today);
+
+        const [assignments] = await db.query(
             `SELECT
                 ra.id,
                 ra.assigned_date,
                 ra.status,
                 ra.pickup_type,
+                r.id as route_id,
                 r.zone_name,
-                r.description   AS zone_description,
-                t.id            AS truck_id,
+                r.description AS zone_description,
+                t.id AS truck_id,
                 t.plate_number,
                 t.model,
                 t.latitude,
                 t.longitude
              FROM route_assignments ra
-             JOIN routes r  ON ra.route_id = r.id
-             JOIN trucks t  ON ra.truck_id  = t.id
+             JOIN routes r ON ra.route_id = r.id
+             JOIN trucks t ON ra.truck_id = t.id
              WHERE ra.driver_id = ? AND ra.assigned_date = ?
              LIMIT 1`,
             [req.user.id, today]
         );
-        res.json(assignment || null);
+
+        const assignment = assignments[0] || null;
+        console.log("Found assignment:", assignment ? `YES (${assignment.zone_name})` : "NO");
+
+        res.json(assignment);
     } catch (err) {
-        console.error(err);
+        console.error("Error in getTodayAssignment:", err);
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.updateAssignmentStatus = async (req, res) => {
     try {
@@ -40,7 +53,6 @@ exports.updateAssignmentStatus = async (req, res) => {
         if (!allowed.includes(status)) {
             return res.status(400).json({ error: "Invalid status value" });
         }
-
 
         const [[row]] = await db.query(
             "SELECT id FROM route_assignments WHERE id=? AND driver_id=?",
@@ -52,7 +64,6 @@ exports.updateAssignmentStatus = async (req, res) => {
             "UPDATE route_assignments SET status=? WHERE id=?",
             [status, req.params.id]
         );
-
 
         if (status === "completed") {
             await db.query(
@@ -70,7 +81,6 @@ exports.updateAssignmentStatus = async (req, res) => {
     }
 };
 
-
 exports.getMySchedule = async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -84,7 +94,7 @@ exports.getMySchedule = async (req, res) => {
                 t.model
              FROM route_assignments ra
              JOIN routes r ON ra.route_id = r.id
-             JOIN trucks t ON ra.truck_id  = t.id
+             JOIN trucks t ON ra.truck_id = t.id
              WHERE ra.driver_id = ?
              ORDER BY ra.assigned_date DESC
              LIMIT 30`,
@@ -97,15 +107,15 @@ exports.getMySchedule = async (req, res) => {
     }
 };
 
-
 exports.updateMyLocation = async (req, res) => {
     try {
-        const { latitude, longitude } = req.body;
+        const { latitude, longitude, accuracy } = req.body;
         if (latitude === undefined || longitude === undefined) {
             return res.status(400).json({ error: "latitude and longitude required" });
         }
 
-        const today = new Date().toISOString().slice(0, 10);
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+
         const [[assignment]] = await db.query(
             `SELECT truck_id FROM route_assignments
              WHERE driver_id=? AND assigned_date=? LIMIT 1`,
@@ -116,12 +126,13 @@ exports.updateMyLocation = async (req, res) => {
             return res.status(404).json({ error: "No truck assigned today" });
         }
 
-
+        // Update truck location
         await db.query(
-            "UPDATE trucks SET latitude=?, longitude=? WHERE id=?",
+            "UPDATE trucks SET latitude=?, longitude=?, last_location_update=NOW() WHERE id=?",
             [latitude, longitude, assignment.truck_id]
         );
 
+        // Log the location
         await db.query(
             `INSERT INTO trip_logs (assignment_id, latitude, longitude, logged_at)
              SELECT ra.id, ?, ?, NOW()
@@ -131,13 +142,12 @@ exports.updateMyLocation = async (req, res) => {
             [latitude, longitude, req.user.id, today]
         );
 
-        res.json({ message: "Location updated" });
+        res.json({ message: "Location updated", accuracy: accuracy });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.submitReport = async (req, res) => {
     try {
@@ -157,7 +167,6 @@ exports.submitReport = async (req, res) => {
     }
 };
 
-
 exports.getMyReports = async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -175,35 +184,13 @@ exports.getMyReports = async (req, res) => {
     }
 };
 
-
 exports.getAnnouncements = async (req, res) => {
     try {
-
-        const [cols] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME = 'announcements'`
-        );
-        const colNames = cols.map(c => c.COLUMN_NAME);
-
-        const hasImageUrl = colNames.includes("image_url");
-        const hasCreatedAt = colNames.includes("created_at");
-        const hasCreatedBy = colNames.includes("created_by");
-
-        const imageCol = hasImageUrl ? "a.image_url" : "NULL AS image_url";
-        const dateCol = hasCreatedAt ? "a.created_at" : "NULL AS created_at";
-        const adminJoin = hasCreatedBy
-            ? "JOIN users u ON a.created_by = u.id"
-            : "LEFT JOIN users u ON 1=0";  // no match — admin_name will be NULL
-        const adminCol = "COALESCE(u.name, 'Admin') AS admin_name";
-        const orderClause = hasCreatedAt ? "ORDER BY a.created_at DESC" : "ORDER BY a.id DESC";
-
         const [rows] = await db.query(
-            `SELECT a.id, a.title, a.message,
-                    ${imageCol}, ${dateCol}, ${adminCol}
+            `SELECT a.id, a.title, a.message, a.created_at, u.name as admin_name
              FROM announcements a
-             ${adminJoin}
-             ${orderClause}
+             LEFT JOIN users u ON a.created_by = u.id
+             ORDER BY a.created_at DESC
              LIMIT 10`
         );
         res.json(rows);
@@ -212,7 +199,6 @@ exports.getAnnouncements = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.getTripHistory = async (req, res) => {
     try {
@@ -227,8 +213,8 @@ exports.getTripHistory = async (req, res) => {
                 t.plate_number
              FROM trip_logs tl
              JOIN route_assignments ra ON tl.assignment_id = ra.id
-             JOIN routes r  ON ra.route_id = r.id
-             JOIN trucks t  ON ra.truck_id  = t.id
+             JOIN routes r ON ra.route_id = r.id
+             JOIN trucks t ON ra.truck_id = t.id
              WHERE ra.driver_id = ?
              ORDER BY COALESCE(tl.completed_at, tl.end_time, tl.logged_at) DESC
              LIMIT 20`,
@@ -241,11 +227,10 @@ exports.getTripHistory = async (req, res) => {
     }
 };
 
-
 exports.getProfile = async (req, res) => {
     try {
         const [[user]] = await db.query(
-            "SELECT id, name, email, phone, address FROM users WHERE id=?",
+            "SELECT id, name, email, phone, address, role FROM users WHERE id=?",
             [req.user.id]
         );
         res.json(user);
@@ -268,173 +253,83 @@ exports.updateProfile = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-// Add this to your existing driverController.js
 
-// Get route waypoints for today's assignment
 exports.getRouteWaypoints = async (req, res) => {
     try {
-        const [[assignment]] = await db.query(
-            `SELECT r.waypoints_json, r.zone_name, r.description, 
-                    r.start_location_lat, r.start_location_lng,
-                    r.end_location_lat, r.end_location_lng
-             FROM route_assignments ra
-             JOIN routes r ON ra.route_id = r.id
-             WHERE ra.driver_id = ? AND ra.assigned_date = CURDATE()
-             LIMIT 1`,
-            [req.user.id]
+        const { route_id } = req.query;
+
+        console.log("getRouteWaypoints called with route_id:", route_id);
+
+        if (!route_id) {
+            return res.status(400).json({ error: "route_id is required" });
+        }
+
+        const [routes] = await db.query(
+            `SELECT id, zone_name, description, waypoints_json 
+             FROM routes 
+             WHERE id = ?`,
+            [route_id]
         );
 
+        if (!routes.length) {
+            return res.status(404).json({ error: "Route not found" });
+        }
+
+        const route = routes[0];
+        console.log("Found route:", route.zone_name);
+        console.log("Raw waypoints_json type:", typeof route.waypoints_json);
+        console.log("Raw waypoints_json value:", route.waypoints_json);
+
         let waypoints = [];
-        let startPoint = null;
-        let endPoint = null;
+        let parsedWaypoints = null;
 
-        if (assignment) {
-            // Parse waypoints if they exist
-            if (assignment.waypoints_json) {
-                try {
-                    waypoints = JSON.parse(assignment.waypoints_json);
-                } catch (e) {
-                    console.error('Invalid waypoints JSON');
+        if (route.waypoints_json) {
+            try {
+                let parsed = route.waypoints_json;
+                if (typeof parsed === 'string') {
+                    parsed = JSON.parse(parsed);
                 }
-            }
 
-            // Get start and end locations
-            if (assignment.start_location_lat && assignment.start_location_lng) {
-                startPoint = {
-                    lat: assignment.start_location_lat,
-                    lng: assignment.start_location_lng,
-                    name: "Starting Point"
-                };
-            }
+                console.log("Parsed waypoints structure:", JSON.stringify(parsed, null, 2));
 
-            if (assignment.end_location_lat && assignment.end_location_lng) {
-                endPoint = {
-                    lat: assignment.end_location_lat,
-                    lng: assignment.end_location_lng,
-                    name: "Depot / End Point"
-                };
+                // Check for different formats
+                if (parsed && typeof parsed === 'object') {
+                    if (parsed.road || parsed.road_path) {
+                        console.log("Found road layer with", (parsed.road || parsed.road_path).length, "points");
+                    }
+                    if (parsed.pins || parsed.pin_stops) {
+                        console.log("Found pins layer with", (parsed.pins || parsed.pin_stops).length, "points");
+                    }
+                    if (parsed.mrf || parsed.mrf_stops) {
+                        console.log("Found MRF layer with", (parsed.mrf || parsed.mrf_stops).length, "points");
+                    }
+                }
+
+                parsedWaypoints = parsed;
+
+                // Return the full parsed structure
+                return res.json({
+                    waypoints: [],
+                    raw_waypoints: parsedWaypoints,
+                    waypoints_json: route.waypoints_json,
+                    zone_name: route.zone_name,
+                    description: route.description,
+                    has_waypoints: true
+                });
+            } catch (e) {
+                console.error("Error parsing waypoints:", e);
             }
         }
 
         res.json({
             waypoints: waypoints,
-            startPoint: startPoint,
-            endPoint: endPoint,
-            zone_name: assignment?.zone_name,
-            description: assignment?.description
+            raw_waypoints: null,
+            zone_name: route.zone_name,
+            description: route.description,
+            has_waypoints: false
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// Get real-time traffic data (optional - requires external API)
-exports.getTrafficData = async (req, res) => {
-    try {
-        const { lat, lng } = req.query;
-        // You can integrate with TomTom, Google Maps, or Here API for traffic data
-        // For now, return mock data
-        res.json({
-            status: "moderate",
-            delay: 5, // minutes
-            incidents: []
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// Save completed route tracking
-exports.saveRouteTracking = async (req, res) => {
-    try {
-        const { route_data, distance_covered, time_taken } = req.body;
-
-        await db.query(
-            `INSERT INTO route_tracking (assignment_id, driver_id, route_data, distance_covered, time_taken, tracked_at)
-             SELECT ra.id, ?, ?, ?, ?, NOW()
-             FROM route_assignments ra
-             WHERE ra.driver_id = ? AND ra.assigned_date = CURDATE()
-             LIMIT 1`,
-            [req.user.id, JSON.stringify(route_data), distance_covered, time_taken, req.user.id]
-        );
-
-        res.json({ message: "Route tracking saved" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-// Add these GPS accuracy improvements to your driverController.js
-
-// Enhanced location update with accuracy tracking
-exports.updateMyLocation = async (req, res) => {
-    try {
-        const { latitude, longitude, accuracy, heading, speed } = req.body;
-        if (latitude === undefined || longitude === undefined) {
-            return res.status(400).json({ error: "latitude and longitude required" });
-        }
-
-        const today = new Date().toISOString().slice(0, 10);
-        const [[assignment]] = await db.query(
-            `SELECT truck_id FROM route_assignments
-             WHERE driver_id=? AND assigned_date=? LIMIT 1`,
-            [req.user.id, today]
-        );
-
-        if (!assignment) {
-            return res.status(404).json({ error: "No truck assigned today" });
-        }
-
-        // Update truck location with accuracy and heading
-        await db.query(
-            "UPDATE trucks SET latitude=?, longitude=?, gps_accuracy=?, heading=?, speed=?, last_location_update=NOW() WHERE id=?",
-            [latitude, longitude, accuracy || null, heading || null, speed || null, assignment.truck_id]
-        );
-
-        // Log the location with accuracy metadata
-        await db.query(
-            `INSERT INTO trip_logs (assignment_id, latitude, longitude, gps_accuracy, heading, speed, logged_at)
-             SELECT ra.id, ?, ?, ?, ?, ?, NOW()
-             FROM route_assignments ra
-             WHERE ra.driver_id = ? AND ra.assigned_date = ?
-             LIMIT 1`,
-            [latitude, longitude, accuracy || null, heading || null, speed || null, req.user.id, today]
-        );
-
-        res.json({ message: "Location updated", accuracy: accuracy });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// Get real-time truck positions with accuracy filtering
-exports.getNearbyTrucks = async (req, res) => {
-    try {
-        const { lat, lng, radius_km = 5 } = req.query;
-
-        const [trucks] = await db.query(
-            `SELECT t.id, t.plate_number, t.latitude, t.longitude, t.gps_accuracy, t.heading, t.speed,
-                    u.name AS driver_name,
-                    (6371 * acos(cos(radians(?)) * cos(radians(t.latitude)) * 
-                    cos(radians(t.longitude) - radians(?)) + 
-                    sin(radians(?)) * sin(radians(t.latitude)))) AS distance_km
-             FROM trucks t
-             JOIN route_assignments ra ON t.id = ra.truck_id
-             JOIN users u ON ra.driver_id = u.id
-             WHERE ra.assigned_date = CURDATE()
-               AND t.latitude IS NOT NULL
-               AND t.gps_accuracy < 50  -- Only show accurate GPS (less than 50m error)
-             HAVING distance_km < ?
-             ORDER BY distance_km`,
-            [lat, lng, lat, radius_km]
-        );
-
-        res.json(trucks);
-    } catch (err) {
-        console.error(err);
+        console.error("Error in getRouteWaypoints:", err);
         res.status(500).json({ error: err.message });
     }
 };

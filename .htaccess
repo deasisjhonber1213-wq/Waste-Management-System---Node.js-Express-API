@@ -1,0 +1,36 @@
+# Enable mod_rewrite
+
+RewriteEngine On
+
+# If the request is not for a valid file
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route everything to server.js
+
+RewriteRule ^(.\*)$ /server.js [QSA,L]
+
+# Security headers
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Don't show directory listings
+
+Options -Indexes
+
+# Protect sensitive files
+
+<FilesMatch "^\.">
+Order allow,deny
+Deny from all
+</FilesMatch>
+
+<FilesMatch "(\.env|package\.json|server\.js)$">
+Order allow,deny
+Deny from all
+</FilesMatch>

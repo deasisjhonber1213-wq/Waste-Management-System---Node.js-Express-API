@@ -113,10 +113,45 @@
             flex-wrap: wrap;
         }
 
+        .map-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 10px 0;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .map-tool-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--ui);
+        }
+
+        .map-tool-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .map-tool-btn.active {
+            background: var(--gold-dim);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
         #fleetMap {
-            height: 360px;
+            height: 420px;
             border-radius: var(--radius);
             border: 1px solid var(--border2);
+            width: 100%;
+            background: var(--bg2);
         }
 
         .delete-confirm-name {
@@ -177,13 +212,17 @@
             font-size: 0.72rem;
         }
 
+        .leaflet-container {
+            background: var(--bg2) !important;
+        }
+
         @media (max-width: 600px) {
             .truck-card-grid {
                 grid-template-columns: 1fr;
             }
 
             #fleetMap {
-                height: 240px;
+                height: 300px;
             }
         }
     </style>
@@ -195,7 +234,7 @@
     <aside class="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
-            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+            <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
@@ -215,7 +254,7 @@
             <div class="sidebar-user">
                 <div class="sidebar-avatar">👤</div>
                 <div>
-                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-name" id="adminName">Admin</div>
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
@@ -228,7 +267,7 @@
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
             <div class="topbar-left">
                 <div class="topbar-title">Trucks</div>
-                <div class="topbar-breadcrumb">SmartWaste / Management / <span>Trucks</span></div>
+                <div class="topbar-breadcrumb">Jose Dalman WM / Management / <span>Trucks</span></div>
             </div>
         </div>
         <div class="topbar-right">
@@ -250,7 +289,7 @@
                     <div class="panel-title-icon">🗺️</div>Fleet Map
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;font-size:0.72rem;color:var(--text2)">
-                    <span class="pulse-dot"></span>Last known positions
+                    <span class="pulse-dot"></span>Live tracking positions
                 </div>
             </div>
             <div class="panel-body">
@@ -263,8 +302,7 @@
                         moving right now or whether the dot on the map is hours old.
                     </p>
                     <p style="margin-top:8px">Coordinates are updated in two ways: <strong>(1)</strong> automatically
-                        every 15 seconds
-                        when a driver has GPS sharing turned on in the Driver Portal, or
+                        every 15 seconds when a driver has GPS sharing turned on in the Driver Portal, or
                         <strong>(2)</strong> manually via the "📍 Location" button on each truck card below.
                     </p>
                     <div class="legend">
@@ -275,6 +313,16 @@
                                 style="color:#fbb034">Amber</strong> — 1–12 hours ago</div>
                         <div class="legend-item"><span style="color:#f87171;font-size:1rem">●</span> <strong
                                 style="color:#f87171">Red</strong> — over 12 hours (position likely stale)</div>
+                    </div>
+                </div>
+                <div class="map-toolbar">
+                    <div style="display:flex;gap:8px;">
+                        <button class="map-tool-btn" onclick="centerMapOnTrucks()">🎯 Center on Trucks</button>
+                        <button class="map-tool-btn" id="fleetSatBtn" onclick="toggleFleetMapSatellite()">🛰️
+                            Satellite</button>
+                    </div>
+                    <div style="font-size:0.7rem;color:var(--text2);font-family:var(--mono)">
+                        📍 ${document.querySelectorAll('.truck-card').length || 0} trucks on map
                     </div>
                 </div>
                 <div id="fleetMap"></div>
@@ -427,6 +475,57 @@
 
     <script>
         let fleetMap, mapMarkers = [], trucks = [];
+        let isFleetMapSatellite = false;
+
+        // Map tile layers (same as driver)
+        const darkTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+            attribution: "&copy; OSM & CARTO",
+            subdomains: "abcd",
+            maxZoom: 20
+        });
+        const satelliteTileLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            attribution: "Esri",
+            maxZoom: 19
+        });
+
+        function addTileLayerToMap(map, isSatellite) {
+            map.eachLayer(layer => {
+                if (layer._url && (layer._url.includes('basemaps.cartocdn.com') || layer._url.includes('arcgisonline.com'))) {
+                    map.removeLayer(layer);
+                }
+            });
+            if (isSatellite) {
+                satelliteTileLayer.addTo(map);
+            } else {
+                darkTileLayer.addTo(map);
+            }
+        }
+
+        function toggleFleetMapSatellite() {
+            if (!fleetMap) return;
+            isFleetMapSatellite = !isFleetMapSatellite;
+            addTileLayerToMap(fleetMap, isFleetMapSatellite);
+            const btn = document.getElementById("fleetSatBtn");
+            btn.innerHTML = isFleetMapSatellite ? "🌍 Map" : "🛰️ Satellite";
+            btn.classList.toggle("active", isFleetMapSatellite);
+            showToast(isFleetMapSatellite ? "Satellite view" : "Dark map view", "info");
+        }
+
+        function centerMapOnTrucks() {
+            if (!fleetMap) return;
+            const positioned = trucks.filter(t => t.latitude != null && t.longitude != null);
+            if (positioned.length === 0) {
+                showToast("No trucks with location data to center on", "info");
+                return;
+            }
+            if (positioned.length === 1) {
+                fleetMap.setView([positioned[0].latitude, positioned[0].longitude], 13);
+            } else {
+                const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
+                fleetMap.fitBounds(bounds.pad(0.2));
+            }
+            showToast(`Centered on ${positioned.length} truck${positioned.length !== 1 ? 's' : ''}`, "success");
+        }
 
         /* ── LOAD ── */
         async function loadTrucks() {
@@ -485,6 +584,15 @@
             if (h < 1) return "#4ade80";
             if (h < 12) return "#fbb034";
             return "#f87171";
+        }
+
+        function showToast(msg, type = "info") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
 
         /* ── RENDER CARDS ── */
@@ -547,7 +655,7 @@
         function renderMap(data) {
             if (!fleetMap) {
                 fleetMap = L.map("fleetMap").setView([14.5995, 120.9842], 12);
-                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "" }).addTo(fleetMap);
+                addTileLayerToMap(fleetMap, false);
             }
             mapMarkers.forEach(m => fleetMap.removeLayer(m));
             mapMarkers = [];
@@ -571,10 +679,8 @@
                 mapMarkers.push(m);
             });
 
-            if (positioned.length === 1) {
-                fleetMap.setView([positioned[0].latitude, positioned[0].longitude], 14);
-            } else if (positioned.length > 1) {
-                try { fleetMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.25)); } catch { }
+            if (positioned.length === 0) {
+                fleetMap.setView([14.5995, 120.9842], 12);
             }
         }
 
@@ -624,6 +730,15 @@
             document.getElementById("deleteTruckName").textContent = plate;
             openModal("deleteTruckModal");
         }
+        async function loadAdminProfile() {
+            try {
+                const res = await API.get("/api/admin/profile");
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("adminName").textContent = data.name || "Admin";
+                }
+            } catch { }
+        }
 
         async function confirmDeleteTruck() {
             const id = document.getElementById("deleteTruckId").value;
@@ -660,6 +775,23 @@
             } catch (e) { showToast(e.message || "Update failed", "error"); }
         }
 
+        // Modal helpers
+        function openModal(id) { document.getElementById(id).classList.add("open"); }
+        function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+        // Expose globals
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.addTruck = addTruck;
+        window.openEditModal = openEditModal;
+        window.saveTruckEdit = saveTruckEdit;
+        window.openLocModal = openLocModal;
+        window.updateLocation = updateLocation;
+        window.openDeleteModal = openDeleteModal;
+        window.confirmDeleteTruck = confirmDeleteTruck;
+        window.centerMapOnTrucks = centerMapOnTrucks;
+        window.toggleFleetMapSatellite = toggleFleetMapSatellite;
+        loadAdminProfile();
         loadTrucks();
     </script>
 </body>

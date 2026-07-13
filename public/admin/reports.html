@@ -4,25 +4,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Reports · SmartWaste Admin</title>
+    <title>Reports & Resident Locations · Jose Dalman WM Admin</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
+        /* ── layout - Map on LEFT, Reports on RIGHT ── */
+        .reports-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 1100px) {
+            .reports-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── type bar ── */
         .report-type-bar {
             height: 4px;
             border-radius: 2px;
             margin-top: 6px;
             transition: width 0.6s ease;
         }
+
+        /* ── date filter pills ── */
+        .date-pills {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .date-pill {
+            padding: 5px 13px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border: 1.5px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            transition: all 0.18s;
+            font-family: var(--ui);
+            user-select: none;
+        }
+
+        .date-pill:hover {
+            border-color: var(--gold-mid);
+            color: var(--text);
+        }
+
+        .date-pill.active {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: var(--gold-dim);
+        }
+
+        /* ── map panel - LARGER ── */
+        #reportMap {
+            height: 550px;
+            width: 100%;
+            background: var(--bg2);
+        }
+
+        .map-panel-wrap {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border2);
+            isolation: isolate;
+        }
+
+        .map-panel-wrap .leaflet-control-container {
+            z-index: 400 !important;
+        }
+
+        /* ── report popup inside leaflet ── */
+        .leaflet-popup-content-wrapper {
+            background: var(--panel) !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
+            color: var(--text) !important;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--panel) !important;
+        }
+
+        .leaflet-popup-content {
+            margin: 12px 14px !important;
+            min-width: 220px;
+            max-width: 280px;
+        }
+
+        .rp-popup-type {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .rp-popup-desc {
+            font-size: 0.8rem;
+            color: var(--text2);
+            line-height: 1.55;
+            margin-bottom: 8px;
+        }
+
+        .rp-popup-img {
+            width: 100%;
+            max-height: 140px;
+            object-fit: cover;
+            border-radius: 7px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .rp-popup-meta {
+            font-size: 0.7rem;
+            color: var(--text2);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .rp-popup-btn {
+            margin-top: 8px;
+            width: 100%;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            font-family: var(--ui);
+            transition: all 0.15s;
+        }
+
+        .rp-popup-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* custom map marker dots */
+        .rp-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2.5px solid #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .resident-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ── image lightbox ── */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-overlay.open {
+            display: flex;
+        }
+
+        .lightbox-overlay img {
+            max-width: 90vw;
+            max-height: 88vh;
+            border-radius: 10px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 18px;
+            right: 22px;
+            font-size: 1.8rem;
+            color: #fff;
+            cursor: pointer;
+            opacity: 0.8;
+            background: none;
+            border: none;
+            line-height: 1;
+        }
+
+        .lightbox-close:hover {
+            opacity: 1;
+        }
+
+        /* ── map toolbar ── */
+        .map-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 10px 14px 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .map-tool-btn {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.71rem;
+            font-weight: 600;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            transition: all 0.18s;
+            font-family: var(--ui);
+        }
+
+        .map-tool-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .map-tool-btn.active {
+            background: var(--gold-dim);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .map-dot-legend {
+            display: flex;
+            gap: 10px;
+            font-size: 0.69rem;
+            color: var(--text2);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .map-dot-legend span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .map-dot-legend .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Resident cards */
+        .resident-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .resident-card:hover {
+            border-color: var(--gold);
+            background: var(--gold-dim);
+        }
+
+        .resident-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--blue-dim);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .resident-info {
+            flex: 1;
+        }
+
+        .resident-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .resident-loc-time {
+            font-size: 0.65rem;
+            color: var(--text3);
+            font-family: var(--mono);
+        }
+
+        .resident-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        /* ── table tweaks ── */
+        .row-has-location {
+            cursor: pointer;
+        }
+
+        .row-has-location:hover td {
+            background: var(--bg3) !important;
+        }
+
+        .report-img-thumb {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            background: var(--gold-dim);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .type-filter-select {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            font-size: 0.75rem;
+        }
     </style>
 </head>
 
 <body>
-
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
-            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+            <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
@@ -33,7 +397,7 @@
             <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
             <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="reports.html" class="nav-item active"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="reports.html" class="nav-item active"><span class="nav-icon">⚠️</span>Reports & Residents</a>
             <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
@@ -42,7 +406,7 @@
             <div class="sidebar-user">
                 <div class="sidebar-avatar">👤</div>
                 <div>
-                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-name" id="adminName">Admin</div>
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
@@ -54,77 +418,147 @@
         <div style="display:flex;align-items:center;gap:14px;">
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
             <div class="topbar-left">
-                <div class="topbar-title">Reports</div>
-                <div class="topbar-breadcrumb">SmartWaste / Community / <span>Reports</span></div>
+                <div class="topbar-title">Reports & Resident Locations</div>
+                <div class="topbar-breadcrumb">Jose Dalman WM / Community / <span>Reports & Residents</span></div>
             </div>
         </div>
     </div>
 
     <main class="main">
 
-        <!-- TYPE BREAKDOWN -->
-        <div class="stat-grid reveal" id="reportStats" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
-            <div class="stat-card" data-icon="🚛">
+        <!-- TYPE STATS -->
+        <div class="stat-grid reveal" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+            <div class="stat-card">
                 <div class="stat-label">Missed Pickup</div>
                 <div class="stat-value" id="c-missed">—</div>
                 <div class="report-type-bar" style="background:var(--gold)"></div>
             </div>
-            <div class="stat-card" data-icon="🗑️">
+            <div class="stat-card">
                 <div class="stat-label">Overflowing Bin</div>
                 <div class="stat-value" id="c-overflow">—</div>
                 <div class="report-type-bar" style="background:var(--green)"></div>
             </div>
-            <div class="stat-card" data-icon="⚠️">
+            <div class="stat-card">
                 <div class="stat-label">Illegal Dumping</div>
                 <div class="stat-value" id="c-illegal">—</div>
                 <div class="report-type-bar" style="background:var(--red)"></div>
             </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Residents</div>
+                <div class="stat-value" id="c-residents">—</div>
+                <div class="report-type-bar" style="background:var(--blue)"></div>
+            </div>
         </div>
 
-        <div class="panel reveal">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <div class="panel-title-icon">⚠️</div>Resident Reports
+        <!-- MAIN LAYOUT: Map on LEFT, Reports on RIGHT -->
+        <div class="reports-layout">
+            <!-- LEFT: LARGER MAP -->
+            <div class="panel reveal">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <div class="panel-title-icon">🗺️</div>Location Map
+                    </div>
+                    <span class="badge badge-gold" id="mapPinCount">0 pins</span>
                 </div>
-                <div class="flex-row flex-wrap" style="gap:8px">
-                    <div class="search-bar"><input type="text" placeholder="Search…" id="searchInput"
-                            oninput="filterReports()"></div>
-                    <select class="form-control" id="typeFilter" onchange="filterReports()"
-                        style="width:160px;padding:8px 12px;font-size:0.82rem">
+                <div class="map-toolbar">
+                    <div class="map-dot-legend">
+                        <span><span class="dot" style="background:#ffc13c;"></span>Missed Pickup</span>
+                        <span><span class="dot" style="background:#4ade80;"></span>Overflowing Bin</span>
+                        <span><span class="dot" style="background:#f87171;"></span>Illegal Dumping</span>
+                        <span><span class="dot" style="background:#60a5fa;"></span>Resident Location</span>
+                    </div>
+                    <button class="map-tool-btn" id="satBtn" onclick="toggleSat()" style="margin-left:auto;">🛰️
+                        Satellite</button>
+                    <button class="map-tool-btn" onclick="fitAllPins()">📍 Fit All Pins</button>
+                </div>
+                <div class="map-panel-wrap">
+                    <div id="reportMap"></div>
+                </div>
+                <div style="padding:8px 14px;font-size:0.69rem;color:var(--text2);">
+                    Click a pin to view details. Yellow/green/red = reports, Blue = resident locations.
+                </div>
+            </div>
+
+            <!-- RIGHT: Reports and Residents Tabs -->
+            <div class="panel reveal">
+                <!-- Filter Bar -->
+                <div class="filter-row">
+                    <div class="search-bar" style="flex:1;min-width:150px;">
+                        <input type="text" placeholder="Search reports..." id="searchInput" oninput="applyFilters()">
+                    </div>
+                    <select class="type-filter-select" id="typeFilter" onchange="applyFilters()">
                         <option value="">All Types</option>
                         <option value="missed_pickup">Missed Pickup</option>
                         <option value="overflowing_bin">Overflowing Bin</option>
                         <option value="illegal_dumping">Illegal Dumping</option>
                     </select>
                 </div>
-            </div>
-            <div class="panel-body-flush">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Reporter</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsBody">
-                        <tr>
-                            <td colspan="6" style="text-align:center;padding:32px;color:var(--text2)"><span
-                                    class="loading-spinner"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
+
+                <div class="date-pills" style="margin-bottom:15px;">
+                    <div class="date-pill active" id="pill-all" onclick="setDateFilter('all')">All Time</div>
+                    <div class="date-pill" id="pill-today" onclick="setDateFilter('today')">Today</div>
+                    <div class="date-pill" id="pill-week" onclick="setDateFilter('week')">This Week</div>
+                    <div class="date-pill" id="pill-month" onclick="setDateFilter('month')">This Month</div>
+                </div>
+
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab('reports')">📋 Resident Reports</button>
+                    <button class="tab-btn" onclick="switchTab('residents')">📍 Live Resident Locations</button>
+                </div>
+
+                <!-- Reports Tab Content -->
+                <div id="reports-tab" class="tab-content active">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <div class="panel-title-icon">⚠️</div>Resident Reports
+                        </div>
+                        <span class="badge badge-gold" id="visibleCount">0</span>
+                    </div>
+                    <div class="panel-body-flush" style="max-height: 500px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Reporter</th>
+                                    <th>Date</th>
+                                    <th>Photo</th>
+                                    <th>Map</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsBody">
+                                <tr>
+                                    <td colspan="7" style="text-align:center;padding:32px;color:var(--text2)">
+                                        <span class="loading-spinner"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Residents Tab Content -->
+                <div id="residents-tab" class="tab-content">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <div class="panel-title-icon">📍</div>Active Residents (Last 2 Hours)
+                        </div>
+                        <span class="badge badge-gold" id="residentCount">0</span>
+                    </div>
+                    <div class="resident-list" id="residentList" style="max-height: 500px; overflow-y: auto;">
+                        <div style="text-align:center;padding:32px;color:var(--text2)">
+                            <span class="loading-spinner"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
     </main>
 
     <!-- VIEW REPORT MODAL -->
     <div class="modal-overlay" id="viewReportModal">
-        <div class="modal">
+        <div class="modal" style="max-width:540px;">
             <div class="modal-header">
                 <div class="modal-title">📋 Report Details</div>
                 <button class="modal-close" onclick="closeModal('viewReportModal')">✕</button>
@@ -136,83 +570,528 @@
         </div>
     </div>
 
+    <!-- VIEW RESIDENT MODAL -->
+    <div class="modal-overlay" id="viewResidentModal">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <div class="modal-title">👤 Resident Details</div>
+                <button class="modal-close" onclick="closeModal('viewResidentModal')">✕</button>
+            </div>
+            <div class="modal-body" id="residentModalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('viewResidentModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMAGE LIGHTBOX -->
+    <div class="lightbox-overlay" id="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+        <img id="lightboxImg" src="" alt="Report photo">
+    </div>
+
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
-
     <script>
+        /* ════════════════════════════════════════════════════
+           STATE
+        ════════════════════════════════════════════════════ */
         let allReports = [];
+        let allResidents = [];
+        let filtered = [];
+        let activeDateFilter = 'all';
+        let activeTab = 'reports';
+        let reportMap = null;
+        let reportTiles = null;
+        let isSat = false;
+        let reportMarkers = [];
+        let residentMarkers = [];
 
-        const TYPE_COLORS = {
-            missed_pickup: "var(--gold)",
-            overflowing_bin: "var(--green)",
-            illegal_dumping: "var(--red)"
+        const TYPE_COLOR = {
+            missed_pickup: '#ffc13c',
+            overflowing_bin: '#4ade80',
+            illegal_dumping: '#f87171'
+        };
+        const TYPE_BADGE = {
+            missed_pickup: 'badge-gold',
+            overflowing_bin: 'badge-green',
+            illegal_dumping: 'badge-red'
+        };
+        const TYPE_LABEL = {
+            missed_pickup: 'Missed Pickup',
+            overflowing_bin: 'Overflowing Bin',
+            illegal_dumping: 'Illegal Dumping'
         };
 
-        const TYPE_BADGES = {
-            missed_pickup: "badge-gold",
-            overflowing_bin: "badge-green",
-            illegal_dumping: "badge-red"
-        };
+        /* ════════════════════════════════════════════════════
+           HELPERS
+        ════════════════════════════════════════════════════ */
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.innerHTML = `<span>${msg}</span>`;
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
 
+        function fmtDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function fmtTime(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+        function startOfWeek(d) { const x = startOfDay(d); x.setDate(x.getDate() - x.getDay()); return x; }
+        function startOfMonth(d) { const x = new Date(d); x.setDate(1); x.setHours(0, 0, 0, 0); return x; }
+
+        function inDateRange(r, filter) {
+            if (filter === 'all') return true;
+            const d = new Date(r.created_at);
+            const now = new Date();
+            if (filter === 'today') return d >= startOfDay(now);
+            if (filter === 'week') return d >= startOfWeek(now);
+            if (filter === 'month') return d >= startOfMonth(now);
+            return true;
+        }
+
+        function fitAllPins() {
+            const allPins = [...reportMarkers, ...residentMarkers];
+            if (allPins.length) {
+                const bounds = L.latLngBounds(allPins.map(p => p.marker.getLatLng()));
+                reportMap.fitBounds(bounds.pad(0.15));
+            }
+        }
+
+        /* ════════════════════════════════════════════════════
+           MAP INIT
+        ════════════════════════════════════════════════════ */
+        function initReportMap() {
+            if (reportMap) return;
+            reportMap = L.map('reportMap').setView([8.2317, 123.4018], 13);
+            reportTiles = makeTiles();
+            applyTile(reportMap, reportTiles, false);
+            reportMap.invalidateSize();
+        }
+
+        function makeTiles() {
+            return {
+                dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                    { attribution: '&copy; OSM & CARTO', subdomains: 'abcd', maxZoom: 20 }),
+                sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                    { attribution: '&copy; Esri', maxZoom: 19 }),
+                label: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+                    { subdomains: 'abcd', maxZoom: 20, opacity: 0.85, pane: 'overlayPane' })
+            };
+        }
+
+        function applyTile(map, tiles, sat) {
+            Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
+            if (sat) { tiles.sat.addTo(map); tiles.label.addTo(map); }
+            else { tiles.dark.addTo(map); }
+        }
+
+        function toggleSat() {
+            isSat = !isSat;
+            applyTile(reportMap, reportTiles, isSat);
+            const btn = document.getElementById('satBtn');
+            btn.innerHTML = isSat ? '🌍 Map' : '🛰️ Satellite';
+            btn.classList.toggle('active', isSat);
+        }
+
+        /* ════════════════════════════════════════════════════
+           RENDER MAP PINS for reports
+        ════════════════════════════════════════════════════ */
+        function renderMapPins(data) {
+            reportMarkers.forEach(({ marker }) => reportMap.removeLayer(marker));
+            reportMarkers = [];
+
+            const withLoc = data.filter(r => r.latitude != null && r.longitude != null);
+
+            withLoc.forEach(r => {
+                const color = TYPE_COLOR[r.type] || '#a78bfa';
+                const icon = L.divIcon({
+                    html: `<div class="rp-dot" style="background:${color};"></div>`,
+                    iconSize: [14, 14], iconAnchor: [7, 7], className: ''
+                });
+
+                const marker = L.marker([r.latitude, r.longitude], { icon })
+                    .addTo(reportMap)
+                    .bindPopup(buildReportPopupHtml(r), { maxWidth: 280, className: 'rp-popup' });
+
+                reportMarkers.push({ id: r.id, marker });
+            });
+        }
+
+        function buildReportPopupHtml(r) {
+            const color = TYPE_COLOR[r.type] || '#a78bfa';
+            const label = TYPE_LABEL[r.type] || r.type.replace(/_/g, ' ');
+            const imgHtml = r.image_url
+                ? `<img class="rp-popup-img" src="${escHtml(r.image_url)}"
+                    alt="Report photo"
+                    onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')"
+                    onerror="this.style.display='none'">`
+                : '<div style="color:var(--text3);font-size:0.7rem;">No photo</div>';
+            const desc = r.description ? escHtml(r.description).substring(0, 120) + (r.description.length > 120 ? '…' : '') : 'No description';
+            return `
+            <div>
+                <div class="rp-popup-type" style="color:${color};">${label}</div>
+                ${imgHtml}
+                <div class="rp-popup-desc">${desc}</div>
+                <div class="rp-popup-meta">
+                    <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
+                    <span>${fmtDate(r.created_at)}</span>
+                </div>
+                <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
+            </div>`;
+        }
+
+        /* ════════════════════════════════════════════════════
+           RENDER RESIDENT PINS
+        ════════════════════════════════════════════════════ */
+        function renderResidentPins(residents) {
+            residentMarkers.forEach(({ marker }) => reportMap.removeLayer(marker));
+            residentMarkers = [];
+
+            const withLoc = residents.filter(r => r.latitude != null && r.longitude != null);
+
+            withLoc.forEach(r => {
+                const icon = L.divIcon({
+                    html: `<div class="resident-dot" style="background:#60a5fa;"></div>`,
+                    iconSize: [12, 12], iconAnchor: [6, 6], className: ''
+                });
+
+                const lastSeen = new Date(r.location_updated_at);
+                const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
+
+                const marker = L.marker([r.latitude, r.longitude], { icon })
+                    .addTo(reportMap)
+                    .bindPopup(`
+                        <div>
+                            <strong style="color:#60a5fa;">👤 ${escHtml(r.name || 'Resident')}</strong><br>
+                            <span style="font-size:0.7rem;">📍 ${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)}</span><br>
+                            <span style="font-size:0.65rem;color:${isRecent ? '#4ade80' : '#7a8499'}">
+                                Last seen: ${fmtTime(r.location_updated_at)}
+                            </span>
+                            <button class="rp-popup-btn" style="margin-top:6px;" onclick="viewResident(${r.id})">👁 View Details</button>
+                        </div>
+                    `, { maxWidth: 260 });
+
+                residentMarkers.push({ id: r.id, marker });
+            });
+
+            const totalPins = reportMarkers.length + residentMarkers.length;
+            document.getElementById('mapPinCount').textContent = `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+        }
+
+        function updateAllMapPins() {
+            renderMapPins(filtered);
+            renderResidentPins(allResidents);
+            fitAllPins();
+        }
+
+        function flyToReport(id) {
+            const entry = reportMarkers.find(m => m.id === id);
+            if (!entry) return;
+            reportMap.flyTo(entry.marker.getLatLng(), 17, { duration: 0.8 });
+            setTimeout(() => entry.marker.openPopup(), 900);
+        }
+
+        function flyToResident(id) {
+            const entry = residentMarkers.find(m => m.id === id);
+            if (!entry) return;
+            reportMap.flyTo(entry.marker.getLatLng(), 15, { duration: 0.8 });
+            setTimeout(() => entry.marker.openPopup(), 900);
+        }
+
+        /* ════════════════════════════════════════════════════
+           LOAD DATA
+        ════════════════════════════════════════════════════ */
         async function loadReports() {
             try {
-                const res = await API.get("/api/admin/reports");
+                const res = await API.get('/api/admin/reports');
                 if (!res.ok) throw new Error();
                 allReports = await res.json();
-                renderReports(allReports);
-                // Stats
-                document.getElementById("c-missed").textContent = allReports.filter(r => r.type === "missed_pickup").length;
-                document.getElementById("c-overflow").textContent = allReports.filter(r => r.type === "overflowing_bin").length;
-                document.getElementById("c-illegal").textContent = allReports.filter(r => r.type === "illegal_dumping").length;
-            } catch { showToast("Failed to load reports", "error"); }
+                updateStatCards(allReports);
+                applyFilters();
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to load reports', 'error');
+            }
         }
 
-        function renderReports(data) {
-            const tbody = document.getElementById("reportsBody");
-            if (!data.length) {
-                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No reports found</div></div></td></tr>';
+        async function loadResidents() {
+            try {
+                const res = await API.get('/api/admin/resident-locations');
+                if (!res.ok) throw new Error();
+                allResidents = await res.json();
+                document.getElementById('c-residents').textContent = allResidents.length;
+                document.getElementById('residentCount').textContent = allResidents.length;
+                renderResidentList();
+                updateAllMapPins();
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to load resident locations', 'error');
+            }
+        }
+
+        function renderResidentList() {
+            const container = document.getElementById('residentList');
+            if (!allResidents.length) {
+                container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text2)">No active residents found</div>';
                 return;
             }
-            tbody.innerHTML = data.map((r, i) => `
-        <tr>
-            <td class="table-mono table-muted">${String(i + 1).padStart(2, "0")}</td>
-            <td>
-                <span class="badge ${TYPE_BADGES[r.type] || 'badge-gray'}">
-                    ${r.type.replace(/_/g, " ")}
-                </span>
-            </td>
-            <td style="max-width:220px;color:var(--text2);font-size:0.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.description || "—"}</td>
-            <td class="table-muted">${r.user_id ? `User #${r.user_id}` : "Anonymous"}</td>
-            <td class="table-muted">${fmtDate(r.created_at || new Date())}</td>
-            <td>
-                <button class="btn btn-outline btn-sm btn-icon" onclick='viewReport(${JSON.stringify(r).replace(/'/g, "&apos;")})'>👁</button>
-            </td>
-        </tr>`).join("");
+
+            container.innerHTML = allResidents.map(r => {
+                const lastSeen = new Date(r.location_updated_at);
+                const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
+                return `
+                    <div class="resident-card" onclick="viewResident(${r.id})">
+                        <div class="resident-avatar">👤</div>
+                        <div class="resident-info">
+                            <div class="resident-name">${escHtml(r.name || 'Resident')}</div>
+                            <div class="resident-loc-time">
+                                📍 ${r.latitude?.toFixed(5) || '—'}, ${r.longitude?.toFixed(5) || '—'}<br>
+                                🕐 ${fmtTime(r.location_updated_at)} ${isRecent ? '<span style="color:#4ade80;">(Active)</span>' : ''}
+                            </div>
+                        </div>
+                        <div style="font-size:1.2rem;">📍</div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        function filterReports() {
-            const q = document.getElementById("searchInput").value.toLowerCase();
-            const tp = document.getElementById("typeFilter").value;
-            renderReports(allReports.filter(r =>
-                (!q || (r.description || "").toLowerCase().includes(q)) &&
-                (!tp || r.type === tp)
-            ));
+        function updateStatCards(data) {
+            document.getElementById('c-missed').textContent = data.filter(r => r.type === 'missed_pickup').length;
+            document.getElementById('c-overflow').textContent = data.filter(r => r.type === 'overflowing_bin').length;
+            document.getElementById('c-illegal').textContent = data.filter(r => r.type === 'illegal_dumping').length;
         }
 
-        function viewReport(r) {
-            document.getElementById("reportModalBody").innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:16px">
-            <div><div class="form-label">Type</div><div style="margin-top:6px"><span class="badge ${TYPE_BADGES[r.type] || 'badge-gray'}">${r.type.replace(/_/g, " ")}</span></div></div>
-            <div><div class="form-label">Description</div><div style="margin-top:6px;font-size:0.88rem;color:var(--text);line-height:1.7;background:var(--bg3);padding:12px;border-radius:8px">${r.description || "No description provided"}</div></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div><div class="form-label">Reporter ID</div><div style="margin-top:4px;font-family:var(--mono);font-size:0.82rem">${r.user_id || "Anonymous"}</div></div>
-                <div><div class="form-label">Submitted</div><div style="margin-top:4px;font-size:0.82rem">${fmtDate(r.created_at || new Date())}</div></div>
-            </div>
-        </div>`;
-            openModal("viewReportModal");
+        /* ════════════════════════════════════════════════════
+           FILTERS
+        ════════════════════════════════════════════════════ */
+        function setDateFilter(f) {
+            activeDateFilter = f;
+            ['all', 'today', 'week', 'month'].forEach(k => {
+                document.getElementById(`pill-${k}`).classList.toggle('active', k === f);
+            });
+            applyFilters();
         }
 
+        function applyFilters() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const tp = document.getElementById('typeFilter').value;
+
+            filtered = allReports.filter(r => {
+                const matchQ = !q || (r.description || '').toLowerCase().includes(q);
+                const matchTp = !tp || r.type === tp;
+                const matchDt = inDateRange(r, activeDateFilter);
+                return matchQ && matchTp && matchDt;
+            });
+
+            renderTable(filtered);
+            renderMapPins(filtered);
+            renderResidentPins(allResidents);
+            document.getElementById('visibleCount').textContent = filtered.length;
+
+            const totalPins = reportMarkers.length + residentMarkers.length;
+            document.getElementById('mapPinCount').textContent = `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+        }
+
+        /* ════════════════════════════════════════════════════
+           TABLE
+        ════════════════════════════════════════════════════ */
+        function renderTable(data) {
+            const tbody = document.getElementById('reportsBody');
+            if (!data.length) {
+                tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No reports match this filter</div></div></td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map((r, i) => {
+                const hasLoc = r.latitude != null && r.longitude != null;
+                return `<tr class="${hasLoc ? 'row-has-location' : ''}" ${hasLoc ? `onclick="flyToReport(${r.id})" title="Click to locate on map"` : ''}>
+                    <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
+                    <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
+                    <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
+                        ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
+                    </td>
+                    <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
+                    <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
+                    <td style="text-align:center;">${r.image_url ? `<img src="${escHtml(r.image_url)}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')" onerror="this.style.display='none'">` : '—'}</td>
+                    <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
+                 </tr>`;
+            }).join('');
+        }
+
+        /* ════════════════════════════════════════════════════
+           VIEW MODALS
+        ════════════════════════════════════════════════════ */
+        function viewReport(id) {
+            const r = allReports.find(x => x.id === id);
+            if (!r) return;
+
+            const color = TYPE_COLOR[r.type] || '#a78bfa';
+            const label = TYPE_LABEL[r.type] || r.type.replace(/_/g, ' ');
+
+            const imgSection = r.image_url ? `
+                <div>
+                    <div class="form-label" style="margin-bottom:6px;">Photo</div>
+                    <img src="${escHtml(r.image_url)}"
+                         alt="Report photo"
+                         style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;cursor:pointer;"
+                         onclick="openLightbox('${escHtml(r.image_url)}')"
+                         onerror="this.parentElement.style.display='none'">
+                </div>` : '<div style="color:var(--text3);">No photo attached</div>';
+
+            const locSection = (r.latitude != null && r.longitude != null) ? `
+                <div>
+                    <div class="form-label" style="margin-bottom:4px;">Location</div>
+                    <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
+                        ${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}
+                    </div>
+                    <button class="btn btn-outline btn-sm" style="margin-top:6px;"
+                            onclick="closeModal('viewReportModal');flyToReport(${r.id})">
+                        🗺️ Show on Map
+                    </button>
+                </div>` : '<div style="color:var(--text3);">No location provided</div>';
+
+            document.getElementById('reportModalBody').innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    <div>
+                        <div class="form-label">Type</div>
+                        <div style="margin-top:6px;"><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}" style="background:${color}20;color:${color};">${label}</span></div>
+                    </div>
+                    <div>
+                        <div class="form-label">Description</div>
+                        <div style="margin-top:6px;font-size:0.85rem;color:var(--text);line-height:1.6;background:var(--bg3);padding:12px;border-radius:8px;">
+                            ${escHtml(r.description || 'No description provided.')}
+                        </div>
+                    </div>
+                    ${imgSection}
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <div class="form-label">Reporter</div>
+                            <div style="margin-top:4px;font-size:0.8rem;">
+                                ${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="form-label">Submitted</div>
+                            <div style="margin-top:4px;font-size:0.8rem;">${fmtDate(r.created_at)}</div>
+                        </div>
+                    </div>
+                    ${locSection}
+                </div>`;
+            openModal('viewReportModal');
+        }
+
+        function viewResident(id) {
+            const r = allResidents.find(x => x.id === id);
+            if (!r) return;
+
+            const lastSeen = new Date(r.location_updated_at);
+            const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
+
+            document.getElementById('residentModalBody').innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="width:50px;height:50px;background:var(--blue-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</div>
+                        <div>
+                            <div class="form-label">Name</div>
+                            <div style="font-size:1rem;font-weight:700;">${escHtml(r.name || 'Resident')}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-label">Location</div>
+                        <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
+                            📍 ${r.latitude?.toFixed(6) || '—'}, ${r.longitude?.toFixed(6) || '—'}
+                        </div>
+                        <button class="btn btn-outline btn-sm" style="margin-top:6px;"
+                                onclick="closeModal('viewResidentModal');flyToResident(${r.id})">
+                            🗺️ Show on Map
+                        </button>
+                    </div>
+                    <div>
+                        <div class="form-label">Last Seen</div>
+                        <div style="color:${isRecent ? '#4ade80' : '#7a8499'}">
+                            ${fmtDate(r.location_updated_at)} at ${fmtTime(r.location_updated_at)}
+                            ${isRecent ? ' (Active)' : ''}
+                        </div>
+                    </div>
+                    ${r.address ? `<div><div class="form-label">Address</div><div style="font-size:0.85rem;">${escHtml(r.address)}</div></div>` : ''}
+                </div>`;
+            openModal('viewResidentModal');
+        }
+
+        /* ════════════════════════════════════════════════════
+           TAB SWITCHING
+        ════════════════════════════════════════════════════ */
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tab === 'reports') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('reports-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('residents-tab').classList.add('active');
+                renderResidentList();
+            }
+        }
+
+        /* ════════════════════════════════════════════════════
+           LIGHTBOX
+        ════════════════════════════════════════════════════ */
+        function openLightbox(src) {
+            document.getElementById('lightboxImg').src = src;
+            document.getElementById('lightbox').classList.add('open');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('open');
+            document.getElementById('lightboxImg').src = '';
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+        /* ════════════════════════════════════════════════════
+           PROFILE + INIT
+        ════════════════════════════════════════════════════ */
+        async function loadAdminProfile() {
+            try {
+                const res = await API.get('/api/admin/profile');
+                if (res.ok) {
+                    const d = await res.json();
+                    document.getElementById('adminName').textContent = d.name || 'Admin';
+                }
+            } catch { }
+        }
+
+        // Expose functions globally
+        Object.assign(window, {
+            viewReport, viewResident, flyToReport, flyToResident, openLightbox, closeLightbox,
+            setDateFilter, applyFilters, toggleSat, switchTab, fitAllPins
+        });
+
+        // Initialize
+        initReportMap();
+        loadAdminProfile();
         loadReports();
+        loadResidents();
+
+        // Auto-refresh resident locations every 30 seconds
+        setInterval(loadResidents, 30000);
     </script>
 </body>
 

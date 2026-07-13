@@ -88,7 +88,7 @@
     <aside class="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
-            <div class="sidebar-logo-text">SmartWaste<span>Admin Panel</span></div>
+            <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
@@ -108,7 +108,7 @@
             <div class="sidebar-user">
                 <div class="sidebar-avatar">👤</div>
                 <div>
-                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-name" id="adminName">Admin</div>
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
@@ -121,7 +121,7 @@
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
             <div class="topbar-left">
                 <div class="topbar-title">Analytics</div>
-                <div class="topbar-breadcrumb">SmartWaste / <span>Analytics</span></div>
+                <div class="topbar-breadcrumb">Jose Dalman WM/ <span>Analytics</span></div>
             </div>
         </div>
         <div class="topbar-right">
@@ -354,7 +354,16 @@
                 showToast("Export downloaded!", "success");
             } catch { showToast("Export failed", "error"); }
         }
-
+        async function loadAdminProfile() {
+            try {
+                const res = await API.get("/api/admin/profile");
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("adminName").textContent = data.name || "Admin";
+                }
+            } catch { }
+        }
+        loadAdminProfile();
         loadDashStats();
         loadAnalytics();
         loadScheduleStats();

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartWaste · Login</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -17,8 +17,9 @@
             --text: #e2f5e8;
             --muted: #7aaa88;
             --danger: #f87171;
-            --head: 'Syne', sans-serif;
-            --body: 'DM Sans', sans-serif;
+            --head: 'Inter', sans-serif;
+            --body: 'Inter', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
         }
 
         *,
@@ -34,9 +35,10 @@
             height: 100%;
             font-family: var(--body);
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ── BACKGROUND ── */
         .bg {
             position: fixed;
             inset: 0;
@@ -49,10 +51,11 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg,
-                    rgba(3, 8, 4, 0.88) 0%,
-                    rgba(4, 12, 6, 0.80) 50%,
-                    rgba(3, 8, 4, 0.90) 100%);
+            background: linear-gradient(180deg,
+                    rgba(3, 8, 4, 0.3) 0%,
+                    rgba(4, 12, 6, 0.5) 40%,
+                    rgba(4, 12, 6, 0.7) 60%,
+                    rgba(3, 8, 4, 0.85) 100%);
         }
 
         .bg::after {
@@ -60,10 +63,9 @@
             position: absolute;
             inset: 0;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-            opacity: 0.5;
+            opacity: 0.3;
         }
 
-        /* ── LAYOUT ── */
         .page {
             position: relative;
             z-index: 1;
@@ -71,13 +73,13 @@
             display: flex;
         }
 
-        /* Left panel — branding */
         .left {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             padding: 60px 64px;
+            background: linear-gradient(90deg, rgba(3, 8, 4, 0.6) 0%, rgba(3, 8, 4, 0.2) 100%);
         }
 
         .brand-logo {
@@ -103,28 +105,29 @@
 
         .brand-name {
             font-family: var(--head);
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 800;
+            letter-spacing: -0.02em;
             color: var(--glow);
-            letter-spacing: -0.01em;
+            line-height: 1.2;
         }
 
         .brand-name span {
             display: block;
-            font-size: 0.72rem;
-            font-weight: 400;
-            letter-spacing: 0.12em;
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             color: var(--muted);
-            margin-top: 1px;
+            margin-top: 2px;
         }
 
         .hero-headline {
             font-family: var(--head);
             font-size: clamp(2.4rem, 4vw, 3.8rem);
             font-weight: 800;
-            line-height: 0.92;
-            letter-spacing: -0.04em;
+            line-height: 0.95;
+            letter-spacing: -0.03em;
             color: var(--text);
             margin-bottom: 20px;
         }
@@ -135,10 +138,10 @@
         }
 
         .hero-sub {
-            font-size: 0.95rem;
-            font-weight: 300;
+            font-size: 0.92rem;
+            font-weight: 400;
             color: var(--muted);
-            line-height: 1.75;
+            line-height: 1.7;
             max-width: 360px;
             margin-bottom: 40px;
         }
@@ -152,19 +155,20 @@
             font-family: var(--head);
             font-size: 1.8rem;
             font-weight: 800;
+            letter-spacing: -0.02em;
             color: var(--glow);
-            line-height: 1;
+            line-height: 1.1;
         }
 
         .stat-lbl {
-            font-size: 0.68rem;
+            font-size: 0.65rem;
+            font-weight: 600;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             margin-top: 3px;
         }
 
-        /* Right panel — glass card */
         .right {
             width: 440px;
             flex-shrink: 0;
@@ -172,9 +176,9 @@
             align-items: center;
             justify-content: center;
             padding: 32px 40px;
-            background: rgba(4, 10, 5, 0.45);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
+            background: rgba(4, 10, 5, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-left: 1px solid var(--border);
         }
 
@@ -190,49 +194,85 @@
             letter-spacing: -0.02em;
             color: var(--text);
             margin-bottom: 6px;
+            line-height: 1.1;
         }
 
         .card-sub {
             font-size: 0.82rem;
+            font-weight: 400;
             color: var(--muted);
             margin-bottom: 32px;
-            line-height: 1.55;
+            line-height: 1.5;
         }
 
         .form-group {
             margin-bottom: 14px;
+            position: relative;
         }
 
         .form-label {
             display: block;
-            font-size: 0.68rem;
+            font-size: 0.65rem;
             font-weight: 600;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             color: var(--muted);
             margin-bottom: 7px;
         }
 
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
         .form-input {
             width: 100%;
             padding: 12px 14px;
-            background: rgba(4, 10, 5, 0.65);
+            background: rgba(4, 10, 5, 0.5);
             border: 1px solid var(--border);
             border-radius: 9px;
             color: var(--text);
             font-family: var(--body);
-            font-size: 0.9rem;
+            font-size: 0.88rem;
+            font-weight: 400;
             outline: none;
             transition: border-color 0.2s, background 0.2s;
+            padding-right: 48px;
         }
 
         .form-input::placeholder {
             color: rgba(122, 170, 136, 0.45);
+            font-weight: 400;
         }
 
         .form-input:focus {
             border-color: var(--glow-mid);
-            background: rgba(4, 10, 5, 0.82);
+            background: rgba(4, 10, 5, 0.7);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .toggle-password:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .btn {
@@ -241,9 +281,9 @@
             background: var(--glow);
             color: #060d08;
             font-family: var(--head);
-            font-size: 0.88rem;
-            font-weight: 800;
-            letter-spacing: 0.09em;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             border: none;
             border-radius: 9px;
@@ -272,13 +312,14 @@
             text-align: center;
             margin-top: 20px;
             font-size: 0.82rem;
+            font-weight: 400;
             color: var(--muted);
         }
 
         .card-foot a {
             color: var(--glow);
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .card-foot a:hover {
@@ -288,7 +329,8 @@
         .alert {
             padding: 10px 14px;
             border-radius: 7px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
+            font-weight: 500;
             margin-top: 14px;
             line-height: 1.5;
             display: none;
@@ -314,9 +356,10 @@
             gap: 10px;
             margin: 20px 0;
             color: var(--muted);
-            font-size: 0.72rem;
+            font-size: 0.68rem;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.06em;
         }
 
         .divider::before,
@@ -327,7 +370,6 @@
             background: var(--border);
         }
 
-        /* ── RESPONSIVE ── */
         @media (max-width: 900px) {
             .left {
                 display: none;
@@ -336,13 +378,54 @@
             .right {
                 width: 100%;
                 border-left: none;
-                background: rgba(3, 8, 4, 0.72);
+                background: rgba(3, 8, 4, 0.35);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                padding: 40px 24px;
             }
         }
 
         @media (max-width: 480px) {
             .right {
-                padding: 24px 20px;
+                padding: 30px 20px;
+                background: rgba(3, 8, 4, 0.4);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+            }
+
+            .card-title {
+                font-size: 1.5rem;
+            }
+
+            .card-sub {
+                font-size: 0.78rem;
+            }
+
+            .form-input {
+                font-size: 0.85rem;
+                padding: 11px 12px;
+                padding-right: 44px;
+            }
+
+            .btn {
+                font-size: 0.8rem;
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .right {
+                padding: 20px 16px;
+            }
+
+            .card-title {
+                font-size: 1.3rem;
+            }
+
+            .form-input {
+                font-size: 0.82rem;
+                padding: 10px 12px;
+                padding-right: 40px;
             }
         }
     </style>
@@ -353,7 +436,6 @@
     <div class="bg"></div>
 
     <div class="page">
-        <!-- LEFT BRANDING -->
         <div class="left">
             <div class="brand-logo">
                 <div class="brand-icon">♻</div>
@@ -388,9 +470,25 @@
             </div>
         </div>
 
-
         <div class="right">
             <div class="card">
+                <div style="display:none; text-align:center; margin-bottom:24px;" class="mobile-brand">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
+                        <div
+                            style="width:38px; height:38px; background:var(--glow); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#060d08; font-weight:900;">
+                            ♻</div>
+                        <div
+                            style="font-family:var(--head); font-size:1rem; font-weight:800; letter-spacing:-0.02em; color:var(--glow); line-height:1.2;">
+                            Waste Monitoring
+                            <span
+                                style="display:block; font-size:0.6rem; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted);">Jose
+                                Dalman · ZDN</span>
+                        </div>
+                    </div>
+                    <div style="color:var(--muted); font-size:0.7rem; font-weight:400;">Real-time tracking & reporting
+                    </div>
+                </div>
+
                 <div class="card-title">Welcome back</div>
                 <div class="card-sub">Sign in to access your SmartWaste portal.</div>
 
@@ -401,8 +499,14 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password</label>
-                    <input type="password" id="password" class="form-input" placeholder="••••••••"
-                        autocomplete="current-password">
+                    <div class="password-wrapper">
+                        <input type="password" id="password" class="form-input" placeholder="••••••••"
+                            autocomplete="current-password">
+                        <button type="button" class="toggle-password" onclick="togglePassword('password', this)"
+                            aria-label="Toggle password visibility">
+                            👁️
+                        </button>
+                    </div>
                 </div>
 
                 <button class="btn" id="loginBtn" onclick="login()">Sign In</button>
@@ -419,7 +523,36 @@
         </div>
     </div>
 
+    <style>
+        @media (max-width: 900px) {
+            .mobile-brand {
+                display: block !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .mobile-brand {
+                margin-bottom: 20px !important;
+            }
+
+            .mobile-brand div div {
+                font-size: 0.9rem !important;
+            }
+        }
+    </style>
+
     <script>
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁️';
+            }
+        }
 
         document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 
@@ -473,6 +606,7 @@
                 btn.textContent = "Sign In";
             }
         }
+
         function showAlert(msg, type) {
             const el = document.getElementById("alertBox");
             el.textContent = msg;

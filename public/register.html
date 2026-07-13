@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartWaste · Create Account</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -17,8 +17,9 @@
             --text: #e2f5e8;
             --muted: #7aaa88;
             --danger: #f87171;
-            --head: 'Syne', sans-serif;
-            --body: 'DM Sans', sans-serif;
+            --head: 'Inter', sans-serif;
+            --body: 'Inter', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
         }
 
         *,
@@ -33,6 +34,8 @@
         body {
             min-height: 100%;
             font-family: var(--body);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .bg {
@@ -46,7 +49,11 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(3, 8, 4, 0.90) 0%, rgba(4, 12, 6, 0.82) 50%, rgba(3, 8, 4, 0.92) 100%);
+            background: linear-gradient(180deg,
+                    rgba(3, 8, 4, 0.3) 0%,
+                    rgba(4, 12, 6, 0.5) 40%,
+                    rgba(4, 12, 6, 0.7) 60%,
+                    rgba(3, 8, 4, 0.85) 100%);
         }
 
         .bg::after {
@@ -54,7 +61,7 @@
             position: absolute;
             inset: 0;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-            opacity: 0.5;
+            opacity: 0.3;
         }
 
         .page {
@@ -70,6 +77,7 @@
             flex-direction: column;
             justify-content: center;
             padding: 60px 64px;
+            background: linear-gradient(90deg, rgba(3, 8, 4, 0.6) 0%, rgba(3, 8, 4, 0.2) 100%);
         }
 
         .brand-logo {
@@ -95,28 +103,29 @@
 
         .brand-name {
             font-family: var(--head);
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 800;
+            letter-spacing: -0.02em;
             color: var(--glow);
-            letter-spacing: -0.01em;
+            line-height: 1.2;
         }
 
         .brand-name span {
             display: block;
-            font-size: 0.72rem;
-            font-weight: 400;
-            letter-spacing: 0.12em;
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             color: var(--muted);
-            margin-top: 1px;
+            margin-top: 2px;
         }
 
         .hero-headline {
             font-family: var(--head);
             font-size: clamp(2.2rem, 3.5vw, 3.4rem);
             font-weight: 800;
-            line-height: 0.93;
-            letter-spacing: -0.04em;
+            line-height: 0.95;
+            letter-spacing: -0.03em;
             color: var(--text);
             margin-bottom: 20px;
         }
@@ -128,9 +137,9 @@
 
         .hero-sub {
             font-size: 0.92rem;
-            font-weight: 300;
+            font-weight: 400;
             color: var(--muted);
-            line-height: 1.75;
+            line-height: 1.7;
             max-width: 360px;
             margin-bottom: 36px;
         }
@@ -156,6 +165,7 @@
             font-family: var(--head);
             font-size: 0.85rem;
             font-weight: 700;
+            letter-spacing: -0.01em;
             color: var(--glow);
             margin-bottom: 4px;
         }
@@ -164,6 +174,7 @@
             font-size: 0.8rem;
             color: var(--muted);
             line-height: 1.6;
+            font-weight: 400;
         }
 
         .right {
@@ -173,9 +184,9 @@
             align-items: center;
             justify-content: center;
             padding: 32px 40px;
-            background: rgba(4, 10, 5, 0.45);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
+            background: rgba(4, 10, 5, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-left: 1px solid var(--border);
             overflow-y: auto;
         }
@@ -193,72 +204,38 @@
             letter-spacing: -0.02em;
             color: var(--text);
             margin-bottom: 4px;
+            line-height: 1.1;
         }
 
         .card-sub {
             font-size: 0.82rem;
+            font-weight: 400;
             color: var(--muted);
             margin-bottom: 26px;
-            line-height: 1.55;
-        }
-
-        /* ── ROLE SELECTOR ── */
-        .role-selector {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .role-btn {
-            padding: 10px 8px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            background: rgba(4, 10, 5, 0.55);
-            color: var(--muted);
-            font-family: var(--head);
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.18s;
-            text-align: center;
-        }
-
-        .role-btn:hover {
-            border-color: var(--glow-mid);
-            color: var(--text);
-        }
-
-        .role-btn.active {
-            border-color: var(--glow);
-            background: var(--glow-dim);
-            color: var(--glow);
-            box-shadow: 0 0 0 1px var(--glow-mid);
-        }
-
-        .role-btn .role-icon {
-            display: block;
-            font-size: 1.3rem;
-            margin-bottom: 4px;
-        }
-
-        /* Admin warning banner — shown only when admin is selected */
-        .admin-warn {
-            display: none;
-            margin-bottom: 14px;
-            padding: 10px 13px;
-            border-radius: 8px;
-            background: rgba(248, 113, 113, 0.08);
-            border: 1px solid rgba(248, 113, 113, 0.28);
-            color: #fca5a5;
-            font-size: 0.78rem;
             line-height: 1.5;
         }
 
-        .admin-warn.show {
-            display: block;
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--glow-dim);
+            border: 1px solid var(--glow-mid);
+            border-radius: 8px;
+            color: var(--glow);
+            font-family: var(--head);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .role-badge .role-icon {
+            font-size: 1.1rem;
         }
 
         .form-row {
@@ -269,38 +246,72 @@
 
         .form-group {
             margin-bottom: 12px;
+            position: relative;
         }
 
         .form-label {
             display: block;
-            font-size: 0.67rem;
+            font-size: 0.65rem;
             font-weight: 600;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             color: var(--muted);
             margin-bottom: 6px;
         }
 
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
         .form-input {
             width: 100%;
             padding: 11px 13px;
-            background: rgba(4, 10, 5, 0.65);
+            background: rgba(4, 10, 5, 0.5);
             border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text);
             font-family: var(--body);
             font-size: 0.88rem;
+            font-weight: 400;
             outline: none;
             transition: border-color 0.2s, background 0.2s;
+            padding-right: 48px;
         }
 
         .form-input::placeholder {
             color: rgba(122, 170, 136, 0.4);
+            font-weight: 400;
         }
 
         .form-input:focus {
             border-color: var(--glow-mid);
-            background: rgba(4, 10, 5, 0.82);
+            background: rgba(4, 10, 5, 0.7);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .toggle-password:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .btn {
@@ -309,9 +320,9 @@
             background: var(--glow);
             color: #060d08;
             font-family: var(--head);
-            font-size: 0.88rem;
-            font-weight: 800;
-            letter-spacing: 0.09em;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             border: none;
             border-radius: 9px;
@@ -340,13 +351,14 @@
             text-align: center;
             margin-top: 18px;
             font-size: 0.82rem;
+            font-weight: 400;
             color: var(--muted);
         }
 
         .card-foot a {
             color: var(--glow);
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .card-foot a:hover {
@@ -356,7 +368,8 @@
         .alert {
             padding: 10px 14px;
             border-radius: 7px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
+            font-weight: 500;
             margin-top: 12px;
             line-height: 1.5;
             display: none;
@@ -384,9 +397,11 @@
             .right {
                 width: 100%;
                 border-left: none;
-                background: rgba(3, 8, 4, 0.72);
+                background: rgba(3, 8, 4, 0.35);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
                 align-items: flex-start;
-                padding-top: 48px;
+                padding: 40px 24px;
             }
 
             .card {
@@ -397,11 +412,36 @@
 
         @media (max-width: 480px) {
             .right {
-                padding: 36px 18px;
+                padding: 30px 18px;
+                background: rgba(3, 8, 4, 0.4);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
             }
 
             .form-row {
                 grid-template-columns: 1fr;
+            }
+
+            .card-title {
+                font-size: 1.5rem;
+            }
+
+            .form-input {
+                padding-right: 44px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .right {
+                padding: 20px 14px;
+            }
+
+            .card-title {
+                font-size: 1.3rem;
+            }
+
+            .form-input {
+                padding-right: 40px;
             }
         }
     </style>
@@ -411,7 +451,6 @@
     <div class="bg"></div>
 
     <div class="page">
-        <!-- LEFT BRANDING -->
         <div class="left">
             <div class="brand-logo">
                 <div class="brand-icon">♻</div>
@@ -430,41 +469,23 @@
             <div class="resident-notice">
                 <div class="notice-icon">🏘️</div>
                 <div>
-                    <div class="notice-title">Self-Registration Portal</div>
+                    <div class="notice-title">Resident Registration</div>
                     <div class="notice-text">
-                        Residents can register freely. Driver and Admin accounts should only be created by authorized
-                        municipal staff.
+                        This portal is for residents of Jose Dalman. Driver and Admin accounts are created by authorized
+                        municipal staff only.
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- RIGHT FORM -->
         <div class="right">
             <div class="card">
                 <div class="card-title">Create account</div>
                 <div class="card-sub">Register for SmartWaste — Jose Dalman, Zamboanga del Norte.</div>
 
-                <!-- ROLE SELECTOR -->
-                <div class="role-selector">
-                    <button class="role-btn active" onclick="selectRole('resident', this)">
-                        <span class="role-icon">🏘️</span>
-                        Resident
-                    </button>
-                    <button class="role-btn" onclick="selectRole('driver', this)">
-                        <span class="role-icon">🚛</span>
-                        Driver
-                    </button>
-                    <button class="role-btn" onclick="selectRole('admin', this)">
-                        <span class="role-icon">🛡️</span>
-                        Admin
-                    </button>
-                </div>
-
-                <!-- Admin warning -->
-                <div class="admin-warn" id="adminWarn">
-                    ⚠️ <strong>Admin access:</strong> Only create an admin account if you are authorized municipal
-                    staff. This account will have full system access.
+                <div class="role-badge">
+                    <span class="role-icon">🏘️</span>
+                    Resident Account
                 </div>
 
                 <div class="form-row">
@@ -487,8 +508,14 @@
 
                 <div class="form-group">
                     <label class="form-label">Password <span style="color:var(--danger)">*</span></label>
-                    <input type="password" id="password" class="form-input" placeholder="Min. 8 characters"
-                        autocomplete="new-password">
+                    <div class="password-wrapper">
+                        <input type="password" id="password" class="form-input" placeholder="Min. 8 characters"
+                            autocomplete="new-password">
+                        <button type="button" class="toggle-password" onclick="togglePassword('password', this)"
+                            aria-label="Toggle password visibility">
+                            👁️
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -508,13 +535,18 @@
     </div>
 
     <script>
-        let selectedRole = 'resident';
+        const selectedRole = 'resident';
 
-        function selectRole(role, el) {
-            selectedRole = role;
-            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('adminWarn').classList.toggle('show', role === 'admin');
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁️';
+            }
         }
 
         document.addEventListener('keydown', e => { if (e.key === 'Enter') register(); });
@@ -547,7 +579,7 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    showAlert(`✓ ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} account created! Redirecting to login…`, "success");
+                    showAlert("✓ Resident account created! Redirecting to login…", "success");
                     setTimeout(() => window.location = "login.html", 1800);
                 } else {
                     showAlert(data.message || "Registration failed. Please try again.", "error");

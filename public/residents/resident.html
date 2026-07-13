@@ -4,567 +4,1454 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>SmartWaste | Resident Portal - Live Fleet Tracker</title>
+    <title>SmartWaste | Resident Portal</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Clean font system for better readability without squishing -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <style>
-        /* ---------- ROOT VARIABLES ---------- */
         :root {
-            --bg-dark: #0a0f0c;
-            --bg-card: #0f1a12;
-            --border: rgba(74, 222, 128, 0.15);
-            --border-glow: rgba(74, 222, 128, 0.35);
-            --text: #ebf5eb;
-            --text-muted: #9bbfa8;
-            --glow: #4ade80;
-            --glow-dim: rgba(74, 222, 128, 0.1);
-            --glow-mid: rgba(74, 222, 128, 0.3);
-            --danger: #f87171;
-            --warn: #fbbf24;
-            --font-display: 'Space Grotesk', system-ui, sans-serif;
-            --font-body: 'Inter', system-ui, sans-serif;
+            --bg: #050d07;
+            --bg-1: #091210;
+            --bg-2: #0c1a0f;
+            --surface: rgba(13, 24, 16, 0.85);
+            --surface-2: rgba(20, 38, 24, 0.7);
+            --border: rgba(74, 222, 128, 0.12);
+            --border-hi: rgba(74, 222, 128, 0.3);
+            --green: #4ade80;
+            --green-2: #22c55e;
+            --green-dim: rgba(74, 222, 128, 0.08);
+            --green-mid: rgba(74, 222, 128, 0.25);
+            --text: #e8f5e8;
+            --text-2: #8fb89a;
+            --text-3: #536b5a;
+            --red: #f87171;
+            --amber: #fbbf24;
+            --blue: #60a5fa;
+            --r: 16px;
+            --r-lg: 24px;
+            --r-xl: 32px;
+            --ff-display: 'Inter', system-ui, sans-serif;
+            --ff-mono: 'Space Mono', monospace;
+            --nav-h: 60px;
+            --shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
         }
 
-        * {
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: var(--font-body);
-            background: linear-gradient(135deg, #0a0f0c 0%, #0d1410 100%);
-            color: var(--text);
-            overflow-x: hidden;
+        html {
+            scroll-behavior: smooth;
         }
 
-        /* Subtle background pattern */
+        body {
+            font-family: var(--ff-display);
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
         body::before {
             content: '';
             position: fixed;
             inset: 0;
-            background-image: radial-gradient(circle at 25% 50%, rgba(74, 222, 128, 0.03) 0%, transparent 50%);
+            background: radial-gradient(ellipse 80% 60% at 10% 20%, rgba(34, 197, 94, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 90% 80%, rgba(74, 222, 128, 0.03) 0%, transparent 60%);
             pointer-events: none;
             z-index: 0;
         }
 
-        nav,
-        section,
-        footer {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Navigation */
-        nav {
-            position: sticky;
+        /* ── NAV ── */
+        .site-nav {
+            position: fixed;
             top: 0;
-            z-index: 1000;
+            left: 0;
+            right: 0;
+            z-index: 960;
+            height: var(--nav-h);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 2rem;
-            background: rgba(10, 15, 12, 0.92);
-            backdrop-filter: blur(16px);
+            padding: 0 1.5rem;
+            background: rgba(5, 13, 7, 0.95);
+            backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
         }
 
-        .nav-logo {
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 1.25rem;
-            letter-spacing: -0.02em;
-            color: var(--glow);
+        .nav-brand {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--green);
+            text-decoration: none;
+            letter-spacing: -0.02em;
         }
 
-        .nav-logo-icon {
+        .nav-brand-icon {
             width: 32px;
             height: 32px;
-            background: var(--glow);
-            border-radius: 10px;
+            background: var(--green);
+            color: var(--bg);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1rem;
-            color: #0a0f0c;
+            flex-shrink: 0;
         }
 
-        nav ul {
+        .nav-links {
             display: flex;
-            gap: 0.5rem;
             list-style: none;
+            gap: 0.25rem;
         }
 
-        nav ul a {
-            color: var(--text-muted);
+        .nav-links a {
+            color: var(--text-2);
             text-decoration: none;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 500;
             padding: 0.5rem 1rem;
             border-radius: 40px;
-            transition: all 0.2s;
+            transition: 0.2s;
         }
 
-        nav ul a:hover,
-        nav ul a.active {
-            color: var(--glow);
-            background: var(--glow-dim);
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--green);
+            background: var(--green-dim);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
         .nav-logout {
-            background: var(--glow);
-            color: #0a0f0c;
+            background: var(--green);
+            color: var(--bg);
             text-decoration: none;
             padding: 0.5rem 1.25rem;
             border-radius: 40px;
             font-weight: 600;
             font-size: 0.8rem;
-            transition: all 0.2s;
-        }
-
-        .nav-logout:hover {
-            background: var(--text);
-            transform: translateY(-1px);
-        }
-
-        .nav-hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
-
-        .nav-hamburger span {
-            width: 24px;
-            height: 2px;
-            background: var(--glow);
-            border-radius: 2px;
             transition: 0.2s;
         }
 
-        .mobile-menu {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 15, 12, 0.98);
-            backdrop-filter: blur(20px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1.5rem;
-            transform: translateX(100%);
-            transition: 0.3s;
-            z-index: 999;
+        .nav-logout:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
         }
 
-        .mobile-menu.open {
+        /* ── BURGER BTN (mobile only) ── */
+        .nav-burger {
+            display: none;
+            width: 40px;
+            height: 40px;
+            background: var(--green-dim);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+
+        .nav-burger span {
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: var(--green);
+            border-radius: 2px;
+            transition: 0.25s;
+        }
+
+        /* Burger -> X animation when drawer is open */
+        .nav-burger.open {
+            background: var(--green-mid);
+            border-color: var(--border-hi);
+        }
+
+        .nav-burger.open span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .nav-burger.open span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .nav-burger.open span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        /* ══════════════════════════════════
+           REDESIGNED MOBILE DRAWER
+           Right-side slide-in panel
+        ══════════════════════════════════ */
+
+        /* Backdrop */
+        .drawer-backdrop {
+            position: fixed;
+            top: var(--nav-h);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0);
+            visibility: hidden;
+            transition: background 0.35s ease, visibility 0.35s;
+            z-index: 940;
+        }
+
+        .drawer-backdrop.open {
+            background: rgba(0, 0, 0, 0.6);
+            visibility: visible;
+        }
+
+        /* The drawer panel — slides in from the right, sits below the navbar */
+        .mobile-drawer {
+            position: fixed;
+            top: var(--nav-h);
+            right: 0;
+            bottom: 0;
+            width: min(300px, 82vw);
+            z-index: 950;
+            background: #0b1a0e;
+            border-left: 1px solid var(--border-hi);
+            padding: 0 0 env(safe-area-inset-bottom, 0);
+            transform: translateX(100%);
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -12px 0 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .mobile-drawer.open {
             transform: translateX(0);
         }
 
-        .mobile-menu a {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-muted);
+        /* Drag handle — not used in the side-panel layout */
+        .drawer-handle {
+            display: none;
+        }
+
+        /* Drawer header */
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 18px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .drawer-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .drawer-brand-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--green);
+            color: var(--bg);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .drawer-brand-text {
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--green);
+            letter-spacing: -0.02em;
+        }
+
+        .drawer-brand-sub {
+            font-size: 0.7rem;
+            color: var(--text-3);
+            margin-top: 1px;
+        }
+
+        .drawer-close {
+            width: 36px;
+            height: 36px;
+            background: var(--green-dim);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-2);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .drawer-close:hover {
+            background: var(--green-mid);
+            color: var(--green);
+        }
+
+        /* Nav links grid */
+        .drawer-nav {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .drawer-link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
             text-decoration: none;
+            color: var(--text-2);
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid transparent;
+            transition: 0.2s;
+            font-size: 0.95rem;
+            font-weight: 500;
         }
 
-        .mobile-menu a:hover {
-            color: var(--glow);
+        .drawer-link:active,
+        .drawer-link:hover {
+            background: var(--green-dim);
+            border-color: var(--border);
+            color: var(--green);
         }
 
-        /* Sections */
+        .drawer-link-icon {
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+            transition: 0.2s;
+        }
+
+        .drawer-link:hover .drawer-link-icon,
+        .drawer-link:active .drawer-link-icon {
+            background: var(--green-mid);
+            border-color: var(--border-hi);
+        }
+
+        .drawer-link-arrow {
+            margin-left: auto;
+            color: var(--text-3);
+            font-size: 0.75rem;
+            transition: 0.2s;
+        }
+
+        .drawer-link:hover .drawer-link-arrow {
+            color: var(--green);
+            transform: translateX(3px);
+        }
+
+        /* Bottom section: logout */
+        .drawer-footer {
+            padding: 12px 16px 16px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .drawer-logout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            background: var(--green);
+            color: var(--bg);
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 14px;
+            border-radius: 40px;
+            transition: 0.2s;
+        }
+
+        .drawer-logout:hover {
+            filter: brightness(1.08);
+        }
+
+        /* Status bar in drawer */
+        .drawer-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 16px 14px;
+            background: var(--green-dim);
+            border: 1px solid var(--border-hi);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.75rem;
+            color: var(--green);
+        }
+
+        /* ── SECTIONS ── */
         section {
-            padding: 5rem 2rem;
+            position: relative;
+            z-index: 1;
         }
 
-        .section-inner {
-            max-width: 1280px;
+        #home {
+            padding-top: calc(var(--nav-h) + 2rem);
+            padding-bottom: 3rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        .section-pad {
+            padding: 4rem 1.5rem;
+        }
+
+        .section-alt {
+            background: rgba(13, 24, 16, 0.4);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .inner {
+            max-width: 1200px;
             margin: 0 auto;
         }
 
-        .section-label {
+        .section-eyebrow {
             font-size: 0.7rem;
             font-weight: 600;
-            letter-spacing: 0.15em;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            color: var(--glow);
+            color: var(--green);
             margin-bottom: 0.5rem;
         }
 
         .section-title {
-            font-family: var(--font-display);
-            font-size: clamp(2rem, 5vw, 3.2rem);
-            font-weight: 700;
+            font-weight: 800;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            letter-spacing: -0.025em;
             line-height: 1.1;
-            letter-spacing: -0.02em;
             margin-bottom: 1rem;
         }
 
-        .section-title span {
-            color: var(--glow);
+        .section-title em {
+            color: var(--green);
+            font-style: normal;
         }
 
-        .glow-line {
-            width: 60px;
-            height: 2px;
-            background: var(--glow);
-            margin: 1rem 0 2rem;
-            border-radius: 2px;
+        .accent-bar {
+            width: 50px;
+            height: 3px;
+            background: var(--green);
+            border-radius: 3px;
+            margin-bottom: 2rem;
         }
 
-        .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-        }
-
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Glassmorphic backgrounds */
-        #about,
-        #pickup,
-        #updates,
-        #tips,
-        #report {
-            background: rgba(15, 26, 18, 0.5);
-            backdrop-filter: blur(2px);
-            border-top: 1px solid var(--border);
-        }
-
-        /* HERO GRID - FIXED MAP SQUISHING */
+        /* ── HERO ── */
         .hero-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2.5rem;
+            gap: 2rem;
             align-items: start;
         }
 
-        .hero-title {
-            font-family: var(--font-display);
-            font-size: clamp(2.5rem, 6vw, 4.5rem);
-            font-weight: 700;
-            line-height: 1;
-            letter-spacing: -0.03em;
-            margin: 1rem 0 1.5rem;
+        .hero-eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
         }
 
-        .hero-title .line2 {
-            color: var(--glow);
+        .hero-badge {
+            background: var(--green-dim);
+            color: var(--green);
+            border: 1px solid var(--border-hi);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.9rem;
+            border-radius: 40px;
         }
 
-        .hero-title .line3 {
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: blink 1.4s ease infinite;
+        }
+
+        .hero-h1 {
+            font-weight: 800;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            line-height: 1.05;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-h1 .g {
+            color: var(--green);
+        }
+
+        .hero-h1 .o {
             color: transparent;
-            -webkit-text-stroke: 1px var(--glow-mid);
+            -webkit-text-stroke: 1.5px rgba(74, 222, 128, 0.35);
         }
 
         .hero-desc {
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin-bottom: 2rem;
-            max-width: 90%;
+            color: var(--text-2);
+            font-size: 0.95rem;
+            line-height: 1.65;
+            margin-bottom: 1.75rem;
+            max-width: 88%;
         }
 
         .hero-stats {
             display: flex;
             gap: 2rem;
+            flex-wrap: wrap;
         }
 
-        .hero-stat-num {
-            font-family: var(--font-display);
+        .hero-stat-n {
             font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--glow);
+            font-weight: 800;
+            color: var(--green);
         }
 
-        .hero-stat-label {
+        .hero-stat-l {
             font-size: 0.7rem;
+            color: var(--text-3);
             text-transform: uppercase;
-            color: var(--text-muted);
+            letter-spacing: 0.1em;
         }
 
-        /* MAP CONTAINER - NO SQUISHING */
-        .hero-visual {
+        /* ── MAP PANEL ── */
+        .map-panel {
+            background: var(--surface);
+            border-radius: var(--r-lg);
+            border: 1px solid var(--border-hi);
+            overflow: hidden;
+            isolation: isolate;
+        }
+
+        .map-toolbar {
             display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            width: 100%;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
-        .hero-img-frame {
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid var(--border-glow);
-        }
-
-        .hero-img-frame img {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .hero-truck-card {
-            position: absolute;
-            bottom: 12px;
-            left: 12px;
-            right: 12px;
-            background: rgba(10, 15, 12, 0.9);
-            backdrop-filter: blur(12px);
-            padding: 0.7rem 1rem;
-            border-radius: 14px;
-            border-left: 3px solid var(--glow);
-        }
-
-        .hero-truck-label {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            color: var(--glow);
-            letter-spacing: 0.08em;
-        }
-
-        #todayTruck {
-            font-weight: 600;
-            margin-top: 4px;
-        }
-
-        /* MAP PANEL - CRITICAL: Fixed dimensions prevent squish */
-        .hero-map-panel {
-            background: rgba(15, 26, 18, 0.7);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            border: 1px solid var(--border-glow);
-            overflow: hidden;
-            width: 100%;
-        }
-
-        .hero-map-label {
-            padding: 0.7rem 1rem;
+        .map-toolbar-left {
             font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
-            color: var(--glow);
-            border-bottom: 1px solid var(--border);
+            letter-spacing: 0.12em;
+            color: var(--green);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .map-toolbar-btns {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .map-btn {
+            background: var(--green-dim);
+            color: var(--text-2);
+            border: 1px solid var(--border);
+            font-size: 0.68rem;
+            font-weight: 500;
+            padding: 0.4rem 0.7rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: var(--ff-display);
+            min-height: 34px;
+            touch-action: manipulation;
+        }
+
+        .map-btn:hover {
+            background: var(--green-mid);
+            color: var(--green);
+            border-color: var(--border-hi);
+        }
+
+        .map-btn.active {
+            background: var(--green-mid);
+            color: var(--green);
+            border-color: var(--border-hi);
         }
 
         #map {
             width: 100%;
-            height: 320px;
-            min-height: 280px;
-            background: #1a2a1e;
-            z-index: 1;
+            height: 360px;
+            background: var(--bg-2);
         }
 
-        /* About grid */
+        .map-panel .leaflet-control-container {
+            z-index: 400 !important;
+        }
+
+        /* ── TRUCK STATUS CARD ── */
+        .truck-card {
+            position: relative;
+            border-radius: var(--r-lg);
+            overflow: hidden;
+            border: 1px solid var(--border-hi);
+            margin-bottom: 1rem;
+        }
+
+        .truck-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .truck-status {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            background: rgba(5, 13, 7, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0.7rem 1rem;
+            border-radius: 12px;
+            border-left: 3px solid var(--green);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .truck-status-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--green-dim);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .truck-status-label {
+            font-size: 0.65rem;
+            color: var(--green);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        #todayTruck {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        .location-info {
+            background: var(--surface-2);
+            border-radius: 12px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            font-family: var(--ff-mono);
+            color: var(--text-2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* ── ABOUT ── */
         .about-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2rem;
+            align-items: center;
             margin-top: 2rem;
         }
 
-        .about-img img {
+        .about-img-wrap {
+            border-radius: var(--r-xl);
+            overflow: hidden;
+            border: 1px solid var(--border-hi);
+        }
+
+        .about-img-wrap img {
             width: 100%;
-            border-radius: 20px;
-            height: 350px;
+            height: 300px;
             object-fit: cover;
-            border: 1px solid var(--border-glow);
         }
 
-        .feature-item {
+        .features {
             display: flex;
-            gap: 1rem;
-            background: rgba(15, 26, 18, 0.7);
-            padding: 1rem;
-            border-radius: 16px;
-            margin-bottom: 1rem;
-            border: 1px solid var(--border);
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
-        .feature-icon {
-            font-size: 1.6rem;
-            width: 44px;
-            height: 44px;
-            background: var(--glow-dim);
-            border-radius: 12px;
+        .feat {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            background: var(--surface-2);
+            padding: 1rem;
+            border-radius: var(--r);
+            border: 1px solid var(--border);
+            transition: 0.25s;
+        }
+
+        .feat:hover {
+            border-color: var(--border-hi);
+            background: rgba(20, 38, 24, 0.9);
+        }
+
+        .feat-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--green-dim);
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
         }
 
-        .feature-title {
-            font-family: var(--font-display);
-            font-weight: 600;
-            margin-bottom: 4px;
+        .feat-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
         }
 
-        /* Schedule rows */
-        .schedule-grid {
+        .feat-desc {
+            font-size: 0.8rem;
+            color: var(--text-2);
+        }
+
+        /* ── SCHEDULE ── */
+        .schedule-timeline {
             display: flex;
             flex-direction: column;
-            gap: 0.8rem;
+            gap: 0;
         }
 
-        .pickup-row {
-            display: grid;
-            grid-template-columns: 140px 1fr 1fr auto;
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+        }
+
+        .tl-left {
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 1rem;
-            background: rgba(15, 26, 18, 0.7);
-            padding: 1rem 1.2rem;
-            border-radius: 16px;
-            border-left: 3px solid var(--glow);
+            width: 36px;
+            flex-shrink: 0;
         }
 
-        .pickup-date {
+        .tl-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 14px;
+            flex-shrink: 0;
+        }
+
+        .tl-dot.upcoming {
+            background: var(--green);
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, .2);
+        }
+
+        .tl-dot.today {
+            background: var(--amber);
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, .25);
+        }
+
+        .tl-dot.done {
+            background: var(--text-3);
+        }
+
+        .tl-line {
+            width: 1px;
+            flex: 1;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        .tl-card {
+            flex: 1;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+        }
+
+        .tl-card.upcoming {
+            border-left-color: var(--green);
+        }
+
+        .tl-card.today {
+            border-left-color: var(--amber);
+        }
+
+        .tl-card.done {
+            border-left-color: var(--text-3);
+            opacity: .7;
+        }
+
+        .tl-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .tl-date {
             font-weight: 700;
-            font-family: var(--font-display);
+            font-size: 0.9rem;
+        }
+
+        .tl-day {
+            font-size: 0.68rem;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+
+        .tl-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+        }
+
+        .tl-meta-item {
+            font-size: 0.72rem;
+            color: var(--text-2);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .see-all-btn {
+            font-size: 0.75rem;
+            color: var(--green);
+            background: var(--green-dim);
+            border: 1px solid var(--border-hi);
+            padding: 0.3rem 0.9rem;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: var(--ff-display);
         }
 
         .badge {
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 40px;
             font-size: 0.7rem;
             font-weight: 600;
         }
 
         .badge-upcoming {
-            background: var(--glow-dim);
-            color: var(--glow);
+            background: var(--green-dim);
+            color: var(--green);
+            border: 1px solid var(--border-hi);
         }
 
         .badge-done {
-            background: rgba(100, 116, 139, 0.3);
-            color: #94a3b8;
+            background: rgba(83, 107, 90, 0.2);
+            color: var(--text-3);
         }
 
-        /* Updates & Tips */
-        .updates-grid {
+        /* ── ANNOUNCEMENTS ── */
+        .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.2rem;
+            gap: 1rem;
             margin-top: 2rem;
         }
 
-        .update-card {
-            background: rgba(15, 26, 18, 0.7);
-            border-radius: 20px;
-            overflow: hidden;
+        .ann-card {
+            background: var(--surface-2);
+            border-radius: var(--r-lg);
             border: 1px solid var(--border);
+            overflow: hidden;
+            transition: 0.25s;
         }
 
-        .update-card-img {
+        .ann-card:hover {
+            border-color: var(--border-hi);
+            transform: translateY(-2px);
+        }
+
+        .ann-card-img {
             width: 100%;
-            height: 140px;
+            height: 130px;
             object-fit: cover;
         }
 
-        .update-card-body {
+        .ann-card-body {
             padding: 1rem;
         }
 
-        .update-card-title {
-            font-weight: 700;
-            font-family: var(--font-display);
-            margin-bottom: 4px;
+        .ann-date {
+            font-size: 0.7rem;
+            color: var(--text-3);
+            margin-bottom: 0.3rem;
         }
 
+        .ann-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .ann-msg {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            line-height: 1.5;
+        }
+
+        /* ── TIPS ── */
         .tips-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.2rem;
+            gap: 1rem;
+            margin-top: 2rem;
         }
 
         .tip-card {
-            background: rgba(15, 26, 18, 0.7);
+            background: var(--surface-2);
             padding: 1.2rem;
-            border-radius: 20px;
+            border-radius: var(--r-lg);
             border: 1px solid var(--border);
+            transition: 0.25s;
+        }
+
+        .tip-card:hover {
+            border-color: var(--border-hi);
         }
 
         .tip-icon {
-            font-size: 1.8rem;
-            margin-bottom: 0.8rem;
-            display: block;
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
         }
 
-        /* Report */
-        .report-layout {
+        .tip-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .tip-desc {
+            font-size: 0.8rem;
+            color: var(--text-2);
+        }
+
+        /* ── REPORT FORM ── */
+        .report-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1.2fr;
             gap: 2rem;
             margin-top: 2rem;
         }
 
-        .report-form-card {
-            background: rgba(15, 26, 18, 0.8);
+        .report-info-types {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .rtype {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--surface-2);
+            padding: 0.85rem 1rem;
+            border-radius: var(--r);
+            border: 1px solid var(--border);
+        }
+
+        .rtype-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .rtype-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .rtype-desc {
+            font-size: 0.75rem;
+            color: var(--text-2);
+        }
+
+        .form-card {
+            background: var(--surface);
+            border-radius: var(--r-xl);
+            border: 1px solid var(--border-hi);
             padding: 1.5rem;
-            border-radius: 24px;
-            border: 1px solid var(--border-glow);
+        }
+
+        .form-card h3 {
+            font-weight: 800;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-2);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            display: block;
+            margin-bottom: 0.4rem;
         }
 
         .form-control {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.35);
             border: 1px solid var(--border);
-            padding: 0.8rem;
-            border-radius: 12px;
+            padding: 0.75rem;
+            border-radius: var(--r);
             color: var(--text);
-            font-family: var(--font-body);
+            font-family: var(--ff-display);
+            font-size: 0.85rem;
+            outline: none;
+            width: 100%;
+            -webkit-appearance: none;
         }
 
-        .btn-primary {
-            background: var(--glow);
-            color: #0a0f0c;
-            font-weight: 700;
-            padding: 0.8rem;
-            border-radius: 40px;
-            width: 100%;
-            border: none;
+        .form-control:focus {
+            border-color: var(--green);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .photo-drop {
+            border: 2px dashed var(--border);
+            border-radius: var(--r);
+            padding: 1rem;
+            text-align: center;
             cursor: pointer;
             transition: 0.2s;
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.05);
+        .photo-drop:hover,
+        .photo-drop.drag {
+            border-color: var(--border-hi);
+            background: var(--green-dim);
         }
 
-        footer {
-            background: rgba(10, 15, 12, 0.9);
-            padding: 1.5rem 2rem;
+        .photo-drop input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .photo-drop-icon {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .photo-drop-label {
+            font-size: 0.78rem;
+            color: var(--text-2);
+        }
+
+        .photo-drop-sub {
+            font-size: 0.68rem;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+
+        .photo-preview-wrap {
+            display: none;
+            margin-top: 8px;
+            position: relative;
+            border-radius: var(--r);
+            overflow: hidden;
+        }
+
+        .photo-preview-wrap img {
+            width: 100%;
+            max-height: 160px;
+            object-fit: cover;
+            border-radius: var(--r);
+            display: block;
+        }
+
+        .photo-preview-remove {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(5, 13, 7, 0.85);
+            color: var(--red);
+            border: 1px solid var(--red);
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .photo-preview-remove:hover {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .loc-row {
             display: flex;
-            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 0.6rem 0.8rem;
+            font-size: 0.75rem;
+            color: var(--text-2);
+        }
+
+        .loc-row .loc-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-3);
+            flex-shrink: 0;
+        }
+
+        .loc-row.got {
+            border-color: var(--border-hi);
+            color: var(--green);
+        }
+
+        .loc-row.got .loc-dot {
+            background: var(--green);
+        }
+
+        .loc-row.err {
+            border-color: rgba(248, 113, 113, 0.3);
+            color: var(--red);
+        }
+
+        .loc-row.err .loc-dot {
+            background: var(--red);
+        }
+
+        .loc-get-btn {
+            margin-left: auto;
+            padding: 3px 10px;
+            border-radius: 40px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            background: var(--green-dim);
+            color: var(--green);
+            border: 1px solid var(--border-hi);
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: var(--ff-display);
+            white-space: nowrap;
+            min-height: 30px;
+        }
+
+        .loc-get-btn:hover {
+            background: var(--green-mid);
+        }
+
+        .btn-submit {
+            background: var(--green);
+            color: var(--bg);
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 0.85rem;
+            border: none;
+            border-radius: 40px;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.2s;
+            min-height: 48px;
+            touch-action: manipulation;
+        }
+
+        .btn-submit:hover {
+            filter: brightness(1.08);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .char-count {
+            font-size: 0.65rem;
+            color: var(--text-3);
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            padding: 1.5rem;
+            background: rgba(5, 13, 7, 0.95);
             border-top: 1px solid var(--border);
+            display: flex;
             flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
             gap: 1rem;
         }
 
-        /* RESPONSIVE - PREVENTS MAP SQUISHING ON ALL DEVICES */
-        @media (max-width: 900px) {
-            .hero-grid {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
+        .footer-brand {
+            font-weight: 800;
+            color: var(--green);
+        }
+
+        .footer-copy {
+            font-size: 0.75rem;
+            color: var(--text-3);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .footer-links a {
+            color: var(--text-3);
+            text-decoration: none;
+            font-size: 0.75rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--green);
+        }
+
+        /* ── TOAST ── */
+        #toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-2);
+            border: 1px solid var(--border-hi);
+            color: var(--text);
+            padding: 0.75rem 1.5rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 9999;
+            transition: transform 0.3s;
+            white-space: nowrap;
+            max-width: 90vw;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── MODAL ── */
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(5, 13, 7, 0.9);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+            padding: 1rem;
+        }
+
+        .modal-bg.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: var(--bg-1);
+            border: 1px solid var(--border-hi);
+            border-radius: var(--r-xl);
+            padding: 1.5rem;
+            max-width: 380px;
+            width: 100%;
+        }
+
+        .modal-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-title {
+            font-weight: 800;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-msg {
+            font-size: 0.85rem;
+            color: var(--text-2);
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        .modal-preview-img {
+            width: 100%;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .modal-loc {
+            font-size: 0.7rem;
+            font-family: var(--ff-mono);
+            color: var(--green);
+            background: var(--green-dim);
+            padding: 5px 10px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 0.7rem;
+            border-radius: 40px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            min-height: 46px;
+        }
+
+        .modal-cancel {
+            background: var(--surface-2);
+            color: var(--text-2);
+            border: 1px solid var(--border);
+        }
+
+        .modal-confirm {
+            background: var(--green);
+            color: var(--bg);
+        }
+
+        /* ── ANIMATIONS ── */
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: .35;
+                transform: scale(.8)
             }
 
+            50% {
+                opacity: 1;
+                transform: scale(1.2)
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+
+        .reveal.in {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* Leaflet overrides */
+        .leaflet-container {
+            background: var(--bg-2) !important;
+            font-family: var(--ff-display);
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-1) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--border-hi) !important;
+            border-radius: 12px !important;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--bg-1) !important;
+        }
+
+        /* ══════════════════════════════════════
+           RESPONSIVE — Tablets
+        ══════════════════════════════════════ */
+        @media (max-width: 900px) {
+
+            .hero-grid,
             .about-grid,
-            .report-layout {
+            .report-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -572,101 +1459,340 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .pickup-row {
-                grid-template-columns: 1fr;
-                gap: 0.5rem;
-            }
-
-            nav ul {
+            .nav-links {
                 display: none;
             }
 
-            .nav-hamburger {
+            .nav-logout {
+                display: none !important;
+            }
+
+            .nav-burger {
                 display: flex;
             }
 
             #map {
                 height: 280px;
-                min-height: 250px;
             }
         }
 
-        @media (max-width: 640px) {
-            section {
-                padding: 3rem 1rem;
+        /* ══════════════════════════════════════
+           RESPONSIVE — Mobile (600px)
+        ══════════════════════════════════════ */
+        @media (max-width: 600px) {
+            #home {
+                padding: calc(var(--nav-h) + 1rem) 1rem 2rem;
+            }
+
+            .section-pad {
+                padding: 2.5rem 1rem;
             }
 
             .tips-grid {
                 grid-template-columns: 1fr;
             }
 
-            .hero-img-frame img {
-                height: 150px;
+            .pickup-row {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto;
+                gap: 0.75rem;
+                padding: 0.9rem 1rem;
+            }
+
+            .pickup-row>div:last-child {
+                grid-column: 1/-1;
+            }
+
+            .hero-desc {
+                max-width: 100%;
+                font-size: 0.9rem;
+            }
+
+            .map-toolbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.6rem;
+            }
+
+            .map-toolbar-btns {
+                width: 100%;
             }
 
             #map {
                 height: 240px;
-                min-height: 220px;
             }
 
-            .hero-title {
-                font-size: clamp(2rem, 10vw, 3rem);
-            }
-        }
-
-        @media (max-width: 480px) {
-            #map {
-                height: 200px;
-                min-height: 200px;
+            .cards-grid {
+                grid-template-columns: 1fr;
             }
 
-            .hero-map-label {
-                font-size: 0.6rem;
-            }
-
-            .about-img img {
-                height: 200px;
+            .section-title {
+                font-size: clamp(1.6rem, 7vw, 2.4rem);
             }
 
             footer {
                 flex-direction: column;
                 text-align: center;
+                padding: 1.25rem 1rem;
+            }
+
+            .footer-links {
+                justify-content: center;
             }
         }
 
-        .live-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: var(--glow);
-            border-radius: 50%;
-            margin-right: 6px;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 0.4;
-                transform: scale(0.8);
+        /* ══════════════════════════════════════
+           RESPONSIVE — Small phones (400px)
+        ══════════════════════════════════════ */
+        @media (max-width: 420px) {
+            :root {
+                --nav-h: 56px;
             }
 
-            50% {
-                opacity: 1;
-                transform: scale(1.2);
+            .site-nav {
+                padding: 0 0.875rem;
+            }
+
+            .nav-brand {
+                font-size: 0.9rem;
+                gap: 0.4rem;
+            }
+
+            .nav-brand-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 0.85rem;
+                border-radius: 7px;
+            }
+
+            #home {
+                padding: calc(var(--nav-h) + 0.875rem) 0.875rem 1.75rem;
+            }
+
+            .section-pad {
+                padding: 2rem 0.875rem;
+            }
+
+            .hero-h1 {
+                font-size: clamp(1.65rem, 8vw, 2.4rem);
+            }
+
+            .hero-desc {
+                font-size: 0.85rem;
+            }
+
+            .hero-stats {
+                gap: 1.25rem;
+            }
+
+            .hero-stat-n {
+                font-size: 1.4rem;
+            }
+
+            .hero-stat-l {
+                font-size: 0.65rem;
+            }
+
+            .truck-card img {
+                height: 120px;
+            }
+
+            .truck-status {
+                padding: 0.55rem 0.75rem;
+                gap: 0.6rem;
+                bottom: 8px;
+                left: 8px;
+                right: 8px;
+            }
+
+            .truck-status-icon {
+                width: 30px;
+                height: 30px;
+                font-size: 0.95rem;
+                border-radius: 8px;
+            }
+
+            .truck-status-label {
+                font-size: 0.6rem;
+            }
+
+            #todayTruck {
+                font-size: 0.78rem;
+            }
+
+            #map {
+                height: 200px;
+            }
+
+            .map-toolbar {
+                padding: 0.6rem 0.75rem;
+            }
+
+            .map-toolbar-left {
+                font-size: 0.65rem;
+            }
+
+            .map-btn {
+                font-size: 0.64rem;
+                padding: 0.35rem 0.6rem;
+                min-height: 32px;
+            }
+
+            .location-info {
+                font-size: 0.64rem;
+                padding: 0.6rem 0.75rem;
+            }
+
+            .feat {
+                padding: 0.875rem;
+                gap: 0.75rem;
+            }
+
+            .feat-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+
+            .feat-title {
+                font-size: 0.85rem;
+            }
+
+            .feat-desc {
+                font-size: 0.75rem;
+            }
+
+            .pickup-row {
+                padding: 0.8rem 0.875rem;
+                gap: 0.5rem;
+            }
+
+            .pickup-date {
+                font-size: 0.82rem;
+            }
+
+            .form-card {
+                padding: 1.15rem;
+                border-radius: var(--r-lg);
+            }
+
+            .form-card h3 {
+                font-size: 1rem;
+            }
+
+            .form-control {
+                font-size: 16px;
+                /* prevents iOS zoom on focus */
+            }
+
+            .rtype {
+                padding: 0.75rem 0.875rem;
+                gap: 0.6rem;
+            }
+
+            .rtype-label {
+                font-size: 0.8rem;
+            }
+
+            .rtype-desc {
+                font-size: 0.7rem;
+            }
+
+            .btn-submit {
+                font-size: 0.875rem;
+                padding: 0.8rem;
+            }
+
+            .section-title {
+                font-size: clamp(1.45rem, 9vw, 2rem);
+            }
+
+            .section-eyebrow {
+                font-size: 0.65rem;
+            }
+
+            .accent-bar {
+                margin-bottom: 1.5rem;
+            }
+
+            .ann-card-body {
+                padding: 0.875rem;
+            }
+
+            .ann-title {
+                font-size: 0.88rem;
+            }
+
+            .ann-msg {
+                font-size: 0.76rem;
+            }
+
+            .tip-card {
+                padding: 1rem;
+            }
+
+            .tip-title {
+                font-size: 0.85rem;
+            }
+
+            .tip-desc {
+                font-size: 0.75rem;
+            }
+
+            .modal {
+                padding: 1.25rem;
+                border-radius: var(--r-lg);
+            }
+
+            .modal-title {
+                font-size: 1rem;
+            }
+
+            .modal-msg {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* ── Tiny phones (360px and below) ── */
+        @media (max-width: 360px) {
+            #home {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .section-pad {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .hero-stats {
+                gap: 1rem;
+                flex-wrap: nowrap;
+            }
+
+            .hero-stat-n {
+                font-size: 1.25rem;
+            }
+
+            .map-toolbar-btns {
+                gap: 0.3rem;
+            }
+
+            .map-btn {
+                font-size: 0.6rem;
+                padding: 0.3rem 0.5rem;
             }
         }
     </style>
 </head>
 
 <body>
-
-    <nav>
-        <div class="nav-logo">
-            <div class="nav-logo-icon">♻</div> Jose Dalman WM
-        </div>
-        <ul>
+    <nav class="site-nav">
+        <a href="#home" class="nav-brand">
+            <div class="nav-brand-icon">♻</div>
+            Jose Dalman WM
+        </a>
+        <ul class="nav-links">
             <li><a href="#home">Home</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#pickup">Schedule</a></li>
@@ -674,96 +1800,216 @@
             <li><a href="#tips">Tips</a></li>
             <li><a href="#report">Report</a></li>
         </ul>
-        <a href="/login.html" class="nav-logout">Logout</a>
-        <button class="nav-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+        <div class="nav-right">
+            <a href="/login.html" class="nav-logout" id="desktopLogout">Logout</a>
+            <button class="nav-burger" id="burgerBtn" aria-label="Open menu" aria-expanded="false"
+                aria-controls="mobileDrawer">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </nav>
 
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="#home">Home</a><a href="#about">About</a><a href="#pickup">Schedule</a>
-        <a href="#updates">Updates</a><a href="#tips">Tips</a><a href="#report">Report</a>
-        <a href="/login.html">Logout</a>
+    <!-- ══════════════ MOBILE DRAWER ══════════════ -->
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+    <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation menu">
+        <div class="drawer-handle"></div>
+
+
+        <nav class="drawer-nav" aria-label="Mobile navigation">
+            <a href="#home" class="drawer-link">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9.5 12 3l9 6.5"></path>
+                        <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"></path>
+                    </svg>
+                </div>
+                <span>Home</span>
+                <span class="drawer-link-arrow">›</span>
+            </a>
+            <a href="#about" class="drawer-link">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <line x1="12" y1="11" x2="12" y2="16"></line>
+                        <circle cx="12" cy="7.5" r="0.6" fill="currentColor" stroke="none"></circle>
+                    </svg>
+                </div>
+                <span>About</span>
+                <span class="drawer-link-arrow">›</span>
+            </a>
+            <a href="#pickup" class="drawer-link">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="17" rx="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                    </svg>
+                </div>
+                <span>Schedule</span>
+                <span class="drawer-link-arrow">›</span>
+            </a>
+            <a href="#updates" class="drawer-link">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.7 21a1.99 1.99 0 0 1-3.4 0"></path>
+                    </svg>
+                </div>
+                <span>Updates</span>
+                <span class="drawer-link-arrow">›</span>
+            </a>
+            <a href="#tips" class="drawer-link">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z">
+                        </path>
+                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+                    </svg>
+                </div>
+                <span>Eco Tips</span>
+                <span class="drawer-link-arrow">›</span>
+            </a>
+            <a href="#report" class="drawer-link">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m21.7 18-8-14.3a2 2 0 0 0-3.4 0l-8 14.3A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <span>Report Issue</span>
+                <span class="drawer-link-arrow">›</span>
+            </a>
+            <!-- Logout link inside drawer -->
+            <a href="/login.html" class="drawer-link"
+                style="margin-top:12px;border-top:1px solid var(--border);border-radius:14px;padding-top:14px;">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <span style="color:var(--green);font-weight:600;">Logout</span>
+                <span class="drawer-link-arrow">›</span>
+            </a>
+        </nav>
     </div>
 
+    <!-- ══════════════ HOME / MAP ══════════════ -->
     <section id="home">
-        <div class="section-inner hero-grid">
+        <div class="inner hero-grid">
             <div class="hero-text reveal">
-                <div class="section-label">Resident Portal</div>
-                <h1 class="hero-title"><span class="line1">Jose Dalman</span><span class="line2">Waste
-                        Management</span><span class="line3">Portal</span></h1>
+                <div class="hero-eyebrow">
+                    <span class="hero-badge"><span class="live-dot"></span>&nbsp;Live Tracking Active</span>
+                </div>
+                <h1 class="hero-h1">
+                    <span>Jose Dalman</span><br>
+                    <span class="g">Waste</span>
+                    <span class="o">Management</span>
+                </h1>
                 <p class="hero-desc">Track garbage trucks in real-time, stay informed about your collection schedule,
                     and help keep your community clean.</p>
                 <div class="hero-stats">
                     <div>
-                        <div class="hero-stat-num">24/7</div>
-                        <div class="hero-stat-label">Live Tracking</div>
+                        <div class="hero-stat-n">24/7</div>
+                        <div class="hero-stat-l">Live Tracking</div>
                     </div>
                     <div>
-                        <div class="hero-stat-num">100%</div>
-                        <div class="hero-stat-label">Coverage</div>
+                        <div class="hero-stat-n">100%</div>
+                        <div class="hero-stat-l">Coverage</div>
                     </div>
                     <div>
-                        <div class="hero-stat-num">&lt;2min</div>
-                        <div class="hero-stat-label">Report Time</div>
+                        <div class="hero-stat-n">&lt;2min</div>
+                        <div class="hero-stat-l">Report Time</div>
                     </div>
                 </div>
             </div>
             <div class="hero-visual reveal">
-                <div class="hero-img-frame">
+                <div class="truck-card">
                     <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80"
-                        alt="waste truck">
-                    <div class="hero-truck-card">
-                        <div class="hero-truck-label"><span class="live-dot"></span> Live Truck Status</div>
-                        <div id="todayTruck">Loading...</div>
+                        alt="Waste truck">
+                    <div class="truck-status">
+                        <div class="truck-status-icon">🚛</div>
+                        <div>
+                            <div class="truck-status-label"><span class="live-dot"></span>&nbsp;Live Truck Status</div>
+                            <div id="todayTruck">Loading...</div>
+                        </div>
                     </div>
                 </div>
-                <div class="hero-map-panel">
-                    <div class="hero-map-label">📍 Real-time GPS Location</div>
+                <div class="map-panel">
+                    <div class="map-toolbar">
+                        <div class="map-toolbar-left">📍 Real-time GPS</div>
+                        <div class="map-toolbar-btns">
+                            <button class="map-btn active" id="btnStreet" onclick="setTile('street')">🗺 Map</button>
+                            <button class="map-btn" id="btnSat" onclick="setTile('satellite')">🛰 Sat</button>
+                            <button class="map-btn" id="btnCenter" onclick="centerOnUser()">📍 Me</button>
+                            <button class="map-btn" id="btnShare" onclick="toggleShareLocation()">📤 Share</button>
+                        </div>
+                    </div>
                     <div id="map"></div>
+                    <div class="location-info" id="locationInfo">
+                        <span>📍 Getting your location…</span>
+                        <span id="locAccuracy"></span>
+                    </div>
+                    <div class="location-info" id="distanceHUD" style="margin-top:4px;display:none;">
+                        <span id="distanceText">🚛 Calculating distance…</span>
+                        <span id="shareStatus" style="color:var(--text-3);font-size:0.65rem;">Sharing: OFF</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="about">
-        <div class="section-inner">
+    <!-- ══════════════ ABOUT ══════════════ -->
+    <section id="about" class="section-pad section-alt">
+        <div class="inner">
             <div class="reveal">
-                <div class="section-label">Our Mission</div>
-                <h2 class="section-title">Waste Management<br><span>Reinvented</span></h2>
-                <div class="glow-line"></div>
+                <div class="section-eyebrow">Our Mission</div>
+                <h2 class="section-title">Waste Management<br><em>Reinvented</em></h2>
+                <div class="accent-bar"></div>
             </div>
             <div class="about-grid">
-                <div class="about-img reveal"><img
-                        src="https://images.unsplash.com/photo-1581093588401-1ec91b9d2b9b?auto=format&fit=crop&w=1000&q=80"
-                        alt="collection"></div>
-                <div class="about-features reveal">
-                    <div class="feature-item">
-                        <div class="feature-icon">🛰️</div>
+                <div class="about-img-wrap reveal">
+                    <img src="/images/images.jpeg" alt="Waste collection">
+                </div>
+                <div class="features reveal">
+                    <div class="feat">
+                        <div class="feat-icon">🛰️</div>
                         <div>
-                            <div class="feature-title">Real-Time GPS Tracking</div>
-                            <div class="feature-desc">Monitor garbage truck's exact location — updated every 10 seconds.
-                            </div>
+                            <div class="feat-title">Real-Time GPS Tracking</div>
+                            <div class="feat-desc">Monitor the garbage truck's exact location — updated every 10
+                                seconds.</div>
                         </div>
                     </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">📅</div>
+                    <div class="feat">
+                        <div class="feat-icon">📅</div>
                         <div>
-                            <div class="feature-title">Smart Scheduling</div>
-                            <div class="feature-desc">Personalized pickup schedules based on your neighborhood.</div>
+                            <div class="feat-title">Smart Scheduling</div>
+                            <div class="feat-desc">Personalized pickup schedules based on your neighborhood.</div>
                         </div>
                     </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">⚡</div>
+                    <div class="feat">
+                        <div class="feat-icon">⚡</div>
                         <div>
-                            <div class="feature-title">Instant Reporting</div>
-                            <div class="feature-desc">Report missed pickups or overflowing bins in under two minutes.
-                            </div>
+                            <div class="feat-title">Instant Reporting</div>
+                            <div class="feat-desc">Report missed pickups or overflowing bins in under two minutes.</div>
                         </div>
                     </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">🔔</div>
+                    <div class="feat">
+                        <div class="feat-icon">🔔</div>
                         <div>
-                            <div class="feature-title">Community Alerts</div>
-                            <div class="feature-desc">Stay informed with real-time announcements.</div>
+                            <div class="feat-title">Community Alerts</div>
+                            <div class="feat-desc">Stay informed with real-time announcements and updates.</div>
                         </div>
                     </div>
                 </div>
@@ -771,92 +2017,160 @@
         </div>
     </section>
 
-    <section id="pickup">
-        <div class="section-inner">
+    <!-- ══════════════ SCHEDULE ══════════════ -->
+    <section id="pickup" class="section-pad">
+        <div class="inner">
             <div class="reveal">
-                <div class="section-label">Collection Schedule</div>
-                <h2 class="section-title">Your Pickup<br><span>Timeline</span></h2>
-                <div class="glow-line"></div>
+                <div class="section-eyebrow">Collection Schedule</div>
+                <div class="section-header">
+                    <h2 class="section-title" style="margin-bottom:0">Your Pickup <em>Timeline</em></h2>
+                    <button class="see-all-btn" onclick="toggleScheduleAll()">See all</button>
+                </div>
+                <div class="accent-bar"></div>
             </div>
-            <div class="schedule-grid" id="scheduleCards"></div>
+            <div class="schedule-timeline reveal" id="scheduleCards">
+                <p style="color:var(--text-2);">Loading schedule…</p>
+            </div>
         </div>
     </section>
 
-    <section id="updates">
-        <div class="section-inner">
+    <!-- ══════════════ ANNOUNCEMENTS ══════════════ -->
+    <section id="updates" class="section-pad section-alt">
+        <div class="inner">
             <div class="reveal">
-                <div class="section-label">Community Board</div>
-                <h2 class="section-title">Latest<br><span>Announcements</span></h2>
-                <div class="glow-line"></div>
+                <div class="section-header"
+                    style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+                    <div>
+                        <div class="section-eyebrow">Community Board</div>
+                        <h2 class="section-title" style="margin-bottom:0">Latest <em>Announcements</em></h2>
+                    </div>
+                    <button class="see-all-btn" id="annSeeAll" onclick="toggleAnnAll()">See all</button>
+                </div>
+                <div class="accent-bar"></div>
             </div>
-            <div class="updates-grid" id="announcementCards"></div>
+            <div class="cards-grid" id="announcementCards">
+                <p style="color:var(--text-2);">Loading announcements…</p>
+            </div>
         </div>
     </section>
 
-    <section id="tips">
-        <div class="section-inner">
+    <!-- ══════════════ TIPS ══════════════ -->
+    <section id="tips" class="section-pad">
+        <div class="inner">
             <div class="reveal">
-                <div class="section-label">Green Living</div>
-                <h2 class="section-title">Eco Tips &<br><span>Guides</span></h2>
-                <div class="glow-line"></div>
+                <div class="section-eyebrow">Green Living</div>
+                <h2 class="section-title">Eco Tips &amp;<br><em>Guides</em></h2>
+                <div class="accent-bar"></div>
             </div>
             <div class="tips-grid">
-                <div class="tip-card"><span class="tip-icon">♻️</span>
+                <div class="tip-card">
+                    <span class="tip-icon">♻️</span>
                     <div class="tip-title">Segregate Your Waste</div>
                     <p class="tip-desc">Separate wet, dry, and hazardous waste for efficient processing.</p>
                 </div>
-                <div class="tip-card"><span class="tip-icon">🌱</span>
+                <div class="tip-card">
+                    <span class="tip-icon">🌱</span>
                     <div class="tip-title">Compost Organics</div>
-                    <p class="tip-desc">Turn food scraps into natural fertilizer, reducing methane.</p>
+                    <p class="tip-desc">Turn food scraps into natural fertilizer, reducing methane emissions.</p>
                 </div>
-                <div class="tip-card"><span class="tip-icon">🚨</span>
+                <div class="tip-card">
+                    <span class="tip-icon">🚨</span>
                     <div class="tip-title">Report Overflows Quickly</div>
-                    <p class="tip-desc">Use the report tool to alert our team instantly.</p>
+                    <p class="tip-desc">Use the report tool below to alert our team instantly.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="report">
-        <div class="section-inner">
+    <!-- ══════════════ REPORT ══════════════ -->
+    <section id="report" class="section-pad section-alt">
+        <div class="inner">
             <div class="reveal">
-                <div class="section-label">Issue Reporting</div>
-                <h2 class="section-title">Something<br><span>Wrong?</span></h2>
-                <div class="glow-line"></div>
+                <div class="section-eyebrow">Issue Reporting</div>
+                <h2 class="section-title">Something<br><em>Wrong?</em></h2>
+                <div class="accent-bar"></div>
             </div>
-            <div class="report-layout">
+            <div class="report-grid">
                 <div class="reveal">
-                    <p class="section-sub" style="margin-bottom:1rem">Quickly report missed pickup, overflowing bin, or
-                        illegal dumping.</p>
-                    <div class="report-types">
-                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.8rem;">
-                            <div style="width:10px;height:10px;background:var(--warn);border-radius:50%"></div> Missed
-                            Pickup
+                    <p style="color:var(--text-2);margin-bottom:1.25rem;">Spotted a problem? Report it in under two
+                        minutes and our team will respond promptly.</p>
+                    <div class="report-info-types">
+                        <div class="rtype">
+                            <div class="rtype-dot" style="background:var(--amber)"></div>
+                            <div>
+                                <div class="rtype-label">Missed Pickup</div>
+                                <div class="rtype-desc">Your scheduled collection didn't happen</div>
+                            </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.8rem;">
-                            <div style="width:10px;height:10px;background:var(--danger);border-radius:50%"></div>
-                            Illegal Dumping
+                        <div class="rtype">
+                            <div class="rtype-dot" style="background:var(--red)"></div>
+                            <div>
+                                <div class="rtype-label">Illegal Dumping</div>
+                                <div class="rtype-desc">Unauthorized waste disposal spotted</div>
+                            </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:0.5rem;">
-                            <div style="width:10px;height:10px;background:var(--glow);border-radius:50%"></div>
-                            Overflowing Bin
+                        <div class="rtype">
+                            <div class="rtype-dot" style="background:var(--green)"></div>
+                            <div>
+                                <div class="rtype-label">Overflowing Bin</div>
+                                <div class="rtype-desc">Bin is full and needs urgent collection</div>
+                            </div>
+                        </div>
+                        <div class="rtype">
+                            <div class="rtype-dot" style="background:var(--blue)"></div>
+                            <div>
+                                <div class="rtype-label">Other Issue</div>
+                                <div class="rtype-desc">Anything else that needs our attention</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="report-form-card reveal">
-                    <h3 style="font-family:var(--font-display); font-weight:700; margin-bottom:1rem;">Submit a Report
-                    </h3>
-                    <form id="reportForm">
-                        <div class="form-group"><label class="form-label"
-                                style="display:block; margin-bottom:4px;">Issue Type</label><select id="type"
-                                class="form-control">
-                                <option value="missed_pickup">Missed Pickup</option>
-                                <option value="illegal_dumping">Illegal Dumping</option>
-                                <option value="overflowing_bin">Overflowing Bin</option>
-                            </select></div>
-                        <div class="form-group"><label class="form-label">Description</label><textarea id="description"
-                                class="form-control" placeholder="Describe the issue in detail..."></textarea></div>
-                        <button type="submit" class="btn-primary">Submit Report →</button>
+
+                <div class="form-card reveal">
+                    <h3>Submit a Report</h3>
+                    <form id="reportForm" onsubmit="handleReportSubmit(event)">
+                        <div class="form-group">
+                            <label class="form-label">Issue Type</label>
+                            <select id="rtype" class="form-control">
+                                <option value="missed_pickup">🟡 Missed Pickup</option>
+                                <option value="illegal_dumping">🔴 Illegal Dumping</option>
+                                <option value="overflowing_bin">🟢 Overflowing Bin</option>
+                                <option value="other">🔵 Other Issue</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea id="rdesc" class="form-control" placeholder="Describe the issue clearly…"
+                                maxlength="500" required oninput="updateCharCount()"></textarea>
+                            <div class="char-count" id="charCount">0 / 500</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Photo <span
+                                    style="color:var(--text-3);font-weight:400;text-transform:none;">(optional)</span></label>
+                            <div class="photo-drop" id="photoDrop">
+                                <input type="file" id="photoInput" accept="image/*" capture="environment"
+                                    onchange="handlePhotoChange(event)">
+                                <div class="photo-drop-icon">📷</div>
+                                <div class="photo-drop-label">Tap to take a photo or choose from gallery</div>
+                                <div class="photo-drop-sub">JPG, PNG, WEBP · max 5 MB</div>
+                            </div>
+                            <div class="photo-preview-wrap" id="photoPreviewWrap">
+                                <img id="photoPreviewImg" src="" alt="Preview">
+                                <button type="button" class="photo-preview-remove" onclick="removePhoto()">✕
+                                    Remove</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Location <span
+                                    style="color:var(--text-3);font-weight:400;text-transform:none;">(auto-detected)</span></label>
+                            <div class="loc-row" id="locRow">
+                                <div class="loc-dot"></div>
+                                <span id="locText">Location not yet captured</span>
+                                <button type="button" class="loc-get-btn" onclick="captureLocation()">📍 Get
+                                    Location</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit" id="submitBtn">Submit Report →</button>
                     </form>
                 </div>
             </div>
@@ -864,276 +2178,676 @@
     </section>
 
     <footer>
-        <div class="footer-logo">♻ SmartWaste</div>
+        <div class="footer-brand">♻ SmartWaste</div>
         <div class="footer-copy">© 2026 Smart Waste Management · Jose Dalman, Zamboanga del Norte</div>
-        <div class="footer-links"><a href="#home">Home</a><a href="#about">About</a><a href="#pickup">Schedule</a><a
-                href="#report">Report</a></div>
+        <div class="footer-links">
+            <a href="#home">Home</a>
+            <a href="#about">About</a>
+            <a href="#pickup">Schedule</a>
+            <a href="#report">Report</a>
+        </div>
     </footer>
 
+    <div id="toast"></div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-bg" id="confirmModal">
+        <div class="modal">
+            <div class="modal-icon" id="modalIcon">📋</div>
+            <div class="modal-title" id="modalTitle">Confirm Report</div>
+            <div class="modal-msg" id="modalMsg">Are you sure you want to submit this report?</div>
+            <img class="modal-preview-img" id="modalPreviewImg" src="" alt="Report photo">
+            <div class="modal-loc" id="modalLoc"></div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-cancel" id="modalCancel">Cancel</button>
+                <button class="modal-btn modal-confirm" id="modalConfirm">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const token = localStorage.getItem("token");
-        if (!token) window.location.href = "/login.html";
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/login.html';
 
-        // Mobile menu
-        const hamburger = document.getElementById('hamburger');
-        const mobileMenu = document.getElementById('mobileMenu');
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('open');
-            mobileMenu.classList.toggle('open');
-            document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
-        });
-        document.querySelectorAll('.mobile-menu a').forEach(link => {
-            link.addEventListener('click', (e) => {
-                const href = link.getAttribute('href');
-                if (href && href.startsWith('#')) {
-                    e.preventDefault();
-                    const target = document.querySelector(href);
-                    mobileMenu.classList.remove('open');
-                    hamburger.classList.remove('open');
-                    document.body.style.overflow = '';
-                    setTimeout(() => target?.scrollIntoView({ behavior: 'smooth' }), 50);
-                }
-            });
-        });
+        /* ════════════════════════════════════════
+           BOTTOM SHEET DRAWER
+           Fixed: toggle instead of open-only, burger
+           animates to X, Escape closes, and resizing
+           back to desktop width auto-closes the drawer
+           so body scroll never gets stuck locked.
+        ════════════════════════════════════════ */
+        const burgerBtn = document.getElementById('burgerBtn');
+        const mobileDrawer = document.getElementById('mobileDrawer');
+        const drawerBackdrop = document.getElementById('drawerBackdrop');
+        const drawerClose = document.getElementById('drawerClose');
 
-        // Reveal animations
-        const observer = new IntersectionObserver(entries => entries.forEach(e => e.isIntersecting && e.target.classList.add('visible')), { threshold: 0.1 });
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        function openDrawer() {
+            mobileDrawer.classList.add('open');
+            drawerBackdrop.classList.add('open');
+            burgerBtn?.classList.add('open');
+            burgerBtn?.setAttribute('aria-expanded', 'true');
+            document.body.style.overflow = 'hidden';
+        }
 
-        // Active nav
-        const sections = ['home', 'about', 'pickup', 'updates', 'tips', 'report'];
-        window.addEventListener('scroll', () => {
-            let current = '';
-            sections.forEach(id => {
-                const el = document.getElementById(id);
-                if (el && window.scrollY >= el.offsetTop - 200) current = id;
-            });
-            document.querySelectorAll('nav ul a').forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${current}`));
-        });
+        function closeDrawer() {
+            mobileDrawer.classList.remove('open');
+            drawerBackdrop.classList.remove('open');
+            burgerBtn?.classList.remove('open');
+            burgerBtn?.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        }
 
-        document.querySelectorAll('nav a, footer a').forEach(a => {
-            a.addEventListener('click', (e) => {
-                const href = a.getAttribute('href');
-                if (href && href.startsWith('#')) {
-                    e.preventDefault();
-                    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
-                }
-            });
+        function toggleDrawer() {
+            if (mobileDrawer.classList.contains('open')) {
+                closeDrawer();
+            } else {
+                openDrawer();
+            }
+        }
+
+        burgerBtn?.addEventListener('click', toggleDrawer);
+        drawerClose?.addEventListener('click', closeDrawer);
+        drawerBackdrop?.addEventListener('click', closeDrawer);
+
+        /* Close on link tap */
+        mobileDrawer?.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', closeDrawer);
         });
 
-        // ========== MAP IMPLEMENTATION (Matches your backend API) ==========
-        let map, marker, currentTruckId, locationInterval;
+        /* Close on Escape key */
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeDrawer();
+        });
 
-        function initMap(lat, lng) {
+        /* Close automatically if the viewport grows past the
+           tablet/mobile breakpoint (rotation, resize, etc.) so
+           the drawer + locked body scroll never gets stuck */
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 900) closeDrawer();
+        });
+
+        /* Swipe right to close (panel slides in from the right) */
+        let touchStartX = 0;
+        mobileDrawer?.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+        mobileDrawer?.addEventListener('touchend', e => {
+            const delta = e.changedTouches[0].clientX - touchStartX;
+            if (delta > 60) closeDrawer();
+        }, { passive: true });
+
+        /* ════════════════════════════════════════
+           REVEAL ON SCROLL
+        ════════════════════════════════════════ */
+        const io = new IntersectionObserver(
+            entries => entries.forEach(e => e.isIntersecting && e.target.classList.add('in')),
+            { threshold: 0.1 }
+        );
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+        /* ════════════════════════════════════════
+           MAP STATE
+        ════════════════════════════════════════ */
+        let map, markerLayer, tileStreet, tileSat, tileRoadOverlay;
+        let currentTruckId, truckMarker, userMarker, userCircle;
+        let mrfMarkers = [];
+        let roadPolyline = null;
+        let pinMarkers = [];
+        let residentMarkers = {};
+        let activeTile = 'street';
+        let sharingLocation = false,
+            shareInterval = null;
+        let userLat = null,
+            userLng = null;
+        let truckLat = null,
+            truckLng = null;
+
+        tileStreet = L.tileLayer(
+            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM &amp; CARTO', subdomains: 'abcd', maxZoom: 20 }
+        );
+        tileSat = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 19 }
+        );
+        tileRoadOverlay = L.tileLayer(
+            'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, opacity: 0.8, pane: 'overlayPane' }
+        );
+
+        function initMap(lat = 8.2317, lng = 123.4018) {
             if (map) return;
-
-            // Better free map tiles recommendation:
-            // Option 1: CartoDB Voyager (clean, detailed, free) - BEST FOR REAL-TIME TRACKING
-            // Option 2: Stamen Toner (high contrast)
-            // Option 3: OpenStreetMap (default but slower)
-
-            map = L.map('map').setView([lat || 8.2317, lng || 123.4018], 14);
-
-            // RECOMMENDED: CartoDB Voyager - cleaner, faster, better for vehicle tracking
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 19,
-                minZoom: 3
-            }).addTo(map);
-
-            // Alternative high-detail free tile (uncomment to use MapTiler free plan):
-            // L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=YOUR_FREE_KEY', {
-            //     attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>'
-            // }).addTo(map);
+            map = L.map('map', { zoomControl: true, attributionControl: false }).setView([lat, lng], 14);
+            tileStreet.addTo(map);
+            markerLayer = L.layerGroup().addTo(map);
+            loadResidentLocations();
+            setInterval(loadResidentLocations, 30000);
         }
 
-        function placeMarker(lat, lng) {
-            if (!map) initMap(lat, lng);
-            if (marker) map.removeLayer(marker);
+        function setTile(mode) {
+            if (!map) return;
+            activeTile = mode;
+            if (mode === 'satellite') {
+                map.removeLayer(tileStreet);
+                tileSat.addTo(map);
+                tileRoadOverlay.addTo(map);
+                document.getElementById('btnStreet')?.classList.remove('active');
+                document.getElementById('btnSat')?.classList.add('active');
+            } else {
+                if (map.hasLayer(tileSat)) map.removeLayer(tileSat);
+                if (map.hasLayer(tileRoadOverlay)) map.removeLayer(tileRoadOverlay);
+                tileStreet.addTo(map);
+                document.getElementById('btnSat')?.classList.remove('active');
+                document.getElementById('btnStreet')?.classList.add('active');
+            }
+        }
 
-            const customIcon = L.divIcon({
-                html: `<div style="width: 18px; height: 18px; background: #4ade80; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px rgba(74,222,128,0.6), 0 0 16px rgba(74,222,128,0.5); animation: pulse 1.5s infinite;"></div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9],
-                className: 'custom-truck-marker'
+        function parseWaypointsJson(raw) {
+            if (!raw) return { road: [], pins: [], mrfs: [] };
+            try {
+                let data = typeof raw === "string" ? JSON.parse(raw) : raw;
+                if (Array.isArray(data)) {
+                    return {
+                        road: [],
+                        pins: data.map((wp, i) => ({ lat: parseFloat(wp.lat), lng: parseFloat(wp.lng), name: wp.name || `Stop ${i + 1}`, num: wp.stopNumber || (i + 1) })),
+                        mrfs: []
+                    };
+                }
+                const road = (data.road_path || data.road || []).map(v => ({ lat: parseFloat(v.lat), lng: parseFloat(v.lng) }));
+                const pins = (data.pin_stops || data.pins || []).map((p, i) => ({ lat: parseFloat(p.lat), lng: parseFloat(p.lng), name: p.name || `Stop ${i + 1}`, num: p.stopNumber || (i + 1) }));
+                const mrfs = (data.mrf_stops || data.mrf || []).map(m => ({ lat: parseFloat(m.lat), lng: parseFloat(m.lng), name: m.name || "MRF Stop" }));
+                return { road, pins, mrfs };
+            } catch (e) { console.error("parseWaypointsJson error:", e); return { road: [], pins: [], mrfs: [] }; }
+        }
+
+        function showRouteOnMap(routeData) {
+            if (!map) return;
+            if (roadPolyline) {
+                map.removeLayer(roadPolyline);
+                roadPolyline = null;
+            }
+            pinMarkers.forEach(m => map.removeLayer(m));
+            pinMarkers = [];
+            mrfMarkers.forEach(m => map.removeLayer(m));
+            mrfMarkers = [];
+            const { road, pins, mrfs } = routeData;
+            if (road.length >= 2) {
+                roadPolyline = L.polyline(road.map(v => [v.lat, v.lng]), { color: "#f5a623", weight: 4, opacity: 0.9, dashArray: "8 6" }).addTo(map);
+            }
+            pins.forEach((p, i) => {
+                const icon = L.divIcon({ html: `<div style="width:28px;height:28px;background:#1e2435;border:2px solid #5b9cf6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#5b9cf6;">${p.num}</div>`, iconSize: [28, 28], iconAnchor: [14, 14], className: '' });
+                pinMarkers.push(L.marker([p.lat, p.lng], { icon }).bindPopup(`<b>📍 Stop ${p.num}</b><br>${p.name}`).addTo(map));
             });
-
-            marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
-            map.setView([lat, lng], 15);
+            mrfs.forEach(m => {
+                const icon = L.divIcon({ html: `<div style="position:relative;width:42px;height:42px;display:flex;align-items:center;justify-content:center;"><div style="position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(45,212,160,.45);animation:mrfRing 2.4s ease-out infinite;"></div><div style="width:38px;height:38px;background:linear-gradient(135deg,#2dd4a0,#1aad82);border-radius:10px;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;position:relative;z-index:2;"><span style="font-size:18px">🏭</span></div></div>`, iconSize: [42, 42], iconAnchor: [21, 21], className: '' });
+                mrfMarkers.push(L.marker([m.lat, m.lng], { icon }).bindPopup(`<b style="color:#2dd4a0">🏭 ${m.name}</b><br>Material Recovery Facility`).addTo(map));
+            });
+            const allPoints = [...road.map(v => [v.lat, v.lng]), ...pins.map(p => [p.lat, p.lng]), ...mrfs.map(m => [m.lat, m.lng])];
+            if (allPoints.length) map.fitBounds(L.latLngBounds(allPoints).pad(0.15));
         }
+
+        function placeTruckMarker(lat, lng) {
+            truckLat = lat;
+            truckLng = lng;
+            if (!map) initMap(lat, lng);
+            if (truckMarker) { truckMarker.setLatLng([lat, lng]); } else {
+                const icon = L.divIcon({ html: `<div style="width:34px;height:34px;background:#f5a623;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(245,166,35,.35),0 0 18px rgba(245,166,35,.6);display:flex;align-items:center;justify-content:center;animation:truckPulse 2s ease-in-out infinite;"><span style="font-size:16px">🚛</span></div>`, iconSize: [34, 34], iconAnchor: [17, 17], className: '' });
+                truckMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).bindPopup('<b>🚛 Garbage Truck</b>').addTo(map);
+            }
+            updateDistanceHUD();
+        }
+
+        async function loadResidentLocations() {
+            if (!map) return;
+            try {
+                const res = await fetch('/api/resident/resident-locations', { headers: { Authorization: `Bearer ${token}` } });
+                const list = await res.json();
+                const freshIds = new Set(list.map(r => r.id));
+                Object.keys(residentMarkers).forEach(id => {
+                    if (!freshIds.has(parseInt(id))) {
+                        map.removeLayer(residentMarkers[id]);
+                        delete residentMarkers[id];
+                    }
+                });
+                list.forEach(r => {
+                    const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
+                    const icon = L.divIcon({ html: `<div style="width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;${fresh ? 'background:rgba(91,156,246,.25);box-shadow:0 0 10px rgba(91,156,246,.5);border-color:rgba(91,156,246,.5);' : 'background:rgba(61,69,88,.5);opacity:.6;'}"><span style="font-size:13px">🏠</span></div>`, iconSize: [30, 30], iconAnchor: [15, 15], className: '' });
+                    if (residentMarkers[r.id]) { residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon); } else { residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon }).bindPopup(`<b style="color:#5b9cf6">🏠 ${r.name}</b><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`).addTo(map); }
+                });
+            } catch (e) { console.warn('Resident locations failed', e); }
+        }
+
+        const markerStyles = document.createElement('style');
+        markerStyles.textContent = `
+        @keyframes truckPulse { 0%,100%{box-shadow:0 0 0 4px rgba(245,166,35,.35),0 0 18px rgba(245,166,35,.6)} 50%{box-shadow:0 0 0 8px rgba(245,166,35,.15),0 0 28px rgba(245,166,35,.4)} }
+        @keyframes mrfRing { 0%{transform:scale(.7);opacity:.8} 100%{transform:scale(1.6);opacity:0} }
+        `;
+        document.head.appendChild(markerStyles);
 
         async function loadTodayTruck() {
             try {
-                const res = await fetch("/api/resident/today-truck", {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
+                const res = await fetch('/api/resident/today-truck', { headers: { Authorization: `Bearer ${token}` } });
+                if (!res.ok) throw new Error();
                 const data = await res.json();
                 if (!data) {
-                    document.getElementById("todayTruck").innerHTML = "No truck assigned today.";
+                    document.getElementById('todayTruck').textContent = 'No truck assigned today.';
                     initMap();
-                    return;
+                    startUserTracking(); return;
                 }
-
                 currentTruckId = data.truck_id;
-                document.getElementById("todayTruck").innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
-
-                if (data.latitude && data.longitude) {
-                    initMap(data.latitude, data.longitude);
-                    placeMarker(data.latitude, data.longitude);
-                } else {
-                    initMap();
-                }
-
-                loadTruckLocation();
-
-                // Clear existing interval
-                if (locationInterval) clearInterval(locationInterval);
-                locationInterval = setInterval(loadTruckLocation, 10000);
+                document.getElementById('todayTruck').innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
+                if (data.route_id) {
+                    try {
+                        const routeRes = await fetch(`/api/resident/route-waypoints?route_id=${data.route_id}`, { headers: { Authorization: `Bearer ${token}` } });
+                        if (routeRes.ok) {
+                            const routeData = await routeRes.json();
+                            const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
+                            if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
+                                initMap(parsed.road[0]?.lat || data.latitude || 8.2317, parsed.road[0]?.lng || data.longitude || 123.4018);
+                                showRouteOnMap(parsed);
+                            } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
+                        } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
+                    } catch (e) { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
+                } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
+                if (data.latitude && data.longitude) placeTruckMarker(data.latitude, data.longitude);
+                startUserTracking();
+                pollTruckLocation();
+                setInterval(pollTruckLocation, 10000);
             } catch (err) {
-                console.error("Failed to load truck:", err);
-                document.getElementById("todayTruck").textContent = "Please login again.";
+                document.getElementById('todayTruck').textContent = 'Failed to load truck.';
                 initMap();
+                startUserTracking();
             }
         }
 
-        async function loadTruckLocation() {
+        async function pollTruckLocation() {
             if (!currentTruckId) return;
             try {
-                const res = await fetch(`/api/resident/truck/${currentTruckId}/location`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error();
+                const res = await fetch(`/api/resident/truck/${currentTruckId}/location`, { headers: { Authorization: `Bearer ${token}` } });
+                if (!res.ok) return;
                 const logs = await res.json();
-                if (logs && logs.length > 0) {
-                    const latest = logs[0];
-                    if (latest.latitude && latest.longitude) {
-                        placeMarker(latest.latitude, latest.longitude);
-                    }
+                if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) placeTruckMarker(logs[0].latitude, logs[0].longitude);
+            } catch (e) { console.warn('Truck poll failed', e); }
+        }
+
+        function haversineKm(lat1, lng1, lat2, lng2) {
+            const R = 6371,
+                dLat = (lat2 - lat1) * Math.PI / 180,
+                dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function updateDistanceHUD() {
+            if (userLat === null || truckLat === null) return;
+            const km = haversineKm(userLat, userLng, truckLat, truckLng);
+            const distanceText = km < 1 ? `🚛 Truck is ~${Math.round(km * 1000)} m away` : `🚛 Truck is ~${km.toFixed(2)} km away`;
+            const distanceEl = document.getElementById('distanceText');
+            if (distanceEl) distanceEl.textContent = distanceText;
+            const hudEl = document.getElementById('distanceHUD');
+            if (hudEl) hudEl.style.display = 'flex';
+        }
+
+        function centerOnUser() {
+            if (!map) { showToast('Map not ready', 'error'); return; }
+            navigator.geolocation?.getCurrentPosition(pos => {
+                map.setView([pos.coords.latitude, pos.coords.longitude], 16, { animate: true });
+                showToast(`Centered ±${Math.round(pos.coords.accuracy)}m`);
+            }, () => showToast('Unable to get location', 'error'));
+        }
+
+        function placeUserMarker(lat, lng, accuracy) {
+            if (!map) initMap(lat, lng);
+            userLat = lat;
+            userLng = lng;
+            if (userMarker) { userMarker.setLatLng([lat, lng]); } else {
+                const icon = L.divIcon({ html: `<div style="width:16px;height:16px;background:#3b82f6;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 4px rgba(59,130,246,0.35),0 0 14px rgba(59,130,246,0.5);"></div>`, iconSize: [16, 16], iconAnchor: [8, 8], className: '' });
+                userMarker = L.marker([lat, lng], { icon, zIndexOffset: 500 }).bindPopup('<b>📍 You</b>').addTo(map);
+            }
+            if (userCircle) { userCircle.setLatLng([lat, lng]).setRadius(accuracy || 30); } else { userCircle = L.circle([lat, lng], { radius: accuracy || 30, color: '#3b82f6', weight: 1, fillOpacity: 0.08 }).addTo(map); }
+            const locInfo = document.getElementById('locationInfo');
+            if (locInfo) locInfo.innerHTML = `<span>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><span id="locAccuracy">±${Math.round(accuracy || 30)}m</span>`;
+            updateDistanceHUD();
+        }
+
+        function startUserTracking() {
+            navigator.geolocation?.getCurrentPosition(pos => {
+                placeUserMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                if (!map) initMap(pos.coords.latitude, pos.coords.longitude);
+                else map.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: true });
+            }, null, { enableHighAccuracy: true });
+            setInterval(() => {
+                navigator.geolocation?.getCurrentPosition(pos => {
+                    placeUserMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                }, null, { enableHighAccuracy: true });
+            }, 20000);
+        }
+
+        function toggleShareLocation() {
+            const btn = document.getElementById('btnShare');
+            const status = document.getElementById('shareStatus');
+            sharingLocation = !sharingLocation;
+            if (sharingLocation) {
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.textContent = '📤 On';
                 }
-            } catch (err) {
-                console.error("Location fetch failed:", err);
+                if (status) {
+                    status.textContent = 'Sharing: ON';
+                    status.style.color = '#4ade80';
+                }
+                pushMyLocation();
+                shareInterval = setInterval(pushMyLocation, 15000);
+                showToast('Location sharing ON');
+            } else {
+                clearInterval(shareInterval);
+                shareInterval = null;
+                if (btn) {
+                    btn.classList.remove('active');
+                    btn.textContent = '📤 Share';
+                }
+                if (status) {
+                    status.textContent = 'Sharing: OFF';
+                    status.style.color = 'var(--text-3)';
+                }
+                showToast('Location sharing OFF');
             }
         }
+
+        async function pushMyLocation() {
+            navigator.geolocation?.getCurrentPosition(async pos => {
+                const { latitude, longitude, accuracy } = pos.coords;
+                placeUserMarker(latitude, longitude, accuracy);
+                try {
+                    await fetch('/api/resident/share-location', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ latitude, longitude })
+                    });
+                } catch (e) { console.warn('Share push failed', e); }
+            }, null, { enableHighAccuracy: true });
+        }
+
+        /* ════════════════════════════════════════
+           SCHEDULE — timeline + see all
+        ════════════════════════════════════════ */
+        let scheduleShowAll = false;
+        const SCHEDULE_LIMIT = 3;
 
         async function loadSchedule() {
+            const el = document.getElementById('scheduleCards');
+            if (!el) return;
             try {
-                const res = await fetch("/api/resident/pickup-schedule", {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await fetch('/api/resident/pickup-schedule', { headers: { Authorization: `Bearer ${token}` } });
                 if (!res.ok) throw new Error();
                 const data = await res.json();
-                const el = document.getElementById("scheduleCards");
-
-                if (!data.length) {
-                    el.innerHTML = '<p style="color:var(--text-muted);">No schedule available.</p>';
-                    return;
-                }
-
-                el.innerHTML = data.map(s => {
-                    const d = new Date(s.assigned_date);
-                    const upcoming = s.status === 'pending';
-                    return `<div class="pickup-row" style="animation: slideIn 0.4s ease forwards;">
-                    <div>
-                        <div class="pickup-date">${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                        <div class="pickup-date-sub">${d.toLocaleDateString('en-US', { weekday: 'long' })}</div>
-                    </div>
-                    <div class="pickup-meta">
-                        <span class="pickup-label">Truck</span>
-                        <strong>🚛 ${s.plate_number}</strong>
-                    </div>
-                    <div class="pickup-meta">
-                        <span class="pickup-label">Zone</span>
-                        <span>📍 ${s.zone_name}</span>
-                    </div>
-                    <div>
-                        <span class="badge ${upcoming ? 'badge-upcoming' : 'badge-done'}">${s.status}</span>
-                        <div style="font-size:0.7rem; margin-top:4px;">${s.pickup_type}</div>
-                    </div>
-                </div>`;
-                }).join('');
-            } catch (err) {
-                console.error(err);
-                document.getElementById("scheduleCards").innerHTML = '<p style="color:var(--text-muted);">Failed to load schedule.</p>';
-            }
+                if (!data.length) { el.innerHTML = '<p style="color:var(--text-2);">No schedule available.</p>'; return; }
+                window._scheduleData = data;
+                renderSchedule();
+            } catch { el.innerHTML = '<p style="color:var(--text-2);">Failed to load schedule.</p>'; }
         }
+
+        function renderSchedule() {
+            const el = document.getElementById('scheduleCards');
+            const data = window._scheduleData || [];
+            const today = new Date().toDateString();
+            const visible = scheduleShowAll ? data : data.slice(0, SCHEDULE_LIMIT);
+            el.innerHTML = visible.map((s, i) => {
+                const d = new Date(s.assigned_date);
+                const isToday = d.toDateString() === today;
+                const isDone = s.status !== 'pending';
+                const cls = isToday ? 'today' : isDone ? 'done' : 'upcoming';
+                const badge = isToday ? `<span class="badge" style="background:rgba(251,191,36,.15);color:var(--amber);border:1px solid rgba(251,191,36,.3);">Today</span>` :
+                    isDone ? `<span class="badge badge-done">${s.status}</span>` :
+                        `<span class="badge badge-upcoming">Upcoming</span>`;
+                const isLast = i === visible.length - 1;
+                return `<div class="timeline-item">
+                      <div class="tl-left">
+                        <div class="tl-dot ${cls}"></div>
+                        ${!isLast ? `<div class="tl-line"></div>` : ''}
+                      </div>
+                      <div class="tl-card ${cls}">
+                        <div class="tl-top">
+                          <div>
+                            <div class="tl-date">${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                            <div class="tl-day">${d.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                          </div>
+                          ${badge}
+                        </div>
+                        <div class="tl-meta">
+                          <span class="tl-meta-item">🚛 ${s.plate_number}</span>
+                          <span class="tl-meta-item">📍 ${s.zone_name}</span>
+                          <span class="tl-meta-item">♻ ${s.pickup_type}</span>
+                        </div>
+                      </div>
+                    </div>`;
+            }).join('');
+            const btn = document.querySelector('.see-all-btn');
+            if (btn) btn.textContent = scheduleShowAll ? 'Show less' : `See all (${data.length})`;
+        }
+
+        function toggleScheduleAll() {
+            scheduleShowAll = !scheduleShowAll;
+            renderSchedule();
+        }
+
+        /* ════════════════════════════════════════
+           ANNOUNCEMENTS — cleaner cards + see all
+        ════════════════════════════════════════ */
+        let annShowAll = false;
+        const ANN_LIMIT = 2;
 
         async function loadAnnouncements() {
+            const el = document.getElementById('announcementCards');
+            if (!el) return;
             try {
-                const res = await fetch("/api/resident/announcements", {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await fetch('/api/resident/announcements', { headers: { Authorization: `Bearer ${token}` } });
                 const data = await res.json();
-                const el = document.getElementById("announcementCards");
+                window._annData = data;
+                renderAnnouncements();
+            } catch { el.innerHTML = '<p style="color:var(--text-2);">Failed to load announcements.</p>'; }
+        }
 
-                el.innerHTML = data.length ? data.map(a => `
-                <div class="update-card">
-                    ${a.image_url ? `<img class="update-card-img" src="${a.image_url}" alt="">` : ''}
-                    <div class="update-card-body">
-                        <div class="update-card-date">${a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</div>
-                        <div class="update-card-title">${a.title}</div>
-                        <div class="update-card-msg">${a.message}</div>
-                    </div>
-                </div>
-            `).join('') : '<p style="color:var(--text-muted);">No announcements yet.</p>';
-            } catch (err) {
-                console.error(err);
-                document.getElementById("announcementCards").innerHTML = '<p style="color:var(--text-muted);">Failed to load announcements.</p>';
+        function renderAnnouncements() {
+            const el = document.getElementById('announcementCards');
+            const data = window._annData || [];
+            const visible = annShowAll ? data : data.slice(0, ANN_LIMIT);
+            el.innerHTML = data.length ? visible.map(a => `
+                <div class="ann-card">
+                  ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" onerror="this.style.display='none'">` : ''}
+                  <div class="ann-card-body">
+                    <div class="ann-date">${a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</div>
+                    <div class="ann-title">${a.title}</div>
+                    <div class="ann-msg" style="-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">${a.message}</div>
+                    <button onclick="expandAnn(this)" style="background:none;border:none;color:var(--green);font-size:0.75rem;padding:4px 0;cursor:pointer;font-family:var(--ff-display)">Read more ›</button>
+                  </div>
+                </div>`).join('') : '<p style="color:var(--text-2);">No announcements yet.</p>';
+            const btn = document.getElementById('annSeeAll');
+            if (btn) btn.textContent = annShowAll ? 'Show less' : `See all (${data.length})`;
+        }
+
+        function expandAnn(btn) {
+            const msg = btn.previousElementSibling;
+            msg.style.webkitLineClamp = msg.style.webkitLineClamp ? '' : '999';
+            btn.textContent = msg.style.webkitLineClamp ? 'Read more ›' : 'Show less ‹';
+        }
+
+        function toggleAnnAll() {
+            annShowAll = !annShowAll;
+            renderAnnouncements();
+        }
+
+        /* ════════════════════════════════════════
+           REPORT
+        ════════════════════════════════════════ */
+        let reportPhotoBase64 = null,
+            reportLat = null,
+            reportLng = null;
+
+        function updateCharCount() {
+            const len = document.getElementById('rdesc')?.value.length || 0;
+            const countEl = document.getElementById('charCount');
+            if (countEl) countEl.textContent = `${len} / 500`;
+        }
+
+        function handlePhotoChange(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Photo must be under 5 MB', 'error');
+                e.target.value = ''; return;
+            }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                reportPhotoBase64 = ev.target.result;
+                const previewImg = document.getElementById('photoPreviewImg');
+                const previewWrap = document.getElementById('photoPreviewWrap');
+                const dropZone = document.getElementById('photoDrop');
+                if (previewImg) previewImg.src = reportPhotoBase64;
+                if (previewWrap) previewWrap.style.display = 'block';
+                if (dropZone) dropZone.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePhoto() {
+            reportPhotoBase64 = null;
+            const photoInput = document.getElementById('photoInput');
+            const previewWrap = document.getElementById('photoPreviewWrap');
+            const dropZone = document.getElementById('photoDrop');
+            if (photoInput) photoInput.value = '';
+            if (previewWrap) previewWrap.style.display = 'none';
+            if (dropZone) dropZone.style.display = 'block';
+        }
+
+        function captureLocation() {
+            const row = document.getElementById('locRow');
+            const txt = document.getElementById('locText');
+            if (txt) txt.textContent = 'Getting location…';
+            navigator.geolocation?.getCurrentPosition(
+                pos => {
+                    reportLat = pos.coords.latitude;
+                    reportLng = pos.coords.longitude;
+                    if (row) row.className = 'loc-row got';
+                    if (txt) txt.textContent = `${reportLat.toFixed(5)}, ${reportLng.toFixed(5)}  ±${Math.round(pos.coords.accuracy)}m`;
+                    showToast('Location captured', 'success');
+                },
+                () => {
+                    if (row) row.className = 'loc-row err';
+                    if (txt) txt.textContent = 'Location unavailable';
+                    showToast('Could not get location', 'error');
+                }, { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        const TYPE_LABELS = { missed_pickup: 'Missed Pickup', illegal_dumping: 'Illegal Dumping', overflowing_bin: 'Overflowing Bin', other: 'Other Issue' };
+        const TYPE_ICONS = { missed_pickup: '🟡', illegal_dumping: '🔴', overflowing_bin: '🟢', other: '🔵' };
+
+        function handleReportSubmit(e) {
+            e.preventDefault();
+            const type = document.getElementById('rtype')?.value;
+            const desc = document.getElementById('rdesc')?.value.trim();
+            if (!desc) { showToast('Please describe the issue.', 'error'); return; }
+            const modalIcon = document.getElementById('modalIcon');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMsg = document.getElementById('modalMsg');
+            if (modalIcon) modalIcon.textContent = TYPE_ICONS[type] || '📋';
+            if (modalTitle) modalTitle.textContent = `Report: ${TYPE_LABELS[type]}`;
+            if (modalMsg) modalMsg.textContent = `"${desc.slice(0, 120)}${desc.length > 120 ? '…' : ''}"`;
+            const mpi = document.getElementById('modalPreviewImg');
+            if (mpi) {
+                if (reportPhotoBase64) {
+                    mpi.src = reportPhotoBase64;
+                    mpi.style.display = 'block';
+                } else { mpi.style.display = 'none'; }
+            }
+            const ml = document.getElementById('modalLoc');
+            if (ml) {
+                if (reportLat !== null) {
+                    ml.textContent = `📍 ${reportLat.toFixed(5)}, ${reportLng.toFixed(5)}`;
+                    ml.style.display = 'block';
+                } else { ml.style.display = 'none'; }
+            }
+            const modal = document.getElementById('confirmModal');
+            if (modal) modal.classList.add('open');
+            const modalCancel = document.getElementById('modalCancel');
+            const modalConfirm = document.getElementById('modalConfirm');
+            if (modalCancel) modalCancel.onclick = () => modal.classList.remove('open');
+            if (modalConfirm) modalConfirm.onclick = () => {
+                modal.classList.remove('open');
+                submitReport(type, desc);
+            };
+        }
+
+        async function submitReport(type, desc) {
+            const btn = document.getElementById('submitBtn');
+            if (btn) {
+                btn.textContent = 'Submitting…';
+                btn.disabled = true;
+            }
+            const payload = { type, description: desc };
+            if (reportLat !== null) payload.latitude = reportLat;
+            if (reportLng !== null) payload.longitude = reportLng;
+            if (reportPhotoBase64) payload.image_url = reportPhotoBase64;
+            try {
+                const res = await fetch('/api/resident/reports', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error();
+                const descField = document.getElementById('rdesc');
+                if (descField) descField.value = '';
+                updateCharCount();
+                removePhoto();
+                reportLat = null;
+                reportLng = null;
+                const locRow = document.getElementById('locRow');
+                const locText = document.getElementById('locText');
+                if (locRow) locRow.className = 'loc-row';
+                if (locText) locText.textContent = 'Location not yet captured';
+                showToast('Report submitted successfully!');
+                if (btn) {
+                    btn.textContent = '✓ Submitted';
+                    setTimeout(() => {
+                        if (btn) {
+                            btn.textContent = 'Submit Report →';
+                            btn.disabled = false;
+                        }
+                    }, 3000);
+                }
+            } catch {
+                showToast('Submission failed. Try again.', 'error');
+                if (btn) {
+                    btn.textContent = 'Submit Report →';
+                    btn.disabled = false;
+                }
             }
         }
 
-        // Report submission
-        document.getElementById("reportForm").addEventListener("submit", async e => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            const originalText = btn.textContent;
-            btn.textContent = 'Submitting...';
-            btn.disabled = true;
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = `${type === 'success' ? '✅' : type === 'info' ? 'ℹ️' : '❌'} ${msg}`;
+            t.className = 'show';
+            setTimeout(() => t.classList.remove('show'), 3500);
+        }
 
-            try {
-                const res = await fetch("/api/resident/reports", {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        type: document.getElementById("type").value,
-                        description: document.getElementById("description").value
-                    })
-                });
-
-                if (!res.ok) throw new Error();
-
-                btn.textContent = '✓ Report Submitted';
-                btn.style.background = 'rgba(74,222,128,0.3)';
-                document.getElementById("description").value = "";
-
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = '';
-                    btn.disabled = false;
-                }, 3000);
-            } catch (err) {
-                btn.textContent = 'Failed — Try Again';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }, 2000);
-            }
+        // Expose all functions to global scope
+        Object.assign(window, {
+            setTile,
+            centerOnUser,
+            toggleShareLocation,
+            captureLocation,
+            handlePhotoChange,
+            removePhoto,
+            handleReportSubmit,
+            updateCharCount,
+            toggleScheduleAll,
+            toggleAnnAll,
+            expandAnn,
+            toggleDrawer
         });
 
-        // Initialize everything
+        // Init
         loadTodayTruck();
         loadSchedule();
         loadAnnouncements();
-
-        // Add CSS animation for slideIn
-        const style = document.createElement('style');
-        style.textContent = `@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`;
-        document.head.appendChild(style);
     </script>
 </body>
 
