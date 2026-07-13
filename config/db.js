@@ -1,20 +1,21 @@
 const mysql = require("mysql2");
 require('dotenv').config();
 
-// Log environment variables for debugging (remove in production)
-console.log('📊 Environment Check:');
-console.log('MYSQLHOST:', process.env.MYSQLHOST ? '✅ Set' : '❌ Missing');
-console.log('MYSQLUSER:', process.env.MYSQLUSER ? '✅ Set' : '❌ Missing');
-console.log('MYSQLPASSWORD:', process.env.MYSQLPASSWORD ? '✅ Set' : '❌ Missing');
-console.log('MYSQLDATABASE:', process.env.MYSQLDATABASE ? '✅ Set' : '❌ Missing');
+// Debug: Log what variables are available
+console.log('📊 Checking Environment Variables:');
+console.log('MYSQLHOST:', process.env.MYSQLHOST || 'NOT SET');
+console.log('MYSQLUSER:', process.env.MYSQLUSER || 'NOT SET');
+console.log('MYSQLPASSWORD:', process.env.MYSQLPASSWORD ? '✅ SET' : '❌ NOT SET');
+console.log('MYSQLDATABASE:', process.env.MYSQLDATABASE || 'NOT SET');
+console.log('MYSQLPORT:', process.env.MYSQLPORT || 'NOT SET');
 
 // Railway MySQL Configuration
 const dbConfig = {
-    host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal',
-    user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
-    database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
-    port: parseInt(process.env.MYSQLPORT || process.env.DB_PORT || '3306'),
+    host: process.env.MYSQLHOST || 'mysql.railway.internal',
+    user: process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQLPASSWORD || 'BYrNTduIFMPfoZRtCLBzWHKRLFcmUASh',
+    database: process.env.MYSQLDATABASE || 'railway',
+    port: parseInt(process.env.MYSQLPORT || '3306'),
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -30,7 +31,6 @@ console.log('Host:', dbConfig.host);
 console.log('User:', dbConfig.user);
 console.log('Database:', dbConfig.database);
 console.log('Port:', dbConfig.port);
-console.log('SSL:', dbConfig.ssl ? 'Enabled' : 'Disabled');
 
 const db = mysql.createPool(dbConfig);
 
@@ -38,13 +38,10 @@ const db = mysql.createPool(dbConfig);
 db.getConnection((err, connection) => {
     if (err) {
         console.error('❌ Database connection failed:', err.message);
-        console.error('📊 Please check:');
-        console.error('   1. MySQL service is running in Railway');
-        console.error('   2. Environment variables are set correctly');
-        console.error('   3. Database name is correct');
+        console.error('📊 Please check that ALL variables are set in Railway App Service');
     } else {
         console.log('✅ Database connected successfully!');
-        console.log(`📊 Connected to: ${dbConfig.database} on ${dbConfig.host}`);
+        console.log(`📊 Connected to: ${dbConfig.database}`);
         connection.release();
     }
 });
