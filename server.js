@@ -5,6 +5,7 @@ require('dotenv').config();
 const app = express();
 const cron = require("node-cron");
 const db = require("./config/db");
+const bcrypt = require("bcrypt"); // ← Add this for password hashing
 
 // Cron job - Weekly announcement
 cron.schedule("0 0 * * 1", async () => {
@@ -42,6 +43,10 @@ if (process.env.NODE_ENV === 'development') {
         next();
     });
 }
+
+// =============================================
+// DATABASE MIGRATION ENDPOINT
+// =============================================
 app.get('/migrate', async (req, res) => {
     try {
         const secret = req.query.secret;
@@ -119,13 +124,70 @@ app.get('/migrate', async (req, res) => {
         });
     }
 });
-// Routes
+
+// =============================================
+// ADMIN SETUP ENDPOINT - Run once to create admin
+// =============================================
+app.get('/setup-admin', async (req, res) => {
+    try {
+        // Optional: Add a secret to prevent unauthorized access
+        const secret = req.query.secret;
+        if (secret !== 'setup123') {
+            return res.status(401).json({ error: 'Unauthorized. Use ?secret=setup123' });
+        }
+
+        const email = 'admin@smartwaste.com';
+        const password = 'admin123';
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Check if admin exists
+        const [existing] = await db.query('SELECT id, email FROM users WHERE email = ?', [email]);
+
+        let message = '';
+        if (existing.length > 0) {
+            // Update existing admin
+            await db.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
+            message = '✅ Admin password reset successfully!';
+        } else {
+            // Create new admin
+            await db.query(
+                'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+                ['Admin', email, hashedPassword, 'admin']
+            );
+            message = '✅ Admin created successfully!';
+        }
+
+        console.log('✅ Admin setup completed:', email);
+
+        res.json({
+            success: true,
+            message: message,
+            email: email,
+            password: password,
+            login_url: `${req.protocol}://${req.get('host')}/login.html`,
+            warning: '⚠️ For security, remove this endpoint after use or add authentication'
+        });
+
+    } catch (error) {
+        console.error('❌ Admin setup error:', error);
+        res.status(500).json({
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+// =============================================
+// ROUTES
+// =============================================
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/resident", require("./routes/residentRoutes"));
 app.use("/driver/api", require("./routes/driverRoutes"));
 
-// Health check endpoint
+// =============================================
+// HEALTH CHECK
+// =============================================
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -135,7 +197,9 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Handle 404 - Keep this after all routes
+// =============================================
+// 404 HANDLER
+// =============================================
 app.use((req, res) => {
     res.status(404).json({
         error: 'Route not found',
@@ -143,7 +207,9 @@ app.use((req, res) => {
     });
 });
 
-// Global error handler
+// =============================================
+// GLOBAL ERROR HANDLER
+// =============================================
 app.use((err, req, res, next) => {
     console.error('❌ Unhandled error:', err);
     res.status(500).json({
@@ -153,6 +219,9 @@ app.use((err, req, res, next) => {
     });
 });
 
+// =============================================
+// START SERVER
+// =============================================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
