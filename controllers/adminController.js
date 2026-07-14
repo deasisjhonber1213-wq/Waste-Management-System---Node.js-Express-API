@@ -136,31 +136,129 @@ exports.updateTruckLocation = async (req, res) => {
 };
 
 
+// FIXED: Better error handling and JSON validation
 exports.addRoute = async (req, res) => {
     try {
         const { zone_name, description, waypoints_json, path_mode } = req.body;
-        if (!zone_name) return res.status(400).json({ error: "Zone name is required" });
-        await db.query(
-            "INSERT INTO routes (zone_name, description, waypoints_json, path_mode) VALUES (?, ?, ?, ?)",
-            [zone_name, description || null, waypoints_json || null, path_mode || 'pin']
+
+        if (!zone_name) {
+            return res.status(400).json({ error: "Zone name is required" });
+        }
+
+        // Validate waypoints_json is valid JSON
+        let waypointsData = null;
+        if (waypoints_json) {
+            try {
+                // Parse to validate JSON structure
+                const parsed = JSON.parse(waypoints_json);
+                // Ensure it has the expected structure
+                if (!parsed.road && !parsed.pins && !parsed.mrf) {
+                    // Convert old format if needed
+                    waypointsData = JSON.stringify({
+                        road: Array.isArray(parsed) ? parsed : [],
+                        pins: [],
+                        mrf: []
+                    });
+                } else {
+                    waypointsData = waypoints_json;
+                }
+            } catch (e) {
+                console.error('Invalid JSON:', e);
+                // If invalid, store as empty structure
+                waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
+            }
+        } else {
+            waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
+        }
+
+        // Check if waypoints_json column exists
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
         );
+        const colNames = columns.map(c => c.COLUMN_NAME);
+        const hasWaypoints = colNames.includes('waypoints_json');
+        const hasPathMode = colNames.includes('path_mode');
+
+        let query = `INSERT INTO routes (zone_name, description`;
+        let values = [zone_name, description || null];
+        let placeholders = ['?', '?'];
+
+        if (hasWaypoints) {
+            query += `, waypoints_json`;
+            values.push(waypointsData);
+            placeholders.push('?');
+        }
+
+        if (hasPathMode) {
+            query += `, path_mode`;
+            values.push(path_mode || 'pin');
+            placeholders.push('?');
+        }
+
+        query += `) VALUES (${placeholders.join(', ')})`;
+
+        await db.query(query, values);
         res.json({ message: "Route added successfully" });
+
     } catch (err) {
-        console.error(err); res.status(500).json({ error: err.message });
+        console.error('Add route error:', err);
+        res.status(500).json({ error: err.message });
     }
 };
 
+// FIXED: Update route with better error handling
 exports.updateRoute = async (req, res) => {
     try {
         const { zone_name, description, waypoints_json, path_mode } = req.body;
-        if (!zone_name) return res.status(400).json({ error: "Zone name is required" });
-        await db.query(
-            "UPDATE routes SET zone_name=?, description=?, waypoints_json=?, path_mode=? WHERE id=?",
-            [zone_name, description || null, waypoints_json || null, path_mode || 'pin', req.params.id]
+
+        if (!zone_name) {
+            return res.status(400).json({ error: "Zone name is required" });
+        }
+
+        // Validate waypoints_json
+        let waypointsData = null;
+        if (waypoints_json) {
+            try {
+                const parsed = JSON.parse(waypoints_json);
+                waypointsData = waypoints_json;
+            } catch (e) {
+                console.error('Invalid JSON:', e);
+                waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
+            }
+        }
+
+        // Build update query dynamically based on existing columns
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
         );
+        const colNames = columns.map(c => c.COLUMN_NAME);
+
+        const updates = ['zone_name = ?', 'description = ?'];
+        const values = [zone_name, description || null];
+
+        if (colNames.includes('waypoints_json')) {
+            updates.push('waypoints_json = ?');
+            values.push(waypointsData || JSON.stringify({ road: [], pins: [], mrf: [] }));
+        }
+
+        if (colNames.includes('path_mode')) {
+            updates.push('path_mode = ?');
+            values.push(path_mode || 'pin');
+        }
+
+        values.push(req.params.id);
+
+        await db.query(
+            `UPDATE routes SET ${updates.join(', ')} WHERE id = ?`,
+            values
+        );
+
         res.json({ message: "Route updated successfully" });
     } catch (err) {
-        console.error(err); res.status(500).json({ error: err.message });
+        console.error('Update route error:', err);
+        res.status(500).json({ error: err.message });
     }
 };
 
