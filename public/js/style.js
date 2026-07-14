@@ -1,16 +1,8 @@
 /* ============================================================
    SMARTWASTE ADMIN — SHARED JS UTILITIES
+   (Only page-agnostic helpers live here. Each page's own
+   inline <script> handles its own API calls and data loading.)
 ============================================================ */
-
-const token = localStorage.getItem("token");
-if (!token) window.location.href = "/login.html";
-
-const API = {
-    get: (url) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }),
-    post: (url, data) => fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(data) }),
-    put: (url, data) => fetch(url, { method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(data) }),
-    del: (url) => fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }),
-};
 
 /* ── TOAST ── */
 function showToast(msg, type = "info") {
@@ -33,7 +25,7 @@ function showToast(msg, type = "info") {
 function openModal(id) { document.getElementById(id).classList.add("open"); }
 function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
-/* ── SIDEBAR MOBILE ── */
+/* ── SIDEBAR MOBILE + REVEAL + ACTIVE NAV ── */
 document.addEventListener("DOMContentLoaded", () => {
     const hamburger = document.getElementById("hamburger");
     const sidebar = document.querySelector(".sidebar");
@@ -50,16 +42,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* reveal animation */
     const obs = new IntersectionObserver(entries => {
         entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } });
     }, { threshold: 0.08 });
     document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
 
-    /* active nav */
-    const path = window.location.pathname.split("/").pop();
+    const currentPath = window.location.pathname.split("/").pop();
     document.querySelectorAll(".nav-item").forEach(a => {
-        if (a.getAttribute("href") === path) a.classList.add("active");
+        if (a.getAttribute("href") === currentPath) a.classList.add("active");
     });
 });
 
