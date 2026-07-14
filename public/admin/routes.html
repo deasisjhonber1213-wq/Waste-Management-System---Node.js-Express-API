@@ -678,27 +678,65 @@
             return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
 
-        /* Parse stored waypoints_json — supports both old flat array and new {road,pins,mrf} format */
+        /* ════════════════════════════════════════════════════
+           FIXED: Parse stored waypoints_json 
+           Supports both old flat array and new {road,pins,mrf} format
+        ════════════════════════════════════════════════════ */
         function parseWaypoints(json) {
-            if (!json) return { road: [], pins: [], mrf: [] };
+            console.log('📦 Parsing waypoints input:', json);
+            console.log('📦 Input type:', typeof json);
+
+            if (!json) {
+                console.log('⚠️ No waypoints data');
+                return { road: [], pins: [], mrf: [] };
+            }
+
             try {
-                const parsed = JSON.parse(json);
-                // New format
-                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && ('road' in parsed || 'pins' in parsed || 'mrf' in parsed)) {
+                let parsed;
+
+                // If it's a string, parse it
+                if (typeof json === 'string') {
+                    parsed = JSON.parse(json);
+                } else {
+                    parsed = json;
+                }
+
+                console.log('📦 Parsed data structure:', parsed);
+                console.log('📦 Is array?', Array.isArray(parsed));
+                console.log('📦 Keys:', Object.keys(parsed || {}));
+
+                // If it's an array (legacy format)
+                if (Array.isArray(parsed)) {
+                    console.log('📦 Legacy array format detected');
                     return {
+                        road: parsed,
+                        pins: [],
+                        mrf: []
+                    };
+                }
+
+                // If it's an object with road, pins, mrf keys
+                if (parsed && typeof parsed === 'object') {
+                    const result = {
                         road: parsed.road || [],
                         pins: parsed.pins || [],
                         mrf: parsed.mrf || []
                     };
+                    console.log('📦 Parsed result:', result);
+                    console.log('📦 Road count:', result.road.length);
+                    console.log('📦 Pins count:', result.pins.length);
+                    console.log('📦 MRF count:', result.mrf.length);
+                    return result;
                 }
-                // Legacy flat array — treat all points as road vertices, MRF-flagged ones as mrf
-                if (Array.isArray(parsed)) {
-                    const road = parsed.filter(p => !p.isMRF);
-                    const mrf = parsed.filter(p => p.isMRF);
-                    return { road, pins: [], mrf };
-                }
-            } catch (e) { }
-            return { road: [], pins: [], mrf: [] };
+
+                console.log('⚠️ Unknown format, returning empty');
+                return { road: [], pins: [], mrf: [] };
+
+            } catch (e) {
+                console.error('❌ Error parsing waypoints:', e);
+                console.error('❌ Input was:', json);
+                return { road: [], pins: [], mrf: [] };
+            }
         }
 
         /* ════════════════════════════════════════════════════
@@ -709,9 +747,14 @@
                 const res = await API.get('/admin/routes');
                 if (!res.ok) throw new Error();
                 allRoutes = await res.json();
+                console.log('📋 Loaded routes:', allRoutes.length);
+                console.log('📋 Sample route waypoints:', allRoutes[0]?.waypoints_json);
                 renderRouteList(allRoutes);
                 document.getElementById('routeCount').textContent = allRoutes.length;
-            } catch { showToast('Failed to load routes', 'error'); }
+            } catch (error) {
+                console.error('❌ Failed to load routes:', error);
+                showToast('Failed to load routes', 'error');
+            }
         }
 
         function renderRouteList(data) {
@@ -728,6 +771,7 @@
                 const { road, pins, mrf } = parseWaypoints(r.waypoints_json);
                 const isActive = selectedRoute?.id === r.id;
                 const total = road.length + pins.length + mrf.length;
+                console.log(`📊 Route ${r.id} - ${r.zone_name}:`, { road: road.length, pins: pins.length, mrf: mrf.length });
                 return `<div class="route-card ${isActive ? 'active' : ''}" onclick="selectRoute(${r.id})">
                 <div class="route-name">📍 ${escHtml(r.zone_name)}</div>
                 <div class="route-desc">${escHtml(r.description || 'No description')}</div>
@@ -755,10 +799,17 @@
         }
 
         function renderDetail(route) {
-            // Always destroy the old detailMap before wiping the DOM node it lives in
+            console.log('📋 Rendering detail for route:', route);
+            console.log('📋 Route waypoints_json type:', typeof route.waypoints_json);
+            console.log('📋 Route waypoints_json:', route.waypoints_json);
+
+            // Destroy old map
             if (detailMap) { detailMap.remove(); detailMap = null; detailTiles = null; }
 
             const { road, pins, mrf } = parseWaypoints(route.waypoints_json);
+
+            console.log('📊 Parsed waypoints:', { road: road.length, pins: pins.length, mrf: mrf.length });
+
             const hasAny = road.length || pins.length || mrf.length;
 
             document.getElementById('detailActions').innerHTML = `
@@ -914,6 +965,7 @@
                 setActiveLayer('road');
 
                 const { road, pins, mrf } = parseWaypoints(route.waypoints_json);
+                console.log('📊 Editing route with:', { road: road.length, pins: pins.length, mrf: mrf.length });
 
                 // Restore road vertices
                 road.forEach(p => addRoadVertex(p.lat, p.lng));
@@ -1287,6 +1339,8 @@
                 path_mode: 'combined'
             };
 
+            console.log('💾 Saving route:', body);
+
             try {
                 let res;
                 if (isEditingId) {
@@ -1302,6 +1356,7 @@
                 const fresh = allRoutes.find(r => r.zone_name === zone);
                 if (fresh) selectRoute(fresh.id);
             } catch (err) {
+                console.error('❌ Save error:', err);
                 showToast(err.message || 'Failed to save route', 'error');
             }
         }

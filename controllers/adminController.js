@@ -283,7 +283,25 @@ exports.updateRoute = async (req, res) => {
 exports.getRoutes = async (req, res) => {
     try {
         const [routes] = await db.query("SELECT * FROM routes ORDER BY created_at DESC");
-        res.json(routes);
+
+        // Ensure waypoints_json is parsed properly
+        const processedRoutes = routes.map(route => {
+            if (route.waypoints_json) {
+                // If it's already an object, keep it
+                if (typeof route.waypoints_json === 'object') {
+                    return route;
+                }
+                // If it's a string, parse it
+                try {
+                    route.waypoints_json = JSON.parse(route.waypoints_json);
+                } catch (e) {
+                    console.error('Error parsing waypoints for route', route.id, e);
+                }
+            }
+            return route;
+        });
+
+        res.json(processedRoutes);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
