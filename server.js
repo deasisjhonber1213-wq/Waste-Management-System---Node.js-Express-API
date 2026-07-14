@@ -42,7 +42,73 @@ if (process.env.NODE_ENV === 'development') {
         next();
     });
 }
+// TEMPORARY: Add this after app.use(express.json()) and before routes
+// REMOVE AFTER RUNNING!
+app.get('/migrate', async (req, res) => {
+    try {
+        const secret = req.query.secret;
+        if (secret !== 'your_migration_secret_123') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
 
+        console.log('🔧 Running database migration...');
+
+        // Check if waypoints_json column exists
+        const [columns] = await db.query(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'routes'
+        `);
+
+        const colNames = columns.map(c => c.COLUMN_NAME);
+        const migrations = [];
+
+        // Add waypoints_json if missing
+        if (!colNames.includes('waypoints_json')) {
+            try {
+                await db.query(`ALTER TABLE routes ADD COLUMN waypoints_json JSON NULL`);
+                migrations.push('✅ Added waypoints_json column');
+            } catch (err) {
+                // Fallback to TEXT for MySQL 5.7
+                await db.query(`ALTER TABLE routes ADD COLUMN waypoints_json TEXT NULL`);
+                migrations.push('✅ Added waypoints_json as TEXT');
+            }
+        } else {
+            migrations.push('ℹ️ waypoints_json already exists');
+        }
+
+        // Add path_mode if missing
+        if (!colNames.includes('path_mode')) {
+            await db.query(`ALTER TABLE routes ADD COLUMN path_mode VARCHAR(20) DEFAULT 'pin'`);
+            migrations.push('✅ Added path_mode column');
+        } else {
+            migrations.push('ℹ️ path_mode already exists');
+        }
+
+        // Update existing rows with default values
+        await db.query(`
+            UPDATE routes 
+            SET waypoints_json = '{"road":[],"pins":[],"mrf":[]}' 
+            WHERE waypoints_json IS NULL
+        `);
+        migrations.push('✅ Updated existing rows with default values');
+
+        res.json({
+            success: true,
+            message: 'Migration completed successfully',
+            migrations: migrations,
+            table_columns: colNames
+        });
+
+    } catch (error) {
+        console.error('❌ Migration error:', error);
+        res.status(500).json({
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));

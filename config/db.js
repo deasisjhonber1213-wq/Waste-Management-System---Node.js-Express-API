@@ -1,25 +1,24 @@
 const mysql = require("mysql2");
 require('dotenv').config();
 
-// Use consistent variable names from Railway
+// Build connection config from environment variables
 const dbConfig = {
-    host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal',
-    port: parseInt(process.env.MYSQLPORT) || parseInt(process.env.DB_PORT) || 3306,
-    user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
-    database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
+    host: process.env.MYSQLHOST || 'mysql.railway.internal',
+    port: parseInt(process.env.MYSQLPORT) || 3306,
+    user: process.env.MYSQLUSER || 'root',
+    password: process.env.MYSQLPASSWORD || '',
+    database: process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || 'railway', // ← Fixed!
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
     connectTimeout: 10000
 };
 
-// Add SSL if using Railway
+// Add SSL for production (Railway requires this sometimes)
 if (process.env.NODE_ENV === 'production') {
     dbConfig.ssl = { rejectUnauthorized: false };
 }
 
-// Log connection info (without password)
 console.log('📊 Database Config:', {
     host: dbConfig.host,
     port: dbConfig.port,
@@ -36,7 +35,7 @@ db.getConnection((err, connection) => {
     if (err) {
         console.error('❌ Database connection failed:', err.message);
         console.log('💡 Check your MySQL credentials in Railway Variables');
-        console.log('📝 Required variables: MYSQLHOST, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE');
+        console.log('📝 Required: MYSQLHOST, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE');
     } else {
         console.log('✅ Database connected successfully!');
         console.log(`📊 Connected to: ${dbConfig.database}`);
