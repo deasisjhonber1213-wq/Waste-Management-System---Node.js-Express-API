@@ -1771,7 +1771,26 @@
             if (body) opts.body = JSON.stringify(body);
             const res = await fetch(BASE + path, opts);
             if (res.status === 401) { localStorage.removeItem("token"); window.location.href = "/login.html"; }
-            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Request failed");
+            if (!res.ok) {
+                let errBody = {};
+                try { errBody = await res.json(); } catch (_) { }
+                console.error(`[API ${res.status}] ${method} ${BASE + path}`, errBody);
+                throw new Error(errBody.error || `Request failed (${res.status})`);
+            }
+            return res.json();
+        }
+
+        /* Generic fetch helper for endpoints outside BASE (resident API),
+           with the same error logging so failures are visible in console. */
+        async function apiRaw(url, options = {}) {
+            const opts = { ...options, headers: { ...hdrs(), ...(options.headers || {}) } };
+            const res = await fetch(url, opts);
+            if (!res.ok) {
+                let bodyText = '';
+                try { bodyText = await res.text(); } catch (_) { }
+                console.error(`[API ${res.status}] ${url}`, bodyText);
+                throw new Error(`${res.status} ${res.statusText} on ${url}`);
+            }
             return res.json();
         }
 
@@ -1901,7 +1920,14 @@
 
         async function loadFallbackMRF() {
             let mrf = MRF_FALLBACK;
-            try { const r = await fetch("/resident/api/mrf", { headers: hdrs() }); if (r.ok) mrf = await r.json(); } catch (_) { }
+            try {
+                // Correct base path: resident routes are mounted at /api/resident
+                // (previously this pointed at /resident/api/mrf, which was never registered).
+                const data = await apiRaw("/api/resident/mrf-location");
+                if (data && data.latitude && data.longitude) mrf = data;
+            } catch (e) {
+                console.warn("MRF lookup failed, using fallback coordinates:", e);
+            }
 
             const icon = L.divIcon({
                 className: "",
@@ -2098,14 +2124,11 @@
         async function loadResidents() {
             if (!dMap) return;
             try {
-                let residents = [];
-                try {
-                    const r = await fetch("/resident/api/resident-locations", { headers: hdrs() });
-                    if (r.ok) residents = await r.json();
-                } catch (_) {
-                    const r2 = await fetch("/driver/api/resident-locations", { headers: hdrs() }).catch(() => null);
-                    if (r2 && r2.ok) residents = await r2.json();
-                }
+                // Correct base path: resident routes are mounted at /api/resident
+                // (previously this pointed at /resident/api/... with a bad
+                // fallback to /driver/api/resident-locations, a route that
+                // doesn't exist on the server).
+                const residents = await apiRaw("/api/resident/resident-locations");
                 const seen = new Set();
                 residents.forEach(r => {
                     if (!r.latitude || !r.longitude) return;
@@ -2156,7 +2179,7 @@
                 if (accuracy > 60 && lastPos) { lat = lastPos.lat * .7 + lat * .3; lng = lastPos.lng * .7 + lng * .3; }
                 document.getElementById("gpsAccBadge").textContent = `±${Math.round(accuracy)}m`;
                 setMarker(lat, lng, accuracy);
-                try { await api("POST", "/location", { latitude: lat, longitude: lng, accuracy }); } catch (e) { }
+                try { await api("POST", "/location", { latitude: lat, longitude: lng, accuracy }); } catch (e) { console.warn("location push failed:", e); }
             }, err => { if (err.code === 1) { toast("Enable GPS permissions", "error"); stopGPS(); } },
                 { enableHighAccuracy: true, timeout: 10000 });
         }
@@ -2245,7 +2268,7 @@
                 document.getElementById("statCompleted").textContent = data.filter(r => r.status === "completed").length;
                 document.getElementById("statTotal").textContent = data.length;
                 document.getElementById("statPending").textContent = data.filter(r => r.status === "pending").length;
-            } catch (e) { }
+            } catch (e) { console.warn("loadStats failed:", e); }
         }
 
         async function loadSchedule() {
@@ -2264,7 +2287,7 @@
         <span class="badge ${s.status === 'pending' ? 'badge-amber' : s.status === 'completed' ? 'badge-green' : 'badge-blue'}">${s.status === 'in_progress' ? 'IN PROGRESS' : s.status.toUpperCase()}</span>
       </div>`;
                 }).join("");
-            } catch (e) { document.getElementById("scheduleList").innerHTML = `<div class="empty">Failed to load schedule</div>`; }
+            } catch (e) { console.error("loadSchedule failed:", e); document.getElementById("scheduleList").innerHTML = `<div class="empty">Failed to load schedule</div>`; }
         }
 
         document.getElementById("reportForm").addEventListener("submit", async e => {
@@ -2292,7 +2315,7 @@
         <div class="report-desc">${r.description}</div>${r.location_note ? `<div class="report-note">📍 ${r.location_note}</div>` : ""}</div>
         <div class="report-ts">${fmtShort(r.created_at)}<br>${fmtTime(r.created_at)}</div>
       </div>`).join("");
-            } catch (e) { }
+            } catch (e) { console.error("loadMyReports failed:", e); }
         }
 
         async function loadAnnouncements() {
@@ -2309,7 +2332,7 @@
         <div class="ann-title">${a.title}</div>
         <div class="ann-msg">${a.message}</div>
       </div></div>`).join("");
-            } catch (e) { }
+            } catch (e) { console.error("loadAnnouncements failed:", e); }
         }
 
         async function loadTrips() {
@@ -2324,7 +2347,7 @@
         <div><div class="sched-zone">📍 ${t.zone_name}</div><div class="sched-meta">🚛 ${t.plate_number}</div></div>
         <span class="badge badge-green">DONE</span>
       </div>`).join("");
-            } catch (e) { }
+            } catch (e) { console.error("loadTrips failed:", e); }
         }
 
         async function loadProfile() {
@@ -2340,7 +2363,7 @@
                 document.getElementById("profName").value = data.name || "";
                 document.getElementById("profPhone").value = data.phone || "";
                 document.getElementById("profAddress").value = data.address || "";
-            } catch (e) { toast("Failed to load profile", "error"); }
+            } catch (e) { console.error("loadProfile failed:", e); toast("Failed to load profile", "error"); }
         }
 
         document.getElementById("profileForm").addEventListener("submit", async e => {

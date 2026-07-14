@@ -2209,6 +2209,21 @@
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/login.html';
 
+        /* Central fetch helper: logs status + response body on failure,
+           so a 500/403/404 shows up clearly in the console instead of
+           a generic "Failed to load" message. */
+        async function apiFetch(url, options = {}) {
+            const opts = { ...options, headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) } };
+            const res = await fetch(url, opts);
+            if (!res.ok) {
+                let bodyText = '';
+                try { bodyText = await res.text(); } catch (_) { }
+                console.error(`[API ${res.status}] ${url}`, bodyText);
+                throw new Error(`${res.status} ${res.statusText} on ${url}${bodyText ? ' — ' + bodyText : ''}`);
+            }
+            return res.json();
+        }
+
         /* ════════════════════════════════════════
            BOTTOM SHEET DRAWER
            Fixed: toggle instead of open-only, burger
@@ -2395,8 +2410,7 @@
         async function loadResidentLocations() {
             if (!map) return;
             try {
-                const res = await fetch('/api/resident/resident-locations', { headers: { Authorization: `Bearer ${token}` } });
-                const list = await res.json();
+                const list = await apiFetch('/api/resident/resident-locations');
                 const freshIds = new Set(list.map(r => r.id));
                 Object.keys(residentMarkers).forEach(id => {
                     if (!freshIds.has(parseInt(id))) {
@@ -2421,9 +2435,7 @@
 
         async function loadTodayTruck() {
             try {
-                const res = await fetch('/api/resident/today-truck', { headers: { Authorization: `Bearer ${token}` } });
-                if (!res.ok) throw new Error();
-                const data = await res.json();
+                const data = await apiFetch('/api/resident/today-truck');
                 if (!data) {
                     document.getElementById('todayTruck').textContent = 'No truck assigned today.';
                     initMap();
@@ -2433,22 +2445,20 @@
                 document.getElementById('todayTruck').innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
                 if (data.route_id) {
                     try {
-                        const routeRes = await fetch(`/api/resident/route-waypoints?route_id=${data.route_id}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (routeRes.ok) {
-                            const routeData = await routeRes.json();
-                            const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
-                            if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
-                                initMap(parsed.road[0]?.lat || data.latitude || 8.2317, parsed.road[0]?.lng || data.longitude || 123.4018);
-                                showRouteOnMap(parsed);
-                            } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
+                        const routeData = await apiFetch(`/api/resident/route-waypoints?route_id=${data.route_id}`);
+                        const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
+                        if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
+                            initMap(parsed.road[0]?.lat || data.latitude || 8.2317, parsed.road[0]?.lng || data.longitude || 123.4018);
+                            showRouteOnMap(parsed);
                         } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
-                    } catch (e) { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
+                    } catch (e) { console.warn('route-waypoints failed', e); initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
                 } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
                 if (data.latitude && data.longitude) placeTruckMarker(data.latitude, data.longitude);
                 startUserTracking();
                 pollTruckLocation();
                 setInterval(pollTruckLocation, 10000);
             } catch (err) {
+                console.error('loadTodayTruck failed:', err);
                 document.getElementById('todayTruck').textContent = 'Failed to load truck.';
                 initMap();
                 startUserTracking();
@@ -2458,9 +2468,7 @@
         async function pollTruckLocation() {
             if (!currentTruckId) return;
             try {
-                const res = await fetch(`/api/resident/truck/${currentTruckId}/location`, { headers: { Authorization: `Bearer ${token}` } });
-                if (!res.ok) return;
-                const logs = await res.json();
+                const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
                 if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) placeTruckMarker(logs[0].latitude, logs[0].longitude);
             } catch (e) { console.warn('Truck poll failed', e); }
         }
@@ -2554,9 +2562,9 @@
                 const { latitude, longitude, accuracy } = pos.coords;
                 placeUserMarker(latitude, longitude, accuracy);
                 try {
-                    await fetch('/api/resident/share-location', {
+                    await apiFetch('/api/resident/share-location', {
                         method: 'POST',
-                        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ latitude, longitude })
                     });
                 } catch (e) { console.warn('Share push failed', e); }
@@ -2573,13 +2581,11 @@
             const el = document.getElementById('scheduleCards');
             if (!el) return;
             try {
-                const res = await fetch('/api/resident/pickup-schedule', { headers: { Authorization: `Bearer ${token}` } });
-                if (!res.ok) throw new Error();
-                const data = await res.json();
+                const data = await apiFetch('/api/resident/pickup-schedule');
                 if (!data.length) { el.innerHTML = '<p style="color:var(--text-2);">No schedule available.</p>'; return; }
                 window._scheduleData = data;
                 renderSchedule();
-            } catch { el.innerHTML = '<p style="color:var(--text-2);">Failed to load schedule.</p>'; }
+            } catch (err) { console.error('loadSchedule failed:', err); el.innerHTML = '<p style="color:var(--text-2);">Failed to load schedule.</p>'; }
         }
 
         function renderSchedule() {
@@ -2636,11 +2642,10 @@
             const el = document.getElementById('announcementCards');
             if (!el) return;
             try {
-                const res = await fetch('/api/resident/announcements', { headers: { Authorization: `Bearer ${token}` } });
-                const data = await res.json();
+                const data = await apiFetch('/api/resident/announcements');
                 window._annData = data;
                 renderAnnouncements();
-            } catch { el.innerHTML = '<p style="color:var(--text-2);">Failed to load announcements.</p>'; }
+            } catch (err) { console.error('loadAnnouncements failed:', err); el.innerHTML = '<p style="color:var(--text-2);">Failed to load announcements.</p>'; }
         }
 
         function renderAnnouncements() {
@@ -2785,12 +2790,11 @@
             if (reportLng !== null) payload.longitude = reportLng;
             if (reportPhotoBase64) payload.image_url = reportPhotoBase64;
             try {
-                const res = await fetch('/api/resident/reports', {
+                await apiFetch('/api/resident/reports', {
                     method: 'POST',
-                    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!res.ok) throw new Error();
                 const descField = document.getElementById('rdesc');
                 if (descField) descField.value = '';
                 updateCharCount();
@@ -2811,7 +2815,8 @@
                         }
                     }, 3000);
                 }
-            } catch {
+            } catch (err) {
+                console.error('submitReport failed:', err);
                 showToast('Submission failed. Try again.', 'error');
                 if (btn) {
                     btn.textContent = 'Submit Report →';
