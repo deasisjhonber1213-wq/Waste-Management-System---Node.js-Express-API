@@ -42,8 +42,6 @@ if (process.env.NODE_ENV === 'development') {
         next();
     });
 }
-// TEMPORARY: Add this after app.use(express.json()) and before routes
-// REMOVE AFTER RUNNING!
 app.get('/migrate', async (req, res) => {
     try {
         const secret = req.query.secret;
@@ -53,24 +51,25 @@ app.get('/migrate', async (req, res) => {
 
         console.log('🔧 Running database migration...');
 
-        // Check if waypoints_json column exists
+        const migrations = [];
+
+        // Check the current column type
         const [columns] = await db.query(`
-            SELECT COLUMN_NAME 
+            SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE
             FROM INFORMATION_SCHEMA.COLUMNS 
             WHERE TABLE_SCHEMA = DATABASE() 
             AND TABLE_NAME = 'routes'
         `);
 
         const colNames = columns.map(c => c.COLUMN_NAME);
-        const migrations = [];
+        const pathModeCol = columns.find(c => c.COLUMN_NAME === 'path_mode');
 
-        // Add waypoints_json if missing
+        // Check if waypoints_json exists
         if (!colNames.includes('waypoints_json')) {
             try {
                 await db.query(`ALTER TABLE routes ADD COLUMN waypoints_json JSON NULL`);
                 migrations.push('✅ Added waypoints_json column');
             } catch (err) {
-                // Fallback to TEXT for MySQL 5.7
                 await db.query(`ALTER TABLE routes ADD COLUMN waypoints_json TEXT NULL`);
                 migrations.push('✅ Added waypoints_json as TEXT');
             }
@@ -78,12 +77,15 @@ app.get('/migrate', async (req, res) => {
             migrations.push('ℹ️ waypoints_json already exists');
         }
 
-        // Add path_mode if missing
-        if (!colNames.includes('path_mode')) {
-            await db.query(`ALTER TABLE routes ADD COLUMN path_mode VARCHAR(20) DEFAULT 'pin'`);
+        // Fix path_mode - change from JSON to VARCHAR if needed
+        if (pathModeCol && pathModeCol.DATA_TYPE === 'json') {
+            await db.query(`ALTER TABLE routes MODIFY COLUMN path_mode VARCHAR(50) DEFAULT 'pin'`);
+            migrations.push('✅ Changed path_mode from JSON to VARCHAR');
+        } else if (!colNames.includes('path_mode')) {
+            await db.query(`ALTER TABLE routes ADD COLUMN path_mode VARCHAR(50) DEFAULT 'pin'`);
             migrations.push('✅ Added path_mode column');
         } else {
-            migrations.push('ℹ️ path_mode already exists');
+            migrations.push('ℹ️ path_mode already exists and has correct type');
         }
 
         // Update existing rows with default values
@@ -94,11 +96,19 @@ app.get('/migrate', async (req, res) => {
         `);
         migrations.push('✅ Updated existing rows with default values');
 
+        // Get final table structure
+        const [finalColumns] = await db.query(`
+            SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'routes'
+        `);
+
         res.json({
             success: true,
             message: 'Migration completed successfully',
             migrations: migrations,
-            table_columns: colNames
+            table_columns: finalColumns
         });
 
     } catch (error) {

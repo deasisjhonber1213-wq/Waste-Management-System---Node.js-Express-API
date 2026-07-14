@@ -171,14 +171,18 @@ exports.addRoute = async (req, res) => {
             waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
         }
 
-        // Check if waypoints_json column exists
+        // Check if columns exist
         const [columns] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+            `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
         );
         const colNames = columns.map(c => c.COLUMN_NAME);
         const hasWaypoints = colNames.includes('waypoints_json');
         const hasPathMode = colNames.includes('path_mode');
+
+        // Check if path_mode is JSON type
+        const pathModeCol = columns.find(c => c.COLUMN_NAME === 'path_mode');
+        const isPathModeJSON = pathModeCol && pathModeCol.DATA_TYPE === 'json';
 
         let query = `INSERT INTO routes (zone_name, description`;
         let values = [zone_name, description || null];
@@ -192,7 +196,12 @@ exports.addRoute = async (req, res) => {
 
         if (hasPathMode) {
             query += `, path_mode`;
-            values.push(path_mode || 'pin');
+            // If JSON type, store as JSON, otherwise as string
+            if (isPathModeJSON) {
+                values.push(JSON.stringify(path_mode || 'pin')); // ← Store as JSON string
+            } else {
+                values.push(path_mode || 'pin');
+            }
             placeholders.push('?');
         }
 
@@ -230,10 +239,14 @@ exports.updateRoute = async (req, res) => {
 
         // Build update query dynamically based on existing columns
         const [columns] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+            `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
         );
         const colNames = columns.map(c => c.COLUMN_NAME);
+
+        // Check if path_mode is JSON type
+        const pathModeCol = columns.find(c => c.COLUMN_NAME === 'path_mode');
+        const isPathModeJSON = pathModeCol && pathModeCol.DATA_TYPE === 'json';
 
         const updates = ['zone_name = ?', 'description = ?'];
         const values = [zone_name, description || null];
@@ -245,7 +258,12 @@ exports.updateRoute = async (req, res) => {
 
         if (colNames.includes('path_mode')) {
             updates.push('path_mode = ?');
-            values.push(path_mode || 'pin');
+            // If JSON type, store as JSON, otherwise as string
+            if (isPathModeJSON) {
+                values.push(JSON.stringify(path_mode || 'pin'));
+            } else {
+                values.push(path_mode || 'pin');
+            }
         }
 
         values.push(req.params.id);
