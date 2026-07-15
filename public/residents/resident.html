@@ -1057,6 +1057,12 @@
             margin-bottom: 0.4rem;
         }
 
+        .form-label .required {
+            color: var(--red);
+            font-weight: 400;
+            text-transform: none;
+        }
+
         .form-control {
             background: rgba(0, 0, 0, 0.35);
             border: 1px solid var(--border);
@@ -1815,7 +1821,6 @@
     <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation menu">
         <div class="drawer-handle"></div>
 
-
         <nav class="drawer-nav" aria-label="Mobile navigation">
             <a href="#home" class="drawer-link">
                 <div class="drawer-link-icon">
@@ -2145,14 +2150,13 @@
                             <div class="char-count" id="charCount">0 / 500</div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Photo <span
-                                    style="color:var(--text-3);font-weight:400;text-transform:none;">(optional)</span></label>
+                            <label class="form-label">Photo <span class="required">* required</span></label>
                             <div class="photo-drop" id="photoDrop">
                                 <input type="file" id="photoInput" accept="image/*" capture="environment"
                                     onchange="handlePhotoChange(event)">
                                 <div class="photo-drop-icon">📷</div>
                                 <div class="photo-drop-label">Tap to take a photo or choose from gallery</div>
-                                <div class="photo-drop-sub">JPG, PNG, WEBP · max 5 MB</div>
+                                <div class="photo-drop-sub">JPG, PNG, WEBP · max 2 MB</div>
                             </div>
                             <div class="photo-preview-wrap" id="photoPreviewWrap">
                                 <img id="photoPreviewImg" src="" alt="Preview">
@@ -2161,8 +2165,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Location <span
-                                    style="color:var(--text-3);font-weight:400;text-transform:none;">(auto-detected)</span></label>
+                            <label class="form-label">Location <span class="required">* required</span></label>
                             <div class="loc-row" id="locRow">
                                 <div class="loc-dot"></div>
                                 <span id="locText">Location not yet captured</span>
@@ -2234,7 +2237,6 @@
         const burgerBtn = document.getElementById('burgerBtn');
         const mobileDrawer = document.getElementById('mobileDrawer');
         const drawerBackdrop = document.getElementById('drawerBackdrop');
-        const drawerClose = document.getElementById('drawerClose');
 
         function openDrawer() {
             mobileDrawer.classList.add('open');
@@ -2261,7 +2263,6 @@
         }
 
         burgerBtn?.addEventListener('click', toggleDrawer);
-        drawerClose?.addEventListener('click', closeDrawer);
         drawerBackdrop?.addEventListener('click', closeDrawer);
 
         /* Close on link tap */
@@ -2439,7 +2440,8 @@
                 if (!data) {
                     document.getElementById('todayTruck').textContent = 'No truck assigned today.';
                     initMap();
-                    startUserTracking(); return;
+                    startUserTracking();
+                    return;
                 }
                 currentTruckId = data.truck_id;
                 document.getElementById('todayTruck').innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
@@ -2678,7 +2680,7 @@
         }
 
         /* ════════════════════════════════════════
-           REPORT
+           REPORT — WITH REQUIRED PHOTO & LOCATION
         ════════════════════════════════════════ */
         let reportPhotoBase64 = null,
             reportLat = null,
@@ -2693,9 +2695,11 @@
         function handlePhotoChange(e) {
             const file = e.target.files[0];
             if (!file) return;
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('Photo must be under 5 MB', 'error');
-                e.target.value = ''; return;
+            // Reduce max size to 2MB to prevent issues
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Photo must be under 2 MB', 'error');
+                e.target.value = '';
+                return;
             }
             const reader = new FileReader();
             reader.onload = ev => {
@@ -2747,7 +2751,25 @@
             e.preventDefault();
             const type = document.getElementById('rtype')?.value;
             const desc = document.getElementById('rdesc')?.value.trim();
-            if (!desc) { showToast('Please describe the issue.', 'error'); return; }
+
+            // Check if description is provided
+            if (!desc) {
+                showToast('Please describe the issue.', 'error');
+                return;
+            }
+
+            // Check if location is provided
+            if (reportLat === null || reportLng === null) {
+                showToast('Please capture your location first.', 'error');
+                return;
+            }
+
+            // Check if photo is provided
+            if (!reportPhotoBase64) {
+                showToast('Please take a photo of the issue.', 'error');
+                return;
+            }
+
             const modalIcon = document.getElementById('modalIcon');
             const modalTitle = document.getElementById('modalTitle');
             const modalMsg = document.getElementById('modalMsg');

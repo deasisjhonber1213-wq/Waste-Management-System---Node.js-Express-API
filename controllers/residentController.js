@@ -73,12 +73,30 @@ exports.getTruckLocation = async (req, res) => {
 exports.createReport = async (req, res) => {
     try {
         const { type, description, latitude, longitude, image_url } = req.body;
+
+        // Validate required fields
+        if (!type) return res.status(400).json({ error: "Type is required" });
+        if (!description) return res.status(400).json({ error: "Description is required" });
+        if (latitude === undefined || longitude === undefined) {
+            return res.status(400).json({ error: "Location is required" });
+        }
+        if (!image_url) {
+            return res.status(400).json({ error: "Image is required" });
+        }
+
+        // Optional: Validate base64 image size
+        if (image_url && image_url.length > 5 * 1024 * 1024) {
+            return res.status(400).json({ error: "Image is too large" });
+        }
+
         await db.query(`
             INSERT INTO reports (resident_id, type, description, latitude, longitude, image_url)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, [req.user.id, type, description, latitude || null, longitude || null, image_url || null]);
+        `, [req.user.id, type, description, latitude, longitude, image_url]);
+
         res.json({ message: "Report submitted successfully" });
     } catch (err) {
+        console.error("Create report error:", err);
         res.status(500).json({ error: err.message });
     }
 };

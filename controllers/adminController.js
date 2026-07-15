@@ -25,7 +25,6 @@ exports.dashboardStats = async (req, res) => {
     }
 };
 
-
 exports.getUsers = async (req, res) => {
     try {
         const [users] = await db.query(
@@ -51,7 +50,6 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.addTruck = async (req, res) => {
     try {
@@ -97,7 +95,6 @@ exports.editTruck = async (req, res) => {
 
 exports.deleteTruck = async (req, res) => {
     try {
-
         const [[activeAssignment]] = await db.query(
             `SELECT id FROM route_assignments
              WHERE truck_id = ? AND status IN ('pending', 'in_progress')
@@ -117,7 +114,6 @@ exports.deleteTruck = async (req, res) => {
     }
 };
 
-
 exports.updateTruckLocation = async (req, res) => {
     try {
         const { latitude, longitude } = req.body;
@@ -135,8 +131,6 @@ exports.updateTruckLocation = async (req, res) => {
     }
 };
 
-
-// FIXED: Better error handling and JSON validation
 exports.addRoute = async (req, res) => {
     try {
         const { zone_name, description, waypoints_json, path_mode } = req.body;
@@ -145,15 +139,11 @@ exports.addRoute = async (req, res) => {
             return res.status(400).json({ error: "Zone name is required" });
         }
 
-        // Validate waypoints_json is valid JSON
         let waypointsData = null;
         if (waypoints_json) {
             try {
-                // Parse to validate JSON structure
                 const parsed = JSON.parse(waypoints_json);
-                // Ensure it has the expected structure
                 if (!parsed.road && !parsed.pins && !parsed.mrf) {
-                    // Convert old format if needed
                     waypointsData = JSON.stringify({
                         road: Array.isArray(parsed) ? parsed : [],
                         pins: [],
@@ -164,14 +154,12 @@ exports.addRoute = async (req, res) => {
                 }
             } catch (e) {
                 console.error('Invalid JSON:', e);
-                // If invalid, store as empty structure
                 waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
             }
         } else {
             waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
         }
 
-        // Check if columns exist
         const [columns] = await db.query(
             `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
@@ -180,7 +168,6 @@ exports.addRoute = async (req, res) => {
         const hasWaypoints = colNames.includes('waypoints_json');
         const hasPathMode = colNames.includes('path_mode');
 
-        // Check if path_mode is JSON type
         const pathModeCol = columns.find(c => c.COLUMN_NAME === 'path_mode');
         const isPathModeJSON = pathModeCol && pathModeCol.DATA_TYPE === 'json';
 
@@ -196,9 +183,8 @@ exports.addRoute = async (req, res) => {
 
         if (hasPathMode) {
             query += `, path_mode`;
-            // If JSON type, store as JSON, otherwise as string
             if (isPathModeJSON) {
-                values.push(JSON.stringify(path_mode || 'pin')); // ← Store as JSON string
+                values.push(JSON.stringify(path_mode || 'pin'));
             } else {
                 values.push(path_mode || 'pin');
             }
@@ -216,7 +202,6 @@ exports.addRoute = async (req, res) => {
     }
 };
 
-// FIXED: Update route with better error handling
 exports.updateRoute = async (req, res) => {
     try {
         const { zone_name, description, waypoints_json, path_mode } = req.body;
@@ -225,7 +210,6 @@ exports.updateRoute = async (req, res) => {
             return res.status(400).json({ error: "Zone name is required" });
         }
 
-        // Validate waypoints_json
         let waypointsData = null;
         if (waypoints_json) {
             try {
@@ -237,14 +221,12 @@ exports.updateRoute = async (req, res) => {
             }
         }
 
-        // Build update query dynamically based on existing columns
         const [columns] = await db.query(
             `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
         );
         const colNames = columns.map(c => c.COLUMN_NAME);
 
-        // Check if path_mode is JSON type
         const pathModeCol = columns.find(c => c.COLUMN_NAME === 'path_mode');
         const isPathModeJSON = pathModeCol && pathModeCol.DATA_TYPE === 'json';
 
@@ -258,7 +240,6 @@ exports.updateRoute = async (req, res) => {
 
         if (colNames.includes('path_mode')) {
             updates.push('path_mode = ?');
-            // If JSON type, store as JSON, otherwise as string
             if (isPathModeJSON) {
                 values.push(JSON.stringify(path_mode || 'pin'));
             } else {
@@ -284,14 +265,11 @@ exports.getRoutes = async (req, res) => {
     try {
         const [routes] = await db.query("SELECT * FROM routes ORDER BY created_at DESC");
 
-        // Ensure waypoints_json is parsed properly
         const processedRoutes = routes.map(route => {
             if (route.waypoints_json) {
-                // If it's already an object, keep it
                 if (typeof route.waypoints_json === 'object') {
                     return route;
                 }
-                // If it's a string, parse it
                 try {
                     route.waypoints_json = JSON.parse(route.waypoints_json);
                 } catch (e) {
@@ -318,7 +296,6 @@ exports.deleteRoute = async (req, res) => {
     }
 };
 
-
 exports.assignRoute = async (req, res) => {
     try {
         const { driver_id, truck_id, route_id, assigned_date, pickup_type } = req.body;
@@ -335,62 +312,335 @@ exports.assignRoute = async (req, res) => {
     }
 };
 
+// ============================================
+// UPDATED REPORTS FUNCTIONS WITH LONGTEXT SUPPORT
+// ============================================
 
+// Get all reports (with optional pagination and filtering)
 exports.getReports = async (req, res) => {
     try {
-        // First, check what columns exist in the reports table
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        const status = req.query.status;
+        const type = req.query.type;
+
+        // Check what columns exist
         const [columns] = await db.query(
             `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
         );
         const colNames = columns.map(c => c.COLUMN_NAME);
 
-        // Check if resident_id column exists
+        const hasResidentId = colNames.includes('resident_id');
+        const hasStatus = colNames.includes('status');
+        const hasImageUrl = colNames.includes('image_url');
+
+        let whereClause = [];
+        let params = [];
+
+        if (status && status !== 'all' && hasStatus) {
+            whereClause.push('r.status = ?');
+            params.push(status);
+        }
+
+        if (type && type !== 'all') {
+            whereClause.push('r.type = ?');
+            params.push(type);
+        }
+
+        const whereStr = whereClause.length ? `WHERE ${whereClause.join(' AND ')}` : '';
+
+        // Get total count for pagination
+        const [countResult] = await db.query(
+            `SELECT COUNT(*) as total FROM reports r ${whereStr}`,
+            params
+        );
+        const total = countResult[0].total;
+
+        // Build select query (exclude image_url for listing to improve performance)
+        let selectCols = `
+            r.id,
+            r.type,
+            r.description,
+            r.latitude,
+            r.longitude,
+            r.created_at
+        `;
+
+        if (hasStatus) selectCols += `, r.status`;
+        if (hasResidentId) {
+            selectCols += `, r.resident_id AS user_id, u.name AS resident_name, u.email AS resident_email`;
+        } else {
+            selectCols += `, NULL AS user_id, NULL AS resident_name, NULL AS resident_email`;
+        }
+
+        let query = `
+            SELECT ${selectCols}
+            FROM reports r
+            ${hasResidentId ? 'LEFT JOIN users u ON u.id = r.resident_id' : ''}
+            ${whereStr}
+            ORDER BY r.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+
+        const [reports] = await db.query(query, [...params, limit, offset]);
+
+        res.json({
+            data: reports,
+            pagination: {
+                current_page: page,
+                per_page: limit,
+                total: total,
+                total_pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        console.error('Error in getReports:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get single report with full image
+exports.getReportById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
+        );
+        const colNames = columns.map(c => c.COLUMN_NAME);
         const hasResidentId = colNames.includes('resident_id');
 
         let query = `
-            SELECT
-                r.id,
-                r.type,
-                r.description,
-                r.latitude,
-                r.longitude,
-                r.image_url,
-                r.created_at
+            SELECT 
+                r.*,
+                ${hasResidentId ? 'u.name as resident_name, u.email as resident_email, u.phone as resident_phone' : 'NULL as resident_name, NULL as resident_email, NULL as resident_phone'}
+            FROM reports r
+            ${hasResidentId ? 'LEFT JOIN users u ON u.id = r.resident_id' : ''}
+            WHERE r.id = ?
         `;
 
-        // Add resident_id if it exists
-        if (hasResidentId) {
-            query += `, r.resident_id AS user_id, u.name AS resident_name`;
-        } else {
-            query += `, NULL AS user_id, NULL AS resident_name`;
+        const [reports] = await db.query(query, [id]);
+
+        if (!reports.length) {
+            return res.status(404).json({ error: "Report not found" });
         }
 
-        query += ` FROM reports r`;
+        const report = reports[0];
 
-        // Add JOIN if resident_id exists
-        if (hasResidentId) {
-            query += ` LEFT JOIN users u ON u.id = r.resident_id`;
-        }
-
-        query += ` ORDER BY r.created_at DESC`;
-
-        const [reports] = await db.query(query);
-
-        // Process each report to ensure image_url is properly formatted
-        const processedReports = reports.map(report => {
-            // If image_url exists and is a base64 string, make sure it has the proper prefix
-            if (report.image_url) {
-                // Check if it's already a data URL
-                if (!report.image_url.startsWith('data:image') && !report.image_url.startsWith('http')) {
-                    // Assume it's raw base64, add the prefix
-                    report.image_url = `data:image/jpeg;base64,${report.image_url}`;
-                }
+        // Format image if it exists
+        if (report.image_url) {
+            if (!report.image_url.startsWith('data:image') && !report.image_url.startsWith('http')) {
+                report.image_url = `data:image/jpeg;base64,${report.image_url}`;
             }
-            return report;
-        });
+        }
 
-        res.json(processedReports);
+        res.json(report);
+    } catch (err) {
+        console.error('Error in getReportById:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Update report status
+exports.updateReportStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, admin_notes } = req.body;
+
+        // Validate status
+        const validStatuses = ['pending', 'in_progress', 'resolved', 'rejected'];
+        if (status && !validStatuses.includes(status)) {
+            return res.status(400).json({ error: "Invalid status. Must be: pending, in_progress, resolved, rejected" });
+        }
+
+        // Check if status column exists
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
+        );
+        const colNames = columns.map(c => c.COLUMN_NAME);
+        const hasStatus = colNames.includes('status');
+        const hasAdminNotes = colNames.includes('admin_notes');
+
+        if (!hasStatus) {
+            return res.status(400).json({ error: "Status column does not exist in reports table" });
+        }
+
+        // Check if report exists
+        const [existing] = await db.query(
+            `SELECT id FROM reports WHERE id = ?`,
+            [id]
+        );
+
+        if (!existing.length) {
+            return res.status(404).json({ error: "Report not found" });
+        }
+
+        // Build update query
+        const updates = ['status = ?', 'updated_at = NOW()'];
+        const values = [status || 'pending'];
+
+        if (hasAdminNotes && admin_notes !== undefined) {
+            updates.push('admin_notes = ?');
+            values.push(admin_notes || null);
+        }
+
+        values.push(id);
+
+        await db.query(
+            `UPDATE reports SET ${updates.join(', ')} WHERE id = ?`,
+            values
+        );
+
+        // Get the updated report
+        const [updated] = await db.query(
+            `SELECT r.*, u.name as resident_name
+             FROM reports r
+             LEFT JOIN users u ON u.id = r.resident_id
+             WHERE r.id = ?`,
+            [id]
+        );
+
+        // Format image if exists
+        if (updated[0] && updated[0].image_url) {
+            if (!updated[0].image_url.startsWith('data:image') && !updated[0].image_url.startsWith('http')) {
+                updated[0].image_url = `data:image/jpeg;base64,${updated[0].image_url}`;
+            }
+        }
+
+        res.json({
+            message: "Report updated successfully",
+            report: updated[0]
+        });
+    } catch (err) {
+        console.error('Error in updateReportStatus:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Delete report
+exports.deleteReport = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if report exists
+        const [existing] = await db.query(
+            `SELECT id, image_url FROM reports WHERE id = ?`,
+            [id]
+        );
+
+        if (!existing.length) {
+            return res.status(404).json({ error: "Report not found" });
+        }
+
+        // Delete the report
+        await db.query(`DELETE FROM reports WHERE id = ?`, [id]);
+
+        // Log the deletion
+        await db.query(
+            "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
+            [req.user.id, `Deleted report ID ${id}`]
+        );
+
+        res.json({ message: "Report deleted successfully" });
+    } catch (err) {
+        console.error('Error in deleteReport:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Get report analytics with detailed breakdown
+exports.reportAnalytics = async (req, res) => {
+    try {
+        // Check if status column exists
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
+        );
+        const colNames = columns.map(c => c.COLUMN_NAME);
+        const hasStatus = colNames.includes('status');
+
+        let query = `
+            SELECT 
+                type, 
+                COUNT(*) AS total,
+                MIN(created_at) AS first_report,
+                MAX(created_at) AS last_report
+            FROM reports
+        `;
+
+        if (hasStatus) {
+            query += `
+                GROUP BY type
+                UNION ALL
+                SELECT 
+                    'ALL' AS type,
+                    COUNT(*) AS total,
+                    MIN(created_at) AS first_report,
+                    MAX(created_at) AS last_report
+                FROM reports
+            `;
+        } else {
+            query += ` GROUP BY type`;
+        }
+
+        const [data] = await db.query(query);
+
+        // Get status breakdown if status column exists
+        let statusBreakdown = [];
+        if (hasStatus) {
+            const [statusData] = await db.query(`
+                SELECT status, COUNT(*) AS total
+                FROM reports
+                GROUP BY status
+            `);
+            statusBreakdown = statusData;
+        }
+
+        res.json({
+            type_breakdown: data,
+            status_breakdown: statusBreakdown,
+            total_reports: data.reduce((sum, item) => sum + item.total, 0)
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.exportAnalytics = async (req, res) => {
+    try {
+        const [data] = await db.query(
+            "SELECT type, COUNT(*) total FROM reports GROUP BY type"
+        );
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet("Analytics");
+
+        sheet.columns = [
+            { header: "Report Type", key: "type", width: 24 },
+            { header: "Total Reports", key: "total", width: 16 },
+        ];
+
+        sheet.getRow(1).font = { bold: true };
+        sheet.getRow(1).alignment = { horizontal: "center" };
+
+        sheet.addRows(data);
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=analytics-${new Date().toISOString().slice(0, 10)}.xlsx`
+        );
+
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
@@ -415,64 +665,12 @@ exports.getResidentLocations = async (req, res) => {
     }
 };
 
-
-exports.reportAnalytics = async (req, res) => {
-    try {
-        const [data] = await db.query(
-            "SELECT type, COUNT(*) total FROM reports GROUP BY type"
-        );
-        res.json(data);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.exportAnalytics = async (req, res) => {
-    try {
-        const [data] = await db.query(
-            "SELECT type, COUNT(*) total FROM reports GROUP BY type"
-        );
-
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("Analytics");
-
-        sheet.columns = [
-            { header: "Report Type", key: "type", width: 24 },
-            { header: "Total Reports", key: "total", width: 16 },
-        ];
-
-
-        sheet.getRow(1).font = { bold: true };
-        sheet.getRow(1).alignment = { horizontal: "center" };
-
-        sheet.addRows(data);
-
-        res.setHeader(
-            "Content-Type",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        );
-        res.setHeader(
-            "Content-Disposition",
-            `attachment; filename=analytics-${new Date().toISOString().slice(0, 10)}.xlsx`
-        );
-
-        await workbook.xlsx.write(res);
-        res.end();
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-
 exports.createAnnouncement = async (req, res) => {
     try {
         const { title, message, pickup_date, image_url } = req.body;
         if (!title || !message) {
             return res.status(400).json({ error: "Title and message required" });
         }
-
 
         const [cols] = await db.query(
             `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
@@ -541,7 +739,6 @@ exports.deleteAnnouncement = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.getProfile = async (req, res) => {
     try {
