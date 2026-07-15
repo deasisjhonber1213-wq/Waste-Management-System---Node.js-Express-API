@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const residentController = require('../controllers/residentController');
 
+
+const residentController = require('../controllers/residentController');
+console.log('residentController loaded:', Object.keys(residentController));
 router.get('/today-truck', auth, residentController.getTodayTruck);
 router.get('/route-waypoints', auth, residentController.getRouteWaypoints);
-router.get('/pickup-schedule', auth, residentController.getPickupSchedule);
 router.get('/truck/:truckId/location', auth, residentController.getTruckLocation);
+router.get('/pickup-schedule', auth, residentController.getPickupSchedule);
 router.post('/reports', auth, residentController.createReport);
 router.get('/reports', auth, residentController.getReports);
 router.get('/notifications', auth, residentController.getNotifications);
