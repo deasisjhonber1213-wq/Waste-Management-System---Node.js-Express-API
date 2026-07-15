@@ -87,7 +87,7 @@
                         <option value="pending">Pending</option>
                         <option value="in_progress">In Progress</option>
                         <option value="completed">Completed</option>
-                        <option value="missed">Missed</option>
+                        <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
             </div>
@@ -176,7 +176,7 @@
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
                             <option value="completed">Completed</option>
-                            <option value="missed">Missed</option>
+                            <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
                     <div class="form-group"><label class="form-label">Date</label>
@@ -271,7 +271,6 @@
                 'pending': 'badge-warning',
                 'in_progress': 'badge-info',
                 'completed': 'badge-success',
-                'missed': 'badge-danger',
                 'cancelled': 'badge-danger'
             };
             return `<span class="badge ${map[status] || 'badge-gray'}">${(status || 'pending').replace('_', ' ').toUpperCase()}</span>`;
@@ -397,7 +396,12 @@
             const pickup_type = document.getElementById("editType").value;
 
             try {
-                const payload = { status, assigned_date: date, pickup_type };
+                // Build payload with only the fields that should be updated
+                const payload = {};
+                if (status) payload.status = status;
+                if (date) payload.assigned_date = date;
+                if (pickup_type) payload.pickup_type = pickup_type;
+
                 console.log('Updating schedule:', id, payload);
 
                 const res = await API.put(`/admin/pickups/${id}`, payload);
@@ -407,7 +411,7 @@
                     throw new Error(err);
                 }
                 closeModal("editModal");
-                showToast("Schedule updated", "success");
+                showToast("Schedule updated successfully", "success");
                 loadSchedules();
             } catch (err) {
                 console.error('Update failed:', err);

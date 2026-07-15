@@ -6,6 +6,83 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>Users · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .confirm-delete-text {
+            color: var(--red);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .confirm-delete-input {
+            background: rgba(255, 0, 0, 0.05);
+            border: 2px solid var(--red);
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--ui);
+            font-size: 0.9rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .confirm-delete-input:focus {
+            border-color: #ff4444;
+            box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.15);
+        }
+
+        .confirm-delete-input.error {
+            border-color: var(--red);
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .confirm-delete-input.success {
+            border-color: var(--green);
+            background: rgba(74, 222, 128, 0.05);
+        }
+
+        .user-edit-section {
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+            margin-top: 16px;
+        }
+
+        .user-edit-section:first-of-type {
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0;
+        }
+
+        .section-title-sm {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .password-toggle {
+            position: relative;
+        }
+
+        .password-toggle .toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text3);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+        }
+
+        .password-toggle .toggle-btn:hover {
+            color: var(--text);
+        }
+    </style>
 </head>
 
 <body>
@@ -151,6 +228,76 @@
         </div>
     </div>
 
+    <!-- EDIT USER MODAL -->
+    <div class="modal-overlay" id="editUserModal">
+        <div class="modal" style="max-width:550px;">
+            <div class="modal-header">
+                <div class="modal-title">✏️ Edit User</div>
+                <button class="modal-close" onclick="closeModal('editUserModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+
+                <!-- Personal Information Section -->
+                <div class="user-edit-section">
+                    <div class="section-title-sm">📋 Personal Information</div>
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group"><label class="form-label">Full Name</label>
+                            <input class="form-control" id="editName" placeholder="John Doe">
+                        </div>
+                        <div class="form-group"><label class="form-label">Email</label>
+                            <input class="form-control" id="editEmail" type="email" placeholder="john@example.com">
+                        </div>
+                        <div class="form-group"><label class="form-label">Phone</label>
+                            <input class="form-control" id="editPhone" placeholder="+1 555 0000">
+                        </div>
+                        <div class="form-group"><label class="form-label">Address</label>
+                            <input class="form-control" id="editAddress" placeholder="123 Main St">
+                        </div>
+                        <div class="form-group"><label class="form-label">Role</label>
+                            <select class="form-control" id="editRole">
+                                <option value="resident">Resident</option>
+                                <option value="driver">Driver</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password Section -->
+                <div class="user-edit-section">
+                    <div class="section-title-sm">🔑 Change Password</div>
+                    <div class="form-grid form-grid-2">
+                        <div class="form-group password-toggle" style="grid-column:1/-1">
+                            <label class="form-label">New Password <span
+                                    style="color:var(--text3);font-weight:400;text-transform:none;">(leave blank to keep
+                                    current)</span></label>
+                            <div style="position:relative;">
+                                <input class="form-control" id="editPassword" type="password"
+                                    placeholder="Enter new password…">
+                                <button type="button" class="toggle-btn"
+                                    onclick="togglePasswordVisibility('editPassword', this)">👁</button>
+                            </div>
+                        </div>
+                        <div class="form-group password-toggle" style="grid-column:1/-1">
+                            <label class="form-label">Confirm New Password</label>
+                            <div style="position:relative;">
+                                <input class="form-control" id="editPasswordConfirm" type="password"
+                                    placeholder="Confirm new password…">
+                                <button type="button" class="toggle-btn"
+                                    onclick="togglePasswordVisibility('editPasswordConfirm', this)">👁</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editUserModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="updateUser()">💾 Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <!-- VIEW USER MODAL -->
     <div class="modal-overlay" id="viewUserModal">
         <div class="modal">
@@ -161,6 +308,43 @@
             <div class="modal-body" id="viewUserBody"></div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('viewUserModal')">Close</button>
+                <button class="btn btn-gold" onclick="openEditFromView()">✏️ Edit User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+        <div class="modal" style="max-width:450px;">
+            <div class="modal-header" style="border-bottom-color:var(--red);">
+                <div class="modal-title" style="color:var(--red);">⚠️ Delete User</div>
+                <button class="modal-close" onclick="closeModal('deleteConfirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--text2);margin-bottom:8px;">
+                    You are about to delete <strong id="deleteUserName" style="color:var(--text);"></strong>.
+                </p>
+                <p style="color:var(--text3);font-size:0.85rem;margin-bottom:16px;">
+                    This action <strong style="color:var(--red);">cannot be undone</strong>. All data associated with
+                    this user will be permanently removed.
+                </p>
+                <div
+                    style="background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.15);border-radius:8px;padding:12px;">
+                    <label class="form-label" style="color:var(--red);">Type <span
+                            style="font-weight:800;font-size:1rem;">DELETE</span> to confirm</label>
+                    <input type="text" id="deleteConfirmInput" class="confirm-delete-input"
+                        placeholder="Type DELETE here..." oninput="onDeleteConfirmInput()">
+                    <div id="deleteConfirmError"
+                        style="color:var(--red);font-size:0.75rem;margin-top:6px;display:none;">
+                        ⚠️ Please type "DELETE" exactly as shown
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" id="deleteConfirmBtn" disabled onclick="confirmDeleteUser()">
+                    🗑 Delete User
+                </button>
             </div>
         </div>
     </div>
@@ -186,6 +370,16 @@
             post: async (endpoint, data) => {
                 return fetch(API_URL + endpoint, {
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${getToken()}`
@@ -228,6 +422,9 @@
         }
 
         let allUsers = [];
+        let currentViewUser = null;
+        let pendingDeleteId = null;
+        let pendingDeleteName = null;
 
         async function loadUsers() {
             try {
@@ -258,8 +455,9 @@
             <td class="table-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.address || "—"}</td>
             <td>
                 <div class="flex-row" style="gap:6px">
-                    <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${JSON.stringify(u).replace(/"/g, '&quot;')})">👁</button>
-                    <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="deleteUser(${u.id},'${u.name}')">🗑</button>
+                    <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${u.id})">👁</button>
+                    <button class="btn btn-gold btn-icon btn-sm" title="Edit" onclick="openEditUser(${u.id})">✏️</button>
+                    <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="openDeleteConfirm(${u.id},'${u.name}')">🗑</button>
                 </div>
             </td>
         </tr>`).join("");
@@ -287,35 +485,191 @@
             if (!body.name || !body.email || !body.password) { showToast("Name, email and password required", "error"); return; }
             try {
                 const res = await API.post("/auth/register", body);
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
                 closeModal("addUserModal");
                 showToast("User created successfully", "success");
                 loadUsers();
-            } catch { showToast("Failed to create user", "error"); }
+                // Clear form
+                document.getElementById("uName").value = '';
+                document.getElementById("uEmail").value = '';
+                document.getElementById("uPass").value = '';
+                document.getElementById("uPhone").value = '';
+                document.getElementById("uAddress").value = '';
+            } catch (err) {
+                showToast("Failed to create user: " + err.message, "error");
+            }
         }
 
-        async function deleteUser(id, name) {
-            if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+        // ===================== EDIT USER =====================
+        function openEditUser(id) {
+            const user = allUsers.find(u => u.id === id);
+            if (!user) return;
+
+            document.getElementById("editUserId").value = user.id;
+            document.getElementById("editName").value = user.name || '';
+            document.getElementById("editEmail").value = user.email || '';
+            document.getElementById("editPhone").value = user.phone || '';
+            document.getElementById("editAddress").value = user.address || '';
+            document.getElementById("editRole").value = user.role || 'resident';
+            document.getElementById("editPassword").value = '';
+            document.getElementById("editPasswordConfirm").value = '';
+
+            openModal("editUserModal");
+        }
+
+        async function updateUser() {
+            const id = document.getElementById("editUserId").value;
+            const name = document.getElementById("editName").value.trim();
+            const email = document.getElementById("editEmail").value.trim();
+            const phone = document.getElementById("editPhone").value.trim();
+            const address = document.getElementById("editAddress").value.trim();
+            const role = document.getElementById("editRole").value;
+            const password = document.getElementById("editPassword").value;
+            const passwordConfirm = document.getElementById("editPasswordConfirm").value;
+
+            if (!name || !email) {
+                showToast("Name and email are required", "error");
+                return;
+            }
+
+            // Check if password is being changed
+            if (password || passwordConfirm) {
+                if (password !== passwordConfirm) {
+                    showToast("Passwords do not match", "error");
+                    return;
+                }
+                if (password.length < 6) {
+                    showToast("Password must be at least 6 characters", "error");
+                    return;
+                }
+            }
+
+            const payload = { name, email, phone, address, role };
+            if (password) payload.password = password;
+
             try {
-                const res = await API.del(`/admin/users/${id}`);
-                if (!res.ok) throw new Error();
-                showToast("User deleted", "success");
+                const res = await API.put(`/admin/users/${id}`, payload);
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+                closeModal("editUserModal");
+                showToast("User updated successfully", "success");
                 loadUsers();
-            } catch { showToast("Failed to delete user", "error"); }
+            } catch (err) {
+                showToast("Failed to update user: " + err.message, "error");
+            }
         }
 
-        function viewUser(u) {
-            document.getElementById("viewUserBody").innerHTML = `
-        <div class="form-grid form-grid-2" style="gap:14px">
-            <div><div class="form-label">Name</div><div style="font-weight:600;margin-top:4px">${u.name}</div></div>
-            <div><div class="form-label">Email</div><div style="margin-top:4px">${u.email}</div></div>
-            <div><div class="form-label">Role</div><div style="margin-top:4px">${statusBadge(u.role)}</div></div>
-            <div><div class="form-label">Phone</div><div style="margin-top:4px">${u.phone || "—"}</div></div>
-            <div style="grid-column:1/-1"><div class="form-label">Address</div><div style="margin-top:4px">${u.address || "—"}</div></div>
-        </div>`;
-            openModal("viewUserModal");
+        // ===================== VIEW USER =====================
+        async function viewUser(id) {
+            try {
+                const res = await API.get(`/admin/users/${id}`);
+                if (!res.ok) throw new Error();
+                const u = await res.json();
+                currentViewUser = u;
+
+                document.getElementById("viewUserBody").innerHTML = `
+                <div class="form-grid form-grid-2" style="gap:14px">
+                    <div><div class="form-label">Name</div><div style="font-weight:600;margin-top:4px">${u.name}</div></div>
+                    <div><div class="form-label">Email</div><div style="margin-top:4px">${u.email}</div></div>
+                    <div><div class="form-label">Role</div><div style="margin-top:4px">${statusBadge(u.role)}</div></div>
+                    <div><div class="form-label">Phone</div><div style="margin-top:4px">${u.phone || "—"}</div></div>
+                    <div style="grid-column:1/-1"><div class="form-label">Address</div><div style="margin-top:4px">${u.address || "—"}</div></div>
+                </div>`;
+                openModal("viewUserModal");
+            } catch {
+                showToast("Failed to load user details", "error");
+            }
         }
 
+        function openEditFromView() {
+            if (currentViewUser) {
+                closeModal("viewUserModal");
+                openEditUser(currentViewUser.id);
+            }
+        }
+
+        // ===================== DELETE USER WITH CONFIRMATION =====================
+        function openDeleteConfirm(id, name) {
+            pendingDeleteId = id;
+            pendingDeleteName = name;
+            document.getElementById("deleteUserName").textContent = name;
+            document.getElementById("deleteConfirmInput").value = '';
+            document.getElementById("deleteConfirmInput").className = 'confirm-delete-input';
+            document.getElementById("deleteConfirmError").style.display = 'none';
+            document.getElementById("deleteConfirmBtn").disabled = true;
+            openModal("deleteConfirmModal");
+            // Focus the input after modal opens
+            setTimeout(() => {
+                document.getElementById("deleteConfirmInput").focus();
+            }, 300);
+        }
+
+        function onDeleteConfirmInput() {
+            const input = document.getElementById("deleteConfirmInput");
+            const btn = document.getElementById("deleteConfirmBtn");
+            const error = document.getElementById("deleteConfirmError");
+            const value = input.value.trim();
+
+            if (value === "DELETE") {
+                input.className = 'confirm-delete-input success';
+                error.style.display = 'none';
+                btn.disabled = false;
+            } else if (value && value !== "DELETE") {
+                input.className = 'confirm-delete-input error';
+                error.style.display = 'block';
+                btn.disabled = true;
+            } else {
+                input.className = 'confirm-delete-input';
+                error.style.display = 'none';
+                btn.disabled = true;
+            }
+        }
+
+        async function confirmDeleteUser() {
+            const input = document.getElementById("deleteConfirmInput");
+            const value = input.value.trim();
+
+            if (value !== "DELETE") {
+                showToast('Please type "DELETE" to confirm', "error");
+                return;
+            }
+
+            if (!pendingDeleteId) return;
+
+            try {
+                const res = await API.del(`/admin/users/${pendingDeleteId}`);
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+                closeModal("deleteConfirmModal");
+                showToast(`User "${pendingDeleteName}" deleted successfully`, "success");
+                pendingDeleteId = null;
+                pendingDeleteName = null;
+                loadUsers();
+            } catch (err) {
+                showToast("Failed to delete user: " + err.message, "error");
+            }
+        }
+
+        // ===================== PASSWORD TOGGLE =====================
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                btn.textContent = "🙈";
+            } else {
+                input.type = "password";
+                btn.textContent = "👁";
+            }
+        }
+
+        // ===================== PROFILE & UTILITIES =====================
         async function loadAdminProfile() {
             try {
                 const res = await API.get("/admin/profile");
@@ -327,8 +681,27 @@
         }
 
         function openModal(id) { document.getElementById(id).classList.add('open'); }
-
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        // Close delete modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const deleteModal = document.getElementById('deleteConfirmModal');
+                if (deleteModal && deleteModal.classList.contains('open')) {
+                    closeModal('deleteConfirmModal');
+                }
+            }
+            // Enter key in delete confirm input triggers delete
+            if (e.key === 'Enter') {
+                const deleteInput = document.getElementById('deleteConfirmInput');
+                if (deleteInput && document.getElementById('deleteConfirmModal').classList.contains('open')) {
+                    const btn = document.getElementById('deleteConfirmBtn');
+                    if (!btn.disabled) {
+                        confirmDeleteUser();
+                    }
+                }
+            }
+        });
 
         // Expose globals
         window.openModal = openModal;
@@ -337,6 +710,13 @@
         window.deleteUser = deleteUser;
         window.viewUser = viewUser;
         window.filterUsers = filterUsers;
+        window.openEditUser = openEditUser;
+        window.updateUser = updateUser;
+        window.openEditFromView = openEditFromView;
+        window.openDeleteConfirm = openDeleteConfirm;
+        window.confirmDeleteUser = confirmDeleteUser;
+        window.onDeleteConfirmInput = onDeleteConfirmInput;
+        window.togglePasswordVisibility = togglePasswordVisibility;
 
         loadAdminProfile();
         loadUsers();

@@ -1,6 +1,7 @@
 const path = require("path");
 const db = require("../config/db");
 const ExcelJS = require("exceljs");
+const bcrypt = require("bcrypt");
 
 exports.dashboardStats = async (req, res) => {
     try {
@@ -25,6 +26,10 @@ exports.dashboardStats = async (req, res) => {
     }
 };
 
+// ============================================
+// USER MANAGEMENT (UPDATED)
+// ============================================
+
 exports.getUsers = async (req, res) => {
     try {
         const [users] = await db.query(
@@ -37,8 +42,112 @@ exports.getUsers = async (req, res) => {
     }
 };
 
+// Get single user by ID
+exports.getUserById = async (req, res) => {
+    try {
+        const [users] = await db.query(
+            "SELECT id, name, email, role, phone, address FROM users WHERE id = ?",
+            [req.params.id]
+        );
+        if (!users.length) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json(users[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Update user (including password)
+exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, email, phone, address, role, password } = req.body;
+
+        // Validate required fields
+        if (!name || !email) {
+            return res.status(400).json({ error: "Name and email are required" });
+        }
+
+        // Check if user exists
+        const [existing] = await db.query(
+            "SELECT id FROM users WHERE id = ?",
+            [id]
+        );
+        if (!existing.length) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Check if email is already taken by another user
+        const [emailCheck] = await db.query(
+            "SELECT id FROM users WHERE email = ? AND id != ?",
+            [email, id]
+        );
+        if (emailCheck.length) {
+            return res.status(400).json({ error: "Email already in use by another user" });
+        }
+
+        let query = "UPDATE users SET name = ?, email = ?, phone = ?, address = ?, role = ?";
+        let values = [name, email, phone || null, address || null, role || 'resident'];
+
+        // If password is provided, hash and update it
+        if (password) {
+            if (password.length < 6) {
+                return res.status(400).json({ error: "Password must be at least 6 characters" });
+            }
+            const hashedPassword = await bcrypt.hash(password, 10);
+            query += ", password = ?";
+            values.push(hashedPassword);
+        }
+
+        query += " WHERE id = ?";
+        values.push(id);
+
+        await db.query(query, values);
+
+        // Log the update
+        await db.query(
+            "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
+            [req.user.id, `Updated user ID ${id}`]
+        );
+
+        res.json({ message: "User updated successfully" });
+    } catch (err) {
+        console.error('Update user error:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 exports.deleteUser = async (req, res) => {
     try {
+        // Check if user exists
+        const [existing] = await db.query(
+            "SELECT id, name FROM users WHERE id = ?",
+            [req.params.id]
+        );
+        if (!existing.length) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Prevent deleting yourself
+        if (req.params.id == req.user.id) {
+            return res.status(400).json({ error: "You cannot delete your own account" });
+        }
+
+        // Check if user has any active assignments (if driver)
+        const [assignments] = await db.query(
+            `SELECT id FROM route_assignments 
+             WHERE driver_id = ? AND status IN ('pending', 'in_progress')
+             LIMIT 1`,
+            [req.params.id]
+        );
+        if (assignments.length) {
+            return res.status(409).json({
+                error: "Cannot delete — user has active route assignments"
+            });
+        }
+
         await db.query("DELETE FROM users WHERE id=?", [req.params.id]);
         await db.query(
             "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
@@ -50,6 +159,10 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ============================================
+// TRUCK MANAGEMENT
+// ============================================
 
 exports.addTruck = async (req, res) => {
     try {
@@ -130,6 +243,10 @@ exports.updateTruckLocation = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ============================================
+// ROUTE MANAGEMENT
+// ============================================
 
 exports.addRoute = async (req, res) => {
     try {
@@ -288,6 +405,17 @@ exports.getRoutes = async (req, res) => {
 
 exports.deleteRoute = async (req, res) => {
     try {
+        // Check if route is being used
+        const [assignments] = await db.query(
+            `SELECT id FROM route_assignments WHERE route_id = ? AND status IN ('pending', 'in_progress') LIMIT 1`,
+            [req.params.id]
+        );
+        if (assignments.length) {
+            return res.status(409).json({
+                error: "Cannot delete — route is assigned to an active or pending schedule."
+            });
+        }
+
         await db.query("DELETE FROM routes WHERE id=?", [req.params.id]);
         res.json({ message: "Route deleted successfully" });
     } catch (err) {
@@ -295,6 +423,10 @@ exports.deleteRoute = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ============================================
+// ROUTE ASSIGNMENT
+// ============================================
 
 exports.assignRoute = async (req, res) => {
     try {
@@ -313,10 +445,9 @@ exports.assignRoute = async (req, res) => {
 };
 
 // ============================================
-// UPDATED REPORTS FUNCTIONS WITH LONGTEXT SUPPORT
+// REPORTS FUNCTIONS WITH LONGTEXT SUPPORT
 // ============================================
 
-// Get all reports (with optional pagination and filtering)
 exports.getReports = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -325,7 +456,6 @@ exports.getReports = async (req, res) => {
         const status = req.query.status;
         const type = req.query.type;
 
-        // Check what columns exist
         const [columns] = await db.query(
             `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
@@ -334,7 +464,6 @@ exports.getReports = async (req, res) => {
 
         const hasResidentId = colNames.includes('resident_id');
         const hasStatus = colNames.includes('status');
-        const hasImageUrl = colNames.includes('image_url');
 
         let whereClause = [];
         let params = [];
@@ -351,14 +480,12 @@ exports.getReports = async (req, res) => {
 
         const whereStr = whereClause.length ? `WHERE ${whereClause.join(' AND ')}` : '';
 
-        // Get total count for pagination
         const [countResult] = await db.query(
             `SELECT COUNT(*) as total FROM reports r ${whereStr}`,
             params
         );
         const total = countResult[0].total;
 
-        // Build select query (exclude image_url for listing to improve performance)
         let selectCols = `
             r.id,
             r.type,
@@ -401,7 +528,6 @@ exports.getReports = async (req, res) => {
     }
 };
 
-// Get single report with full image
 exports.getReportById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -430,7 +556,6 @@ exports.getReportById = async (req, res) => {
 
         const report = reports[0];
 
-        // Format image if it exists
         if (report.image_url) {
             if (!report.image_url.startsWith('data:image') && !report.image_url.startsWith('http')) {
                 report.image_url = `data:image/jpeg;base64,${report.image_url}`;
@@ -444,19 +569,16 @@ exports.getReportById = async (req, res) => {
     }
 };
 
-// Update report status
 exports.updateReportStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status, admin_notes } = req.body;
 
-        // Validate status
         const validStatuses = ['pending', 'in_progress', 'resolved', 'rejected'];
         if (status && !validStatuses.includes(status)) {
             return res.status(400).json({ error: "Invalid status. Must be: pending, in_progress, resolved, rejected" });
         }
 
-        // Check if status column exists
         const [columns] = await db.query(
             `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
@@ -469,7 +591,6 @@ exports.updateReportStatus = async (req, res) => {
             return res.status(400).json({ error: "Status column does not exist in reports table" });
         }
 
-        // Check if report exists
         const [existing] = await db.query(
             `SELECT id FROM reports WHERE id = ?`,
             [id]
@@ -479,7 +600,6 @@ exports.updateReportStatus = async (req, res) => {
             return res.status(404).json({ error: "Report not found" });
         }
 
-        // Build update query
         const updates = ['status = ?', 'updated_at = NOW()'];
         const values = [status || 'pending'];
 
@@ -495,7 +615,6 @@ exports.updateReportStatus = async (req, res) => {
             values
         );
 
-        // Get the updated report
         const [updated] = await db.query(
             `SELECT r.*, u.name as resident_name
              FROM reports r
@@ -504,7 +623,6 @@ exports.updateReportStatus = async (req, res) => {
             [id]
         );
 
-        // Format image if exists
         if (updated[0] && updated[0].image_url) {
             if (!updated[0].image_url.startsWith('data:image') && !updated[0].image_url.startsWith('http')) {
                 updated[0].image_url = `data:image/jpeg;base64,${updated[0].image_url}`;
@@ -521,12 +639,10 @@ exports.updateReportStatus = async (req, res) => {
     }
 };
 
-// Delete report
 exports.deleteReport = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if report exists
         const [existing] = await db.query(
             `SELECT id, image_url FROM reports WHERE id = ?`,
             [id]
@@ -536,10 +652,8 @@ exports.deleteReport = async (req, res) => {
             return res.status(404).json({ error: "Report not found" });
         }
 
-        // Delete the report
         await db.query(`DELETE FROM reports WHERE id = ?`, [id]);
 
-        // Log the deletion
         await db.query(
             "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
             [req.user.id, `Deleted report ID ${id}`]
@@ -552,10 +666,8 @@ exports.deleteReport = async (req, res) => {
     }
 };
 
-// Get report analytics with detailed breakdown
 exports.reportAnalytics = async (req, res) => {
     try {
-        // Check if status column exists
         const [columns] = await db.query(
             `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
@@ -589,7 +701,6 @@ exports.reportAnalytics = async (req, res) => {
 
         const [data] = await db.query(query);
 
-        // Get status breakdown if status column exists
         let statusBreakdown = [];
         if (hasStatus) {
             const [statusData] = await db.query(`
@@ -647,6 +758,10 @@ exports.exportAnalytics = async (req, res) => {
     }
 };
 
+// ============================================
+// RESIDENT LOCATIONS
+// ============================================
+
 exports.getResidentLocations = async (req, res) => {
     try {
         const [residents] = await db.query(
@@ -664,6 +779,10 @@ exports.getResidentLocations = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ============================================
+// ANNOUNCEMENTS
+// ============================================
 
 exports.createAnnouncement = async (req, res) => {
     try {
@@ -740,6 +859,10 @@ exports.deleteAnnouncement = async (req, res) => {
     }
 };
 
+// ============================================
+// PROFILE
+// ============================================
+
 exports.getProfile = async (req, res) => {
     try {
         const [[user]] = await db.query(
@@ -766,6 +889,10 @@ exports.updateProfile = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ============================================
+// PICKUPS / SCHEDULES
+// ============================================
 
 exports.getPickups = async (req, res) => {
     try {
