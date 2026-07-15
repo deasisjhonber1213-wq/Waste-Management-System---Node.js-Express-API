@@ -25,7 +25,7 @@ const bcrypt = require("bcrypt");
 
 const connectedDrivers = new Map();
 
-// ── WEBSOCKET HANDLERS ──
+
 io.on('connection', (socket) => {
     console.log('🔌 New client connected:', socket.id);
 
@@ -285,7 +285,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// ── CRON JOB ──
+
 const cron = require("node-cron");
 cron.schedule("0 0 * * 1", async () => {
     try {
@@ -307,14 +307,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// ─── 404 & ERROR HANDLERS ──────────────────────
 app.use((req, res) => {
     res.status(404).json({
         error: 'Route not found',
         path: req.path
     });
 });
-// ── MIDDLEWARE ──
+
 app.use(cors({
     origin: process.env.CORS_ORIGIN || '*',
     credentials: true
@@ -322,10 +321,9 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serve static files
+
 app.use(express.static(path.join(__dirname, "public")));
 
-// ─── HIDE .html EXTENSION ──────────────────────
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/driver/api/')) {
         return next();
@@ -350,7 +348,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ─── REDIRECT .html to clean URL ──────────────
+
 app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
         const cleanPath = req.path.replace(/\.html$/, '');
@@ -359,7 +357,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Log requests
+
 if (process.env.NODE_ENV === 'development') {
     app.use((req, res, next) => {
         console.log(`${req.method} ${req.path}`);
@@ -367,13 +365,13 @@ if (process.env.NODE_ENV === 'development') {
     });
 }
 
-// ── ROUTES ──
+
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/resident", require("./routes/residentRoutes"));
 app.use("/driver/api", require("./routes/driverRoutes"));
 
-// ── MIGRATION ──
+
 app.get('/migrate', async (req, res) => {
     try {
         const secret = req.query.secret;
@@ -446,7 +444,7 @@ app.get('/migrate', async (req, res) => {
     }
 });
 
-// ── ADMIN SETUP ──
+
 app.get('/setup-admin', async (req, res) => {
     try {
         const secret = req.query.secret;
@@ -492,7 +490,7 @@ app.get('/setup-admin', async (req, res) => {
     }
 });
 
-// ── HEALTH CHECK ──
+
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -503,7 +501,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// ── GET ONLINE DRIVERS ──
+
 app.get('/api/drivers/online', (req, res) => {
     const online = Array.from(connectedDrivers.entries()).map(([id, data]) => ({
         id,
@@ -516,7 +514,7 @@ app.get('/api/drivers/online', (req, res) => {
     res.json(online);
 });
 
-// ── 404 HANDLER ──
+
 app.use((req, res) => {
     const notFoundPath = path.join(__dirname, 'public', '404.html');
     if (fs.existsSync(notFoundPath)) {
@@ -528,7 +526,7 @@ app.use((req, res) => {
     });
 });
 
-// ── ERROR HANDLER ──
+
 app.use((err, req, res, next) => {
     console.error('❌ Unhandled error:', err);
     res.status(500).json({
@@ -538,7 +536,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// ── START SERVER ──
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
