@@ -358,6 +358,18 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/resident", require("./routes/residentRoutes"));
 app.use("/driver/api", require("./routes/driverRoutes"));
 
+const adminPages = ['dashboard', 'users', 'trucks', 'routes', 'schedules', 'reports', 'announcements', 'analytics'];
+adminPages.forEach(page => {
+    app.get(`/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public', 'admin', `${page}.html`);
+        if (fs.existsSync(filePath)) {
+            res.sendFile(filePath);
+        } else {
+            res.status(404).json({ error: 'Page not found', path: req.path });
+        }
+    });
+});
+
 app.get('/migrate', async (req, res) => {
     try {
         const secret = req.query.secret;
