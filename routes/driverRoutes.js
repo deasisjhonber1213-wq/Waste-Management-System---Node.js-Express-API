@@ -1,43 +1,74 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth'); // Import the auth middleware
+const auth = require('../middleware/auth');
 const driverController = require('../controllers/driverController');
 
-// Apply authentication middleware to ALL driver routes
-router.use(protect);
+// =============================================
+// TODAY'S ROUTE
+// =============================================
+router.get('/today', auth, driverController.getTodayAssignment);
+router.get('/today/details', auth, driverController.getTodayRouteDetails);
 
-// Debug middleware to log user info
-router.use((req, res, next) => {
-    console.log('=== Driver Route Debug ===');
-    console.log('User ID:', req.user?.id);
-    console.log('User Role:', req.user?.role);
-    console.log('User Name:', req.user?.name);
-    console.log('Request URL:', req.method, req.url);
-    next();
-});
+// =============================================
+// ASSIGNMENT MANAGEMENT
+// =============================================
+router.patch('/assignment/:id/status', auth, driverController.updateAssignmentStatus);
+router.patch('/assignment/:id/progress', auth, driverController.updateRouteProgress);
 
-// Routes
-router.get('/today', driverController.getTodayAssignment);
-router.get('/schedule', driverController.getMySchedule);
-router.patch('/assignment/:id/status', driverController.updateAssignmentStatus);
-router.post('/location', driverController.updateMyLocation);
-router.post('/reports', driverController.submitReport);
-router.get('/reports', driverController.getMyReports);
-router.get('/announcements', driverController.getAnnouncements);
-router.get('/trips', driverController.getTripHistory);
-router.get('/profile', driverController.getProfile);
-router.put('/profile', driverController.updateProfile);
-router.get('/route-waypoints', driverController.getRouteWaypoints);
-router.get('/verify', (req, res) => {
-    res.json({
-        message: "Auth working",
-        user: {
-            id: req.user.id,
-            name: req.user.name,
-            email: req.user.email,
-            role: req.user.role
-        }
-    });
-});
+// =============================================
+// SCHEDULE
+// =============================================
+router.get('/schedule', auth, driverController.getMySchedule);
+
+// =============================================
+// LOCATION TRACKING
+// =============================================
+router.post('/location', auth, driverController.updateMyLocation);
+router.get('/location/history', auth, driverController.getLocationHistory);
+
+// =============================================
+// REPORTS
+// =============================================
+router.post('/reports', auth, driverController.submitReport);
+router.post('/reports/quick', auth, driverController.createQuickReport);
+router.get('/reports', auth, driverController.getMyReports);
+
+// =============================================
+// ANNOUNCEMENTS
+// =============================================
+router.get('/announcements', auth, driverController.getAnnouncements);
+
+// =============================================
+// TRIP HISTORY
+// =============================================
+router.get('/trips', auth, driverController.getTripHistory);
+
+// =============================================
+// PROFILE
+// =============================================
+router.get('/profile', auth, driverController.getProfile);
+router.put('/profile', auth, driverController.updateProfile);
+
+// =============================================
+// STATS & PERFORMANCE
+// =============================================
+router.get('/stats', auth, driverController.getStats);
+router.get('/stats/performance', auth, driverController.getPerformanceStats);
+
+// =============================================
+// ROUTE WAYPOINTS
+// =============================================
+router.get('/route-waypoints', auth, driverController.getRouteWaypoints);
+
+// =============================================
+// NOTIFICATIONS
+// =============================================
+router.get('/notifications', auth, driverController.getNotifications);
+router.patch('/notifications/:notification_id/read', auth, driverController.markNotificationRead);
+
+// =============================================
+// DRIVER STATUS (Admin/Dispatcher)
+// =============================================
+router.get('/online', auth, driverController.getConnectedDrivers);
 
 module.exports = router;

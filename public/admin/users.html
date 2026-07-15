@@ -96,17 +96,17 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="users.html" class="nav-item active"><span class="nav-icon">👥</span>Users</a>
-            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <a href="/users" class="nav-itemactive"><span class="nav-icon">👥</span>Users</a>
+            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
-            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item "><span class="nav-icon">📊</span>Analytics</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -135,7 +135,6 @@
 
     <main class="main">
 
-        <!-- STAT ROW -->
         <div class="stat-grid reveal" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px" id="userStats">
             <div class="stat-card" data-icon="👥">
                 <div class="stat-label">Total Users</div>
@@ -193,7 +192,6 @@
 
     </main>
 
-    <!-- ADD USER MODAL -->
     <div class="modal-overlay" id="addUserModal">
         <div class="modal">
             <div class="modal-header">
@@ -228,7 +226,7 @@
         </div>
     </div>
 
-    <!-- EDIT USER MODAL -->
+
     <div class="modal-overlay" id="editUserModal">
         <div class="modal" style="max-width:550px;">
             <div class="modal-header">
@@ -238,7 +236,6 @@
             <div class="modal-body">
                 <input type="hidden" id="editUserId">
 
-                <!-- Personal Information Section -->
                 <div class="user-edit-section">
                     <div class="section-title-sm">📋 Personal Information</div>
                     <div class="form-grid form-grid-2">
@@ -264,7 +261,6 @@
                     </div>
                 </div>
 
-                <!-- Change Password Section -->
                 <div class="user-edit-section">
                     <div class="section-title-sm">🔑 Change Password</div>
                     <div class="form-grid form-grid-2">
@@ -298,7 +294,6 @@
         </div>
     </div>
 
-    <!-- VIEW USER MODAL -->
     <div class="modal-overlay" id="viewUserModal">
         <div class="modal">
             <div class="modal-header">
@@ -313,7 +308,6 @@
         </div>
     </div>
 
-    <!-- DELETE CONFIRMATION MODAL -->
     <div class="modal-overlay" id="deleteConfirmModal">
         <div class="modal" style="max-width:450px;">
             <div class="modal-header" style="border-bottom-color:var(--red);">
@@ -353,7 +347,7 @@
 
     <script src="../js/style.js"></script>
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
+
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -432,7 +426,7 @@
                 if (!res.ok) throw new Error();
                 allUsers = await res.json();
                 renderUsers(allUsers);
-                // Stats
+
                 document.getElementById("totalUsers").textContent = allUsers.length;
                 document.getElementById("totalDrivers").textContent = allUsers.filter(u => u.role === "driver").length;
                 document.getElementById("totalResidents").textContent = allUsers.filter(u => u.role === "resident").length;
@@ -503,7 +497,7 @@
                 closeModal("addUserModal");
                 showToast("User created successfully", "success");
                 loadUsers();
-                // Clear form
+
                 document.getElementById("uName").value = '';
                 document.getElementById("uEmail").value = '';
                 document.getElementById("uPass").value = '';
@@ -514,7 +508,7 @@
             }
         }
 
-        // ===================== EDIT USER =====================
+
         function openEditUser(id) {
             const user = allUsers.find(u => u.id === id);
             if (!user) {
@@ -549,7 +543,7 @@
                 return;
             }
 
-            // Check if password is being changed
+
             if (password || passwordConfirm) {
                 if (password !== passwordConfirm) {
                     showToast("Passwords do not match", "error");
@@ -578,17 +572,17 @@
             }
         }
 
-        // ===================== VIEW USER =====================
+
         async function viewUser(id) {
             try {
-                // Try to get user from local data first
+
                 const user = allUsers.find(u => u.id === id);
                 if (user) {
                     showUserDetails(user);
                     return;
                 }
 
-                // Fallback to API call
+
                 const res = await API.get(`/admin/users/${id}`);
                 if (!res.ok) throw new Error();
                 const u = await res.json();
@@ -619,7 +613,7 @@
             }
         }
 
-        // ===================== DELETE USER WITH CONFIRMATION =====================
+
         function openDeleteConfirm(id, name) {
             pendingDeleteId = id;
             pendingDeleteName = name;
@@ -629,7 +623,7 @@
             document.getElementById("deleteConfirmError").style.display = 'none';
             document.getElementById("deleteConfirmBtn").disabled = true;
             openModal("deleteConfirmModal");
-            // Focus the input after modal opens
+
             setTimeout(() => {
                 document.getElementById("deleteConfirmInput").focus();
             }, 300);
@@ -683,7 +677,7 @@
             }
         }
 
-        // ===================== PASSWORD TOGGLE =====================
+
         function togglePasswordVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
             if (input.type === "password") {
@@ -695,7 +689,7 @@
             }
         }
 
-        // ===================== PROFILE & UTILITIES =====================
+
         async function loadAdminProfile() {
             try {
                 const res = await API.get("/admin/profile");
@@ -714,7 +708,7 @@
             document.getElementById(id).classList.remove('open');
         }
 
-        // Close delete modal on Escape
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const deleteModal = document.getElementById('deleteConfirmModal');
@@ -722,7 +716,7 @@
                     closeModal('deleteConfirmModal');
                 }
             }
-            // Enter key in delete confirm input triggers delete
+
             if (e.key === 'Enter') {
                 const deleteInput = document.getElementById('deleteConfirmInput');
                 if (deleteInput && document.getElementById('deleteConfirmModal').classList.contains('open')) {
@@ -734,7 +728,7 @@
             }
         });
 
-        // ===================== EXPOSE FUNCTIONS TO GLOBAL SCOPE =====================
+
         window.openModal = openModal;
         window.closeModal = closeModal;
         window.addUser = addUser;
@@ -748,7 +742,7 @@
         window.onDeleteConfirmInput = onDeleteConfirmInput;
         window.togglePasswordVisibility = togglePasswordVisibility;
 
-        // ===================== INIT =====================
+
         loadAdminProfile();
         loadUsers();
     </script>

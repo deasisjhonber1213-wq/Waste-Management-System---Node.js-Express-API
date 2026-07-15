@@ -86,17 +86,17 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
-            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
-            <a href="announcements.html" class="nav-item active"><span class="nav-icon">📢</span>Announcements</a>
+            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="/announcements" class="nav-item active"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item "><span class="nav-icon">📊</span>Analytics</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -125,7 +125,6 @@
 
     <main class="main">
 
-        <!-- COMPOSE INLINE PANEL -->
         <div class="panel reveal section-gap">
             <div class="panel-header">
                 <div class="panel-title">
@@ -148,7 +147,6 @@
             </div>
         </div>
 
-        <!-- ANNOUNCEMENTS GRID -->
         <div class="panel reveal">
             <div class="panel-header">
                 <div class="panel-title">
@@ -169,7 +167,6 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 

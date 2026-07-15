@@ -108,10 +108,8 @@
 
 <body>
 
-    <!-- SIDEBAR OVERLAY -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
@@ -119,21 +117,17 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="dashboard.html" class="nav-item active"><span class="nav-icon">⬡</span>Dashboard</a>
-
+            <a href="/dashboard" class="nav-item active"><span class="nav-icon">⬡</span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
-            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
-
+            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports <span class="nav-badge"
-                    id="reportBadge">…</span></a>
-            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
-
+            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item "><span class="nav-icon">📊</span>Analytics</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -147,7 +141,6 @@
         </div>
     </aside>
 
-    <!-- TOPBAR -->
     <div class="topbar">
         <div style="display:flex;align-items:center;gap:14px;">
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
@@ -162,10 +155,8 @@
         </div>
     </div>
 
-    <!-- MAIN -->
     <main class="main">
 
-        <!-- STAT CARDS -->
         <div class="stat-grid reveal" id="statGrid">
             <div class="stat-card" data-icon="👥">
                 <div class="stat-label">Total Users</div>
@@ -199,7 +190,6 @@
             </div>
         </div>
 
-        <!-- QUICK ACTIONS -->
         <div class="panel section-gap reveal">
             <div class="panel-header">
                 <div class="panel-title">
@@ -224,7 +214,6 @@
             </div>
         </div>
 
-        <!-- CHARTS + ACTIVITY -->
         <div class="dash-grid">
             <div class="panel reveal">
                 <div class="panel-header">
@@ -252,7 +241,6 @@
                 </div>
             </div>
 
-            <!-- Recent Schedules — full width -->
             <div class="panel reveal dash-grid-wide">
                 <div class="panel-header">
                     <div class="panel-title">
@@ -288,11 +276,9 @@
 
     <script src="../js/style.js"></script>
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
-        // Helper functions for API calls
         function getToken() {
             return localStorage.getItem('token');
         }
@@ -357,7 +343,6 @@
         }
 
         (() => {
-            // Clock
             function updateClock() {
                 const now = new Date();
                 document.getElementById("clock").textContent = now.toLocaleTimeString("en-US", {
@@ -369,7 +354,6 @@
             setInterval(updateClock, 1000);
             updateClock();
 
-            // Load stats
             async function loadStats() {
                 try {
                     const res = await API.get("/admin/dashboard");
@@ -387,7 +371,6 @@
                 }
             }
 
-            // Load report analytics chart
             async function loadChart() {
                 try {
                     const res = await API.get("/admin/analytics");
@@ -424,7 +407,6 @@
                 } catch { }
             }
 
-            // Load recent reports
             async function loadRecentReports() {
                 try {
                     const res = await API.get("/admin/reports");
@@ -447,7 +429,6 @@
                 } catch { }
             }
 
-            // Load upcoming pickups
             async function loadPickups() {
                 try {
                     const res = await API.get("/admin/pickups");
@@ -469,7 +450,6 @@
                 } catch { }
             }
 
-            // Load admin name
             async function loadProfile() {
                 try {
                     const res = await API.get("/admin/profile");
@@ -479,7 +459,6 @@
                 } catch { }
             }
 
-            // Check auth on load
             function checkAuth() {
                 const token = getToken();
                 if (!token) {
@@ -488,7 +467,6 @@
             }
             checkAuth();
 
-            // Initialize dashboard
             loadStats();
             loadChart();
             loadRecentReports();

@@ -362,17 +362,17 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
-            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="routes.html" class="nav-item active"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
-            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <a href="/reports" class="nav-item active"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item "><span class="nav-icon">📊</span>Analytics</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -443,7 +443,7 @@
         </div>
     </main>
 
-    <!-- ══════════════ ADD / EDIT MODAL ══════════════ -->
+
     <div class="modal-overlay" id="addRouteModal">
         <div class="modal modal-lg">
             <div class="modal-header">
@@ -451,7 +451,7 @@
                 <button class="modal-close" onclick="closeModal('addRouteModal')">✕</button>
             </div>
             <div class="modal-body">
-                <!-- Name + desc -->
+
                 <div class="form-grid form-grid-2" style="margin-bottom:14px;">
                     <div class="form-group">
                         <label class="form-label">Zone Name <span style="color:var(--red)">*</span></label>
@@ -463,7 +463,7 @@
                     </div>
                 </div>
 
-                <!-- Hint -->
+
                 <div class="mode-hint" id="modeHint">
                     <strong>How to use this map:</strong>
                     Use <strong>🛣️ Road layer</strong> to click &amp; draw the road path — drag vertices to reshape,
@@ -474,7 +474,7 @@
                     All three layers are saved together and shown simultaneously.
                 </div>
 
-                <!-- Active-layer pills -->
+
                 <div class="layer-pills">
                     <div class="layer-pill active-road" id="pillRoad" onclick="setActiveLayer('road')"
                         title="Click then draw on map">
@@ -492,7 +492,7 @@
                     </button>
                 </div>
 
-                <!-- Map toolbar -->
+
                 <div class="map-toolbar" style="padding-top:6px;">
                     <button class="map-tool-btn" onclick="undoLast()">↩ Undo</button>
                     <button class="map-tool-btn" onclick="clearActiveLayer()">🗑 Clear Layer</button>
@@ -503,15 +503,13 @@
                     <button class="map-tool-btn" onclick="gotoMyLocation()">🎯 My Location</button>
                 </div>
 
-                <!-- Map -->
+
                 <div class="route-map-wrap">
                     <div id="markingMap"></div>
                 </div>
 
-                <!-- Layer summary -->
                 <div class="layer-summary" id="layerSummary"></div>
 
-                <!-- Point list -->
                 <div id="wpMiniList" style="margin-top:8px;max-height:120px;overflow-y:auto;"></div>
             </div>
             <div class="modal-footer">
@@ -521,7 +519,6 @@
         </div>
     </div>
 
-    <!-- DELETE CONFIRM -->
     <div class="modal-overlay" id="deleteRouteModal">
         <div class="modal">
             <div class="modal-header">
@@ -546,7 +543,6 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -605,45 +601,28 @@
         }
         checkAuth();
 
-        /* ════════════════════════════════════════════════════
-           STATE
-           The route now stores THREE independent layers:
-             roadPoints  — vertices of the blue editable polyline
-             pinPoints   — numbered stop markers (no connecting line)
-             mrfPoints   — MRF facility markers (manually placed)
-           All are saved together into waypoints_json as:
-             { road: [...], pins: [...], mrf: [...] }
-        ════════════════════════════════════════════════════ */
         let allRoutes = [];
         let selectedRoute = null;
         let isEditingId = null;
 
-        // Marking map
         let markingMap = null;
         let isMarkingMapSatellite = false;
-        let activeLayer = 'road';  // 'road' | 'pin'
+        let activeLayer = 'road';
 
-        // Road layer
         let roadPoints = [];
         let roadMarkers = [];
         let ghostMarkers = [];
         let roadPolyline = null;
 
-        // Pin layer
         let pinPoints = [];
         let pinMarkers = [];
 
-        // MRF layer
         let mrfPoints = [];
         let mrfMarkers = [];
 
-        // Detail map
         let detailMap = null;
         let isDetailMapSatellite = false;
 
-        /* ── Tile layers: create a FRESH instance per map call.
-             A single L.tileLayer instance can only belong to one map
-             at a time — reusing it across maps causes blank tiles.    ── */
         function makeTiles() {
             return {
                 dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -655,7 +634,6 @@
             };
         }
 
-        // Each map instance owns its own tile set
         let markingTiles = null;
         let detailTiles = null;
 
@@ -665,9 +643,7 @@
             else { tiles.dark.addTo(map); }
         }
 
-        /* ════════════════════════════════════════════════════
-           HELPERS
-        ════════════════════════════════════════════════════ */
+
         function escHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c =>
                 ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -678,10 +654,6 @@
             return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
 
-        /* ════════════════════════════════════════════════════
-           FIXED: Parse stored waypoints_json 
-           Supports both old flat array and new {road,pins,mrf} format
-        ════════════════════════════════════════════════════ */
         function parseWaypoints(json) {
             console.log('📦 Parsing waypoints input:', json);
             console.log('📦 Input type:', typeof json);
@@ -694,7 +666,6 @@
             try {
                 let parsed;
 
-                // If it's a string, parse it
                 if (typeof json === 'string') {
                     parsed = JSON.parse(json);
                 } else {
@@ -705,7 +676,6 @@
                 console.log('📦 Is array?', Array.isArray(parsed));
                 console.log('📦 Keys:', Object.keys(parsed || {}));
 
-                // If it's an array (legacy format)
                 if (Array.isArray(parsed)) {
                     console.log('📦 Legacy array format detected');
                     return {
@@ -715,7 +685,6 @@
                     };
                 }
 
-                // If it's an object with road, pins, mrf keys
                 if (parsed && typeof parsed === 'object') {
                     const result = {
                         road: parsed.road || [],
@@ -739,9 +708,7 @@
             }
         }
 
-        /* ════════════════════════════════════════════════════
-           LOAD & RENDER LIST
-        ════════════════════════════════════════════════════ */
+
         async function loadRoutes() {
             try {
                 const res = await API.get('/admin/routes');
@@ -788,9 +755,7 @@
             renderRouteList(allRoutes.filter(r => r.zone_name.toLowerCase().includes(q)));
         }
 
-        /* ════════════════════════════════════════════════════
-           SELECT / DETAIL
-        ════════════════════════════════════════════════════ */
+
         function selectRoute(id) {
             selectedRoute = allRoutes.find(r => r.id === id);
             if (!selectedRoute) return;
@@ -803,7 +768,6 @@
             console.log('📋 Route waypoints_json type:', typeof route.waypoints_json);
             console.log('📋 Route waypoints_json:', route.waypoints_json);
 
-            // Destroy old map
             if (detailMap) { detailMap.remove(); detailMap = null; detailTiles = null; }
 
             const { road, pins, mrf } = parseWaypoints(route.waypoints_json);
@@ -866,7 +830,7 @@
             if (detailMap) { detailMap.remove(); detailMap = null; detailTiles = null; }
             isDetailMapSatellite = false;
 
-            // Find a center point
+
             const allPts = [...road, ...pins, ...mrf];
             const center = allPts.length ? [allPts[0].lat, allPts[0].lng] : [8.2317, 123.4018];
             detailMap = L.map('routeDetailMap', { zoomControl: true }).setView(center, 14);
@@ -874,12 +838,11 @@
             applyTile(detailMap, detailTiles, false);
             detailMap.invalidateSize();
 
-            // Road polyline
+
             if (road.length > 1) {
                 L.polyline(road.map(p => [p.lat, p.lng]),
                     { color: '#60a5fa', weight: 4, opacity: 0.9 }).addTo(detailMap);
             }
-            // Road start/end dots
             if (road.length >= 1) {
                 L.circleMarker([road[0].lat, road[0].lng],
                     { radius: 7, color: '#4ade80', fillColor: '#4ade80', fillOpacity: 1, weight: 2 })
@@ -891,8 +854,6 @@
                     { radius: 7, color: '#f87171', fillColor: '#f87171', fillOpacity: 1, weight: 2 })
                     .bindPopup('<b>■ End</b>').addTo(detailMap);
             }
-
-            // Pin stop markers (numbered, gold) — NO connecting line
             pins.forEach((p, i) => {
                 const icon = L.divIcon({
                     html: `<div style="width:26px;height:26px;background:#ffc13c;border-radius:50%;border:2.5px solid #fff;color:#1a1a1a;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.5);">${i + 1}</div>`,
@@ -901,7 +862,6 @@
                 L.marker([p.lat, p.lng], { icon }).bindPopup(`<b>Stop ${i + 1}</b>`).addTo(detailMap);
             });
 
-            // MRF markers
             mrf.forEach((p, i) => {
                 const icon = L.divIcon({
                     html: `<div class="mrf-stop-label">🏭 MRF</div>`,
@@ -921,9 +881,6 @@
             if (btn) btn.innerHTML = isDetailMapSatellite ? '🌍 Map' : '🛰️ Satellite';
         }
 
-        /* ════════════════════════════════════════════════════
-           MODAL HELPERS
-        ════════════════════════════════════════════════════ */
         function openModal(id) { document.getElementById(id).classList.add('open'); }
 
         function closeModal(id) {
@@ -933,8 +890,6 @@
             }
         }
 
-        /* Double-rAF + small timeout guarantees the modal container
-           has real pixel dimensions before Leaflet measures it */
         function scheduleMapInit(fn) {
             requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(fn, 50)));
         }
@@ -967,16 +922,12 @@
                 const { road, pins, mrf } = parseWaypoints(route.waypoints_json);
                 console.log('📊 Editing route with:', { road: road.length, pins: pins.length, mrf: mrf.length });
 
-                // Restore road vertices
                 road.forEach(p => addRoadVertex(p.lat, p.lng));
 
-                // Restore pin stops
                 pins.forEach(p => addPinMarker(p.lat, p.lng));
 
-                // Restore MRF markers
                 mrf.forEach(p => addMRFMarker(p.lat, p.lng));
 
-                // Fit map to all points
                 const allPts = [...road, ...pins, ...mrf];
                 if (allPts.length && markingMap) {
                     markingMap.fitBounds(
@@ -988,13 +939,9 @@
             });
         }
 
-        /* ════════════════════════════════════════════════════
-           MARKING MAP INIT
-        ════════════════════════════════════════════════════ */
         function initMarkingMap() {
             if (markingMap) { markingMap.remove(); markingMap = null; }
 
-            // Reset all layers
             roadPoints = [];
             roadMarkers = [];
             ghostMarkers = [];
@@ -1019,9 +966,6 @@
             updateUI();
         }
 
-        /* ════════════════════════════════════════════════════
-           ACTIVE LAYER TOGGLE
-        ════════════════════════════════════════════════════ */
         function setActiveLayer(layer) {
             activeLayer = layer;
             document.getElementById('pillRoad').className =
@@ -1032,9 +976,6 @@
             updateUI();
         }
 
-        /* ════════════════════════════════════════════════════
-           ROAD LAYER — vertices + ghost midpoints
-        ════════════════════════════════════════════════════ */
         function addRoadVertex(lat, lng, insertAfterIdx = null) {
             if (insertAfterIdx !== null) {
                 roadPoints.splice(insertAfterIdx + 1, 0, { lat, lng });
@@ -1110,9 +1051,6 @@
             }
         }
 
-        /* ════════════════════════════════════════════════════
-           PIN LAYER — numbered markers, NO connecting line
-        ════════════════════════════════════════════════════ */
         function addPinMarker(lat, lng) {
             pinPoints.push({ lat, lng });
             const n = pinPoints.length;
@@ -1133,11 +1071,6 @@
             updateUI();
         }
 
-        /* ════════════════════════════════════════════════════
-           MRF LAYER — manually placed by admin click
-           No GPS, no automation — admin clicks the button,
-           then clicks the map once to place the marker.
-        ════════════════════════════════════════════════════ */
         let mrfPlacementActive = false;
 
         function markMRFManual() {
@@ -1146,7 +1079,6 @@
             showToast('Click on the map to place the MRF Stop', 'info');
             markingMap.getContainer().style.cursor = 'crosshair';
 
-            // One-shot click handler
             markingMap.once('click', e => {
                 mrfPlacementActive = false;
                 markingMap.getContainer().style.cursor = '';
@@ -1175,12 +1107,6 @@
             updateUI();
         }
 
-        /* Override the map click so MRF placement takes priority
-           (handled via markingMap.once so it auto-removes itself) */
-
-        /* ════════════════════════════════════════════════════
-           UNDO / CLEAR
-        ════════════════════════════════════════════════════ */
         function undoLast() {
             if (activeLayer === 'road') {
                 if (!roadPoints.length) return;
@@ -1238,9 +1164,6 @@
             updateUI();
         }
 
-        /* ════════════════════════════════════════════════════
-           SATELLITE / LOCATION
-        ════════════════════════════════════════════════════ */
         function toggleMarkingMapSatellite() {
             if (!markingMap || !markingTiles) return;
             isMarkingMapSatellite = !isMarkingMapSatellite;
@@ -1261,25 +1184,19 @@
             );
         }
 
-        /* ════════════════════════════════════════════════════
-           UI REFRESH
-        ════════════════════════════════════════════════════ */
         function updateUI() {
-            // Count label
             const roadN = roadPoints.length,
                 pinN = pinPoints.length,
                 mrfN = mrfPoints.length;
             document.getElementById('wpCountLabel').textContent =
                 `🛣️ ${roadN} road · 📍 ${pinN} stop${pinN !== 1 ? 's' : ''} · 🏭 ${mrfN} MRF`;
 
-            // Layer summary dots
             document.getElementById('layerSummary').innerHTML = `
             <span><span class="dot" style="background:#60a5fa;"></span> ${roadN} road vertex${roadN !== 1 ? 'es' : ''}</span>
             <span><span class="dot" style="background:#ffc13c;"></span> ${pinN} stop${pinN !== 1 ? 's' : ''}</span>
             <span><span class="dot" style="background:#fbbf24;"></span> ${mrfN} MRF stop${mrfN !== 1 ? 's' : ''}</span>
         `;
 
-            // Mini list — show whichever layer is active
             const mini = document.getElementById('wpMiniList');
             let pts, numClass, label;
             if (activeLayer === 'road') {
@@ -1317,10 +1234,6 @@
             mini.innerHTML = rows + mrfRows;
         }
 
-        /* ════════════════════════════════════════════════════
-           SAVE
-           Saves all three layers as { road, pins, mrf }
-        ════════════════════════════════════════════════════ */
         async function saveRoute() {
             const zone = document.getElementById('rZone').value.trim();
             const desc = document.getElementById('rDesc').value.trim();
@@ -1361,9 +1274,6 @@
             }
         }
 
-        /* ════════════════════════════════════════════════════
-           DELETE
-        ════════════════════════════════════════════════════ */
         function openDeleteModal(id, name) {
             document.getElementById('deleteRouteId').value = id;
             document.getElementById('deleteRouteName').textContent = name;
@@ -1388,9 +1298,6 @@
             } catch { showToast('Delete failed', 'error'); }
         }
 
-        /* ════════════════════════════════════════════════════
-           GLOBALS + INIT
-        ════════════════════════════════════════════════════ */
         async function loadAdminProfile() {
             try {
                 const res = await API.get('/admin/profile');

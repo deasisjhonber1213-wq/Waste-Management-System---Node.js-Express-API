@@ -10,7 +10,6 @@ exports.getTodayAssignment = async (req, res) => {
             return res.status(401).json({ error: "User not authenticated" });
         }
 
-        // Fix timezone issue - get Philippine time
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
         console.log("Today's date (Philippines):", today);
 
@@ -74,6 +73,15 @@ exports.updateAssignmentStatus = async (req, res) => {
             );
         }
 
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.to(`driver-${req.user.id}`).emit('assignment-status-changed', {
+                assignmentId: req.params.id,
+                status: status,
+                timestamp: new Date()
+            });
+        }
+
         res.json({ message: `Status updated to ${status}` });
     } catch (err) {
         console.error(err);
@@ -126,13 +134,12 @@ exports.updateMyLocation = async (req, res) => {
             return res.status(404).json({ error: "No truck assigned today" });
         }
 
-        // Update truck location
+
         await db.query(
             "UPDATE trucks SET latitude=?, longitude=?, last_location_update=NOW() WHERE id=?",
             [latitude, longitude, assignment.truck_id]
         );
 
-        // Log the location
         await db.query(
             `INSERT INTO trip_logs (assignment_id, latitude, longitude, logged_at)
              SELECT ra.id, ?, ?, NOW()
@@ -141,6 +148,18 @@ exports.updateMyLocation = async (req, res) => {
              LIMIT 1`,
             [latitude, longitude, req.user.id, today]
         );
+
+
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.to(`dispatcher-${req.user.id}`).emit('driver-moved', {
+                driverId: req.user.id,
+                latitude: latitude,
+                longitude: longitude,
+                accuracy: accuracy || 0,
+                timestamp: Date.now()
+            });
+        }
 
         res.json({ message: "Location updated", accuracy: accuracy });
     } catch (err) {
@@ -155,11 +174,21 @@ exports.submitReport = async (req, res) => {
         if (!type || !description) {
             return res.status(400).json({ error: "Type and description required" });
         }
+
         await db.query(
             `INSERT INTO reports (resident_id, type, description, location_note, created_at)
              VALUES (?, ?, ?, ?, NOW())`,
             [req.user.id, type, description, location_note || null]
         );
+
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.to(`driver-${req.user.id}`).emit('report-submitted', {
+                success: true,
+                message: 'Report submitted successfully'
+            });
+        }
+
         res.json({ message: "Report submitted" });
     } catch (err) {
         console.error(err);
@@ -183,6 +212,7 @@ exports.getMyReports = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
 
 exports.getAnnouncements = async (req, res) => {
     try {
@@ -247,6 +277,16 @@ exports.updateProfile = async (req, res) => {
             "UPDATE users SET name=?, phone=?, address=? WHERE id=?",
             [name, phone, address, req.user.id]
         );
+
+
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.to(`driver-${req.user.id}`).emit('profile-updated', {
+                success: true,
+                message: 'Profile updated successfully'
+            });
+        }
+
         res.json({ message: "Profile updated" });
     } catch (err) {
         console.error(err);
@@ -292,7 +332,6 @@ exports.getRouteWaypoints = async (req, res) => {
 
                 console.log("Parsed waypoints structure:", JSON.stringify(parsed, null, 2));
 
-                // Check for different formats
                 if (parsed && typeof parsed === 'object') {
                     if (parsed.road || parsed.road_path) {
                         console.log("Found road layer with", (parsed.road || parsed.road_path).length, "points");
@@ -307,7 +346,6 @@ exports.getRouteWaypoints = async (req, res) => {
 
                 parsedWaypoints = parsed;
 
-                // Return the full parsed structure
                 return res.json({
                     waypoints: [],
                     raw_waypoints: parsedWaypoints,
@@ -330,6 +368,307 @@ exports.getRouteWaypoints = async (req, res) => {
         });
     } catch (err) {
         console.error("Error in getRouteWaypoints:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+
+exports.getStats = async (req, res) => {
+    try {
+        const [stats] = await db.query(
+            `SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress
+            FROM route_assignments
+            WHERE driver_id = ?`,
+            [req.user.id]
+        );
+        res.json(stats[0] || { total: 0, completed: 0, pending: 0, in_progress: 0 });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getTodayRouteDetails = async (req, res) => {
+    try {
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+
+        const [assignments] = await db.query(
+            `SELECT
+                ra.id,
+                ra.assigned_date,
+                ra.status,
+                ra.pickup_type,
+                r.id as route_id,
+                r.zone_name,
+                r.description AS zone_description,
+                r.waypoints_json,
+                t.id AS truck_id,
+                t.plate_number,
+                t.model,
+                t.latitude,
+                t.longitude
+             FROM route_assignments ra
+             JOIN routes r ON ra.route_id = r.id
+             JOIN trucks t ON ra.truck_id = t.id
+             WHERE ra.driver_id = ? AND ra.assigned_date = ?
+             LIMIT 1`,
+            [req.user.id, today]
+        );
+
+        const assignment = assignments[0] || null;
+
+        if (assignment && assignment.waypoints_json) {
+            try {
+                let parsed = assignment.waypoints_json;
+                if (typeof parsed === 'string') {
+                    parsed = JSON.parse(parsed);
+                }
+                assignment.waypoints = parsed;
+            } catch (e) {
+                console.error("Error parsing waypoints:", e);
+                assignment.waypoints = null;
+            }
+            delete assignment.waypoints_json;
+        }
+
+        res.json(assignment);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getLocationHistory = async (req, res) => {
+    try {
+        const { limit = 50 } = req.query;
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+
+        const [rows] = await db.query(
+            `SELECT 
+                tl.latitude,
+                tl.longitude,
+                tl.logged_at as timestamp,
+                ra.zone_name
+             FROM trip_logs tl
+             JOIN route_assignments ra ON tl.assignment_id = ra.id
+             WHERE ra.driver_id = ? AND ra.assigned_date = ?
+             ORDER BY tl.logged_at DESC
+             LIMIT ?`,
+            [req.user.id, today, parseInt(limit)]
+        );
+
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.updateRouteProgress = async (req, res) => {
+    try {
+        const { assignment_id, stop_index, stop_status } = req.body;
+
+        if (!assignment_id || stop_index === undefined) {
+            return res.status(400).json({ error: "assignment_id and stop_index required" });
+        }
+
+        const [[assignment]] = await db.query(
+            "SELECT id FROM route_assignments WHERE id = ? AND driver_id = ?",
+            [assignment_id, req.user.id]
+        );
+
+        if (!assignment) {
+            return res.status(403).json({ error: "Not authorised" });
+        }
+
+
+        await db.query(
+            `UPDATE route_assignments 
+             SET progress_log = JSON_SET(
+                 COALESCE(progress_log, '{}'), 
+                 CONCAT('$.stop_', ?), 
+                 ?
+             )
+             WHERE id = ?`,
+            [stop_index, stop_status || 'reached', assignment_id]
+        );
+
+
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.to(`driver-${req.user.id}`).emit('stop-updated', {
+                assignmentId: assignment_id,
+                stopIndex: stop_index,
+                status: stop_status || 'reached',
+                timestamp: new Date()
+            });
+        }
+
+        res.json({
+            message: `Stop ${stop_index} updated to ${stop_status || 'reached'}`
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getConnectedDrivers = async (req, res) => {
+    try {
+
+        const connectedDrivers = req.app.get('connectedDrivers') || new Map();
+
+        const online = Array.from(connectedDrivers.entries()).map(([id, data]) => ({
+            id,
+            name: data.name,
+            lastLat: data.lastLat,
+            lastLng: data.lastLng,
+            connectedAt: data.connectedAt,
+            lastUpdate: data.lastUpdate,
+            socketId: data.socketId
+        }));
+
+        res.json(online);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.createQuickReport = async (req, res) => {
+    try {
+        const { type, description, location_note, latitude, longitude, image_url } = req.body;
+
+        if (!type || !description) {
+            return res.status(400).json({ error: "Type and description required" });
+        }
+
+        const result = await db.query(
+            `INSERT INTO reports (
+                resident_id, 
+                type, 
+                description, 
+                location_note, 
+                latitude, 
+                longitude, 
+                image_url,
+                created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [
+                req.user.id,
+                type,
+                description,
+                location_note || null,
+                latitude || null,
+                longitude || null,
+                image_url || null
+            ]
+        );
+
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.to(`dispatcher-${req.user.id}`).emit('new-report', {
+                reportId: result[0].insertId,
+                driverId: req.user.id,
+                type: type,
+                description: description,
+                location: { latitude, longitude },
+                timestamp: new Date()
+            });
+        }
+
+        res.json({
+            message: "Report submitted successfully",
+            reportId: result[0].insertId
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getNotifications = async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT 
+                id, 
+                message, 
+                type, 
+                is_read,
+                created_at,
+                related_id
+             FROM notifications 
+             WHERE user_id = ? AND user_type = 'driver'
+             ORDER BY created_at DESC
+             LIMIT 50`,
+            [req.user.id]
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.markNotificationRead = async (req, res) => {
+    try {
+        const { notification_id } = req.params;
+
+        await db.query(
+            "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
+            [notification_id, req.user.id]
+        );
+
+        res.json({ message: "Notification marked as read" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getPerformanceStats = async (req, res) => {
+    try {
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekAgoStr = weekAgo.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+
+
+        const [weekly] = await db.query(
+            `SELECT 
+                COUNT(*) as total_assigned,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                ROUND(
+                    (SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*)) * 100, 1
+                ) as completion_rate
+            FROM route_assignments
+            WHERE driver_id = ? 
+            AND assigned_date BETWEEN ? AND ?`,
+            [req.user.id, weekAgoStr, today]
+        );
+
+
+        const [todayStats] = await db.query(
+            `SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+            FROM route_assignments
+            WHERE driver_id = ? AND assigned_date = ?`,
+            [req.user.id, today]
+        );
+
+        res.json({
+            weekly: weekly[0] || { total_assigned: 0, completed: 0, pending: 0, completion_rate: 0 },
+            today: todayStats[0] || { total: 0, completed: 0 },
+            connected_vehicles: 0
+        });
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ error: err.message });
     }
 };

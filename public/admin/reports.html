@@ -390,17 +390,17 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
-            <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="reports.html" class="nav-item active"><span class="nav-icon">⚠️</span>Reports & Residents</a>
-            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <a href="/reports" class="nav-item active"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item "><span class="nav-icon">📊</span>Analytics</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -426,7 +426,6 @@
 
     <main class="main">
 
-        <!-- TYPE STATS -->
         <div class="stat-grid reveal" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
             <div class="stat-card">
                 <div class="stat-label">Missed Pickup</div>
@@ -450,9 +449,8 @@
             </div>
         </div>
 
-        <!-- MAIN LAYOUT: Map on LEFT, Reports on RIGHT -->
         <div class="reports-layout">
-            <!-- LEFT: LARGER MAP -->
+
             <div class="panel reveal">
                 <div class="panel-header">
                     <div class="panel-title">
@@ -479,9 +477,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Reports and Residents Tabs -->
             <div class="panel reveal">
-                <!-- Filter Bar -->
                 <div class="filter-row">
                     <div class="search-bar" style="flex:1;min-width:150px;">
                         <input type="text" placeholder="Search reports..." id="searchInput" oninput="applyFilters()">
@@ -506,7 +502,6 @@
                     <button class="tab-btn" onclick="switchTab('residents')">📍 Live Resident Locations</button>
                 </div>
 
-                <!-- Reports Tab Content -->
                 <div id="reports-tab" class="tab-content active">
                     <div class="panel-header">
                         <div class="panel-title">
@@ -538,7 +533,6 @@
                     </div>
                 </div>
 
-                <!-- Residents Tab Content -->
                 <div id="residents-tab" class="tab-content">
                     <div class="panel-header">
                         <div class="panel-title">
@@ -556,7 +550,6 @@
         </div>
     </main>
 
-    <!-- VIEW REPORT MODAL -->
     <div class="modal-overlay" id="viewReportModal">
         <div class="modal" style="max-width:540px;">
             <div class="modal-header">
@@ -570,7 +563,6 @@
         </div>
     </div>
 
-    <!-- VIEW RESIDENT MODAL -->
     <div class="modal-overlay" id="viewResidentModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
@@ -584,7 +576,6 @@
         </div>
     </div>
 
-    <!-- IMAGE LIGHTBOX -->
     <div class="lightbox-overlay" id="lightbox" onclick="closeLightbox()">
         <button class="lightbox-close" onclick="closeLightbox()">✕</button>
         <img id="lightboxImg" src="" alt="Report photo">
@@ -593,7 +584,7 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
+
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -626,9 +617,6 @@
         }
         checkAuth();
 
-        /* ════════════════════════════════════════════════════
-           STATE
-        ════════════════════════════════════════════════════ */
         let allReports = [];
         let allResidents = [];
         let filtered = [];
@@ -693,9 +681,6 @@
             }
         }
 
-        /* ════════════════════════════════════════════════════
-           MAP INIT
-        ════════════════════════════════════════════════════ */
         function initReportMap() {
             if (reportMap) return;
             reportMap = L.map('reportMap').setView([8.2317, 123.4018], 13);
@@ -729,9 +714,6 @@
             btn.classList.toggle('active', isSat);
         }
 
-        /* ════════════════════════════════════════════════════
-           RENDER MAP PINS for reports
-        ════════════════════════════════════════════════════ */
         function renderMapPins(data) {
             reportMarkers.forEach(({ marker }) => reportMap.removeLayer(marker));
             reportMarkers = [];
@@ -745,7 +727,6 @@
                     iconSize: [14, 14], iconAnchor: [7, 7], className: ''
                 });
 
-                // ✅ FIX: Convert latitude/longitude to numbers
                 const lat = parseFloat(r.latitude);
                 const lng = parseFloat(r.longitude);
 
@@ -782,9 +763,6 @@
             </div>`;
         }
 
-        /* ════════════════════════════════════════════════════
-           RENDER RESIDENT PINS
-        ════════════════════════════════════════════════════ */
         function renderResidentPins(residents) {
             residentMarkers.forEach(({ marker }) => reportMap.removeLayer(marker));
             residentMarkers = [];
@@ -797,7 +775,6 @@
                     iconSize: [12, 12], iconAnchor: [6, 6], className: ''
                 });
 
-                // ✅ FIX: Convert latitude/longitude to numbers
                 const lat = parseFloat(r.latitude);
                 const lng = parseFloat(r.longitude);
 
@@ -846,16 +823,12 @@
             setTimeout(() => entry.marker.openPopup(), 900);
         }
 
-        /* ════════════════════════════════════════════════════
-           LOAD DATA
-        ════════════════════════════════════════════════════ */
         async function loadReports() {
             try {
                 const res = await API.get('/admin/reports');
                 if (!res.ok) throw new Error('Failed to fetch reports');
                 const data = await res.json();
 
-                // ✅ FIX: Handle both array and paginated response
                 if (Array.isArray(data)) {
                     allReports = data;
                 } else if (data && data.data && Array.isArray(data.data)) {
@@ -882,7 +855,6 @@
                 if (!res.ok) throw new Error('Failed to fetch residents');
                 allResidents = await res.json();
 
-                // Ensure allResidents is an array
                 if (!Array.isArray(allResidents)) {
                     allResidents = [];
                 }
@@ -908,7 +880,6 @@
             container.innerHTML = allResidents.map(r => {
                 const lastSeen = new Date(r.location_updated_at);
                 const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
-                // ✅ FIX: Safe access to latitude/longitude with fallback
                 const lat = r.latitude != null ? parseFloat(r.latitude) : null;
                 const lng = r.longitude != null ? parseFloat(r.longitude) : null;
                 const latStr = lat != null && !isNaN(lat) ? lat.toFixed(5) : '—';
@@ -931,16 +902,12 @@
         }
 
         function updateStatCards(data) {
-            // ✅ FIX: Use Array.isArray check
             const reports = Array.isArray(data) ? data : [];
             document.getElementById('c-missed').textContent = reports.filter(r => r.type === 'missed_pickup').length;
             document.getElementById('c-overflow').textContent = reports.filter(r => r.type === 'overflowing_bin').length;
             document.getElementById('c-illegal').textContent = reports.filter(r => r.type === 'illegal_dumping').length;
         }
 
-        /* ════════════════════════════════════════════════════
-           FILTERS
-        ════════════════════════════════════════════════════ */
         function setDateFilter(f) {
             activeDateFilter = f;
             ['all', 'today', 'week', 'month'].forEach(k => {
@@ -953,7 +920,6 @@
             const q = document.getElementById('searchInput').value.toLowerCase();
             const tp = document.getElementById('typeFilter').value;
 
-            // ✅ FIX: Ensure allReports is an array
             const reports = Array.isArray(allReports) ? allReports : [];
 
             filtered = reports.filter(r => {
@@ -972,9 +938,6 @@
             document.getElementById('mapPinCount').textContent = `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
         }
 
-        /* ════════════════════════════════════════════════════
-           TABLE
-        ════════════════════════════════════════════════════ */
         function renderTable(data) {
             const tbody = document.getElementById('reportsBody');
             if (!data.length) {
@@ -997,9 +960,6 @@
             }).join('');
         }
 
-        /* ════════════════════════════════════════════════════
-           VIEW MODALS
-        ════════════════════════════════════════════════════ */
         function viewReport(id) {
             const r = allReports.find(x => x.id === id);
             if (!r) return;
@@ -1066,7 +1026,6 @@
             const lastSeen = new Date(r.location_updated_at);
             const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
 
-            // ✅ FIX: Safe access to latitude/longitude
             const lat = r.latitude != null ? parseFloat(r.latitude) : null;
             const lng = r.longitude != null ? parseFloat(r.longitude) : null;
             const latStr = lat != null && !isNaN(lat) ? lat.toFixed(6) : '—';
@@ -1111,9 +1070,6 @@
             document.getElementById(id).classList.remove('open');
         }
 
-        /* ════════════════════════════════════════════════════
-           TAB SWITCHING
-        ════════════════════════════════════════════════════ */
         function switchTab(tab) {
             activeTab = tab;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1129,9 +1085,6 @@
             }
         }
 
-        /* ════════════════════════════════════════════════════
-           LIGHTBOX
-        ════════════════════════════════════════════════════ */
         function openLightbox(src) {
             document.getElementById('lightboxImg').src = src;
             document.getElementById('lightbox').classList.add('open');
@@ -1144,9 +1097,6 @@
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
-        /* ════════════════════════════════════════════════════
-           PROFILE + INIT
-        ════════════════════════════════════════════════════ */
         async function loadAdminProfile() {
             try {
                 const res = await API.get('/admin/profile');
@@ -1157,19 +1107,17 @@
             } catch { }
         }
 
-        // Expose functions globally
+
         Object.assign(window, {
             viewReport, viewResident, flyToReport, flyToResident, openLightbox, closeLightbox,
             setDateFilter, applyFilters, toggleSat, switchTab, fitAllPins, openModal, closeModal
         });
 
-        // Initialize
         initReportMap();
         loadAdminProfile();
         loadReports();
         loadResidents();
 
-        // Auto-refresh resident locations every 30 seconds
         setInterval(loadResidents, 30000);
     </script>
 </body>

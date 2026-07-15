@@ -238,17 +238,17 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="users.html" class="nav-item"><span class="nav-icon">👥</span>Users</a>
-            <a href="trucks.html" class="nav-item active"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="/trucks" class="nav-item active"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
-            <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item "><span class="nav-icon">📊</span>Analytics</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -277,12 +277,10 @@
 
     <main class="main">
 
-        <!-- FLEET CARDS -->
         <div class="truck-card-grid reveal" id="truckCards">
             <div style="color:var(--text2);padding:20px"><span class="loading-spinner"></span></div>
         </div>
 
-        <!-- FLEET MAP -->
         <div class="panel reveal section-gap">
             <div class="panel-header">
                 <div class="panel-title">
@@ -329,7 +327,7 @@
             </div>
         </div>
 
-        <!-- TABLE -->
+
         <div class="panel reveal">
             <div class="panel-header">
                 <div class="panel-title">
@@ -357,7 +355,7 @@
 
     </main>
 
-    <!-- ADD TRUCK -->
+
     <div class="modal-overlay" id="addTruckModal">
         <div class="modal">
             <div class="modal-header">
@@ -383,7 +381,7 @@
         </div>
     </div>
 
-    <!-- EDIT TRUCK -->
+
     <div class="modal-overlay" id="editTruckModal">
         <div class="modal">
             <div class="modal-header">
@@ -410,7 +408,7 @@
         </div>
     </div>
 
-    <!-- UPDATE LOCATION -->
+
     <div class="modal-overlay" id="updateLocModal">
         <div class="modal">
             <div class="modal-header">
@@ -446,7 +444,7 @@
         </div>
     </div>
 
-    <!-- DELETE CONFIRM -->
+
     <div class="modal-overlay" id="deleteTruckModal">
         <div class="modal">
             <div class="modal-header">
@@ -474,7 +472,7 @@
     <script src="../js/style.js"></script>
 
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
+
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -537,7 +535,7 @@
             trucks = [];
         let isFleetMapSatellite = false;
 
-        // Map tile layers
+
         const darkTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
             attribution: "&copy; OSM & CARTO",
             subdomains: "abcd",
@@ -587,7 +585,7 @@
             showToast(`Centered on ${positioned.length} truck${positioned.length !== 1 ? 's' : ''}`, "success");
         }
 
-        /* ── HELPERS ── */
+
         function escHtml(str) {
             return String(str ?? "").replace(/[&<>"']/g, c =>
                 ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -632,7 +630,6 @@
             return "#f87171";
         }
 
-        /* ── LOAD ── */
         async function loadTrucks() {
             try {
                 const res = await API.get("/admin/trucks");
@@ -648,7 +645,7 @@
             }
         }
 
-        /* ── RENDER CARDS ── */
+
         function renderCards(data) {
             document.getElementById("truckCards").innerHTML = data.length ?
                 data.map(t => `
@@ -678,7 +675,7 @@
                    </div>`;
         }
 
-        /* ── RENDER TABLE ── */
+
         function renderTable(data) {
             document.getElementById("trucksBody").innerHTML = data.length ?
                 data.map((t, i) => `
@@ -704,7 +701,6 @@
                 `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text2)">No trucks found</td></tr>`;
         }
 
-        /* ── RENDER MAP ── */
         function renderMap(data) {
             if (!fleetMap) {
                 fleetMap = L.map("fleetMap").setView([14.5995, 120.9842], 12);
@@ -737,7 +733,6 @@
             }
         }
 
-        /* ── ADD ── */
         async function addTruck() {
             const plate = document.getElementById("tPlate").value.trim();
             const model = document.getElementById("tModel").value.trim();
@@ -753,7 +748,6 @@
             } catch (e) { showToast(e.message || "Failed to add truck", "error"); }
         }
 
-        /* ── EDIT ── */
         function openEditModal(id) {
             const truck = trucks.find(t => t.id === id);
             if (!truck) return;
@@ -777,7 +771,6 @@
             } catch (e) { showToast(e.message || "Update failed", "error"); }
         }
 
-        /* ── DELETE ── */
         function openDeleteModal(id, plate) {
             document.getElementById("deleteTruckId").value = id;
             document.getElementById("deleteTruckName").textContent = plate;
@@ -795,7 +788,7 @@
             } catch (e) { showToast(e.message || "Delete failed", "error"); }
         }
 
-        /* ── LOCATION ── */
+
         function openLocModal(id) {
             document.getElementById("locTruckId").value = id;
             document.getElementById("locLat").value = "";
@@ -833,7 +826,6 @@
 
         function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
-        // Expose globals
         window.openModal = openModal;
         window.closeModal = closeModal;
         window.addTruck = addTruck;

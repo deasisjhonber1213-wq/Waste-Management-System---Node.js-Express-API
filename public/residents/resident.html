@@ -12,7 +12,6 @@
         href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <style>
-        /* ... (your existing styles remain the same) ... */
         :root {
             --bg: #050d07;
             --bg-1: #091210;
@@ -40,7 +39,6 @@
             --shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
         }
 
-        /* ... (rest of your styles remain the same) ... */
         *,
         *::before,
         *::after {
@@ -71,7 +69,6 @@
             z-index: 0;
         }
 
-        /* ── NAV ── */
         .site-nav {
             position: fixed;
             top: 0;
@@ -156,7 +153,6 @@
             transform: translateY(-1px);
         }
 
-        /* ── BURGER BTN (mobile only) ── */
         .nav-burger {
             display: none;
             width: 40px;
@@ -199,10 +195,6 @@
             transform: translateY(-7px) rotate(-45deg);
         }
 
-        /* ══════════════════════════════════
-           REDESIGNED MOBILE DRAWER
-           Right-side slide-in panel
-        ══════════════════════════════════ */
         .drawer-backdrop {
             position: fixed;
             top: var(--nav-h);
@@ -408,7 +400,6 @@
             color: var(--green);
         }
 
-        /* ── SECTIONS ── */
         section {
             position: relative;
             z-index: 1;
@@ -466,7 +457,6 @@
             margin-bottom: 2rem;
         }
 
-        /* ── HERO ── */
         .hero-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -546,7 +536,6 @@
             letter-spacing: 0.1em;
         }
 
-        /* ── MAP PANEL ── */
         .map-panel {
             background: var(--surface);
             border-radius: var(--r-lg);
@@ -615,11 +604,58 @@
             background: var(--bg-2);
         }
 
-        .map-panel .leaflet-control-container {
-            z-index: 400 !important;
+        .leaflet-control-zoom {
+            border: 1px solid var(--border-hi) !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+            background: rgba(5, 13, 7, 0.9) !important;
+            backdrop-filter: blur(8px);
         }
 
-        /* ── TRUCK STATUS CARD ── */
+        .leaflet-control-zoom a {
+            width: 30px !important;
+            height: 30px !important;
+            line-height: 30px !important;
+            font-size: 16px !important;
+            color: var(--green) !important;
+            background: transparent !important;
+            border-bottom: 1px solid var(--border) !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background: var(--green-dim) !important;
+            color: var(--green) !important;
+        }
+
+        .leaflet-control-scale {
+            font-size: 8px !important;
+            color: var(--text-2) !important;
+            font-family: var(--ff-mono) !important;
+        }
+
+        .leaflet-control-scale-line {
+            background: rgba(5, 13, 7, 0.85) !important;
+            border-color: var(--border-hi) !important;
+            padding: 2px 6px !important;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px !important;
+            padding: 4px 8px !important;
+            background: var(--bg-1) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--border-hi) !important;
+        }
+
+        .leaflet-popup-content {
+            font-size: 11px !important;
+            margin: 6px 8px !important;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--bg-1) !important;
+        }
+
         .truck-card {
             position: relative;
             border-radius: var(--r-lg);
@@ -688,7 +724,6 @@
             align-items: center;
         }
 
-        /* ── ABOUT ── */
         .about-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -754,7 +789,6 @@
             color: var(--text-2);
         }
 
-        /* ── SCHEDULE ── */
         .schedule-timeline {
             display: flex;
             flex-direction: column;
@@ -897,7 +931,6 @@
             color: var(--text-3);
         }
 
-        /* ── ANNOUNCEMENTS ── */
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -946,7 +979,6 @@
             line-height: 1.5;
         }
 
-        /* ── TIPS ── */
         .tips-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -982,7 +1014,6 @@
             color: var(--text-2);
         }
 
-        /* ── REPORT FORM ── */
         .report-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
@@ -1245,7 +1276,6 @@
             margin-top: 2px;
         }
 
-        /* ── FOOTER ── */
         footer {
             padding: 1.5rem;
             background: rgba(5, 13, 7, 0.95);
@@ -1282,7 +1312,6 @@
             color: var(--green);
         }
 
-        /* ── TOAST ── */
         #toast {
             position: fixed;
             bottom: 1.5rem;
@@ -1305,7 +1334,6 @@
             transform: translateX(-50%) translateY(0);
         }
 
-        /* ── MODAL ── */
         .modal-bg {
             position: fixed;
             inset: 0;
@@ -1400,7 +1428,6 @@
             color: var(--bg);
         }
 
-        /* ── ANIMATIONS ── */
         @keyframes blink {
 
             0%,
@@ -1426,26 +1453,11 @@
             transform: none;
         }
 
-        /* Leaflet overrides */
         .leaflet-container {
             background: var(--bg-2) !important;
             font-family: var(--ff-display);
         }
 
-        .leaflet-popup-content-wrapper {
-            background: var(--bg-1) !important;
-            color: var(--text) !important;
-            border: 1px solid var(--border-hi) !important;
-            border-radius: 12px !important;
-        }
-
-        .leaflet-popup-tip {
-            background: var(--bg-1) !important;
-        }
-
-        /* ══════════════════════════════════════
-           RESPONSIVE — Tablets
-        ══════════════════════════════════════ */
         @media (max-width: 900px) {
 
             .hero-grid,
@@ -1475,9 +1487,6 @@
             }
         }
 
-        /* ══════════════════════════════════════
-           RESPONSIVE — Mobile (600px)
-        ══════════════════════════════════════ */
         @media (max-width: 600px) {
             #home {
                 padding: calc(var(--nav-h) + 1rem) 1rem 2rem;
@@ -1489,17 +1498,6 @@
 
             .tips-grid {
                 grid-template-columns: 1fr;
-            }
-
-            .pickup-row {
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: auto auto;
-                gap: 0.75rem;
-                padding: 0.9rem 1rem;
-            }
-
-            .pickup-row>div:last-child {
-                grid-column: 1/-1;
             }
 
             .hero-desc {
@@ -1540,9 +1538,6 @@
             }
         }
 
-        /* ══════════════════════════════════════
-           RESPONSIVE — Small phones (400px)
-        ══════════════════════════════════════ */
         @media (max-width: 420px) {
             :root {
                 --nav-h: 56px;
@@ -1661,15 +1656,6 @@
                 font-size: 0.75rem;
             }
 
-            .pickup-row {
-                padding: 0.8rem 0.875rem;
-                gap: 0.5rem;
-            }
-
-            .pickup-date {
-                font-size: 0.82rem;
-            }
-
             .form-card {
                 padding: 1.15rem;
                 border-radius: var(--r-lg);
@@ -1751,7 +1737,6 @@
             }
         }
 
-        /* ── Tiny phones (360px and below) ── */
         @media (max-width: 360px) {
             #home {
                 padding-left: 0.75rem;
@@ -1785,7 +1770,6 @@
 </head>
 
 <body>
-    <!-- ... (your existing HTML body remains exactly the same until the script section) ... -->
     <nav class="site-nav">
         <a href="#home" class="nav-brand">
             <div class="nav-brand-icon">♻</div>
@@ -1808,7 +1792,6 @@
         </div>
     </nav>
 
-    <!-- ══════════════ MOBILE DRAWER ══════════════ -->
     <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
     <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation menu">
@@ -1886,7 +1869,6 @@
                 <span>Report Issue</span>
                 <span class="drawer-link-arrow">›</span>
             </a>
-            <!-- Logout link inside drawer -->
             <a href="/login.html" class="drawer-link"
                 style="margin-top:12px;border-top:1px solid var(--border);border-radius:14px;padding-top:14px;">
                 <div class="drawer-link-icon">
@@ -1903,7 +1885,6 @@
         </nav>
     </div>
 
-    <!-- ══════════════ HOME / MAP ══════════════ -->
     <section id="home">
         <div class="inner hero-grid">
             <div class="hero-text reveal">
@@ -1968,8 +1949,6 @@
         </div>
     </section>
 
-    <!-- ... (rest of your HTML sections remain the same) ... -->
-    <!-- ══════════════ ABOUT ══════════════ -->
     <section id="about" class="section-pad section-alt">
         <div class="inner">
             <div class="reveal">
@@ -2016,7 +1995,6 @@
         </div>
     </section>
 
-    <!-- ══════════════ SCHEDULE ══════════════ -->
     <section id="pickup" class="section-pad">
         <div class="inner">
             <div class="reveal">
@@ -2033,7 +2011,6 @@
         </div>
     </section>
 
-    <!-- ══════════════ ANNOUNCEMENTS ══════════════ -->
     <section id="updates" class="section-pad section-alt">
         <div class="inner">
             <div class="reveal">
@@ -2053,7 +2030,6 @@
         </div>
     </section>
 
-    <!-- ══════════════ TIPS ══════════════ -->
     <section id="tips" class="section-pad">
         <div class="inner">
             <div class="reveal">
@@ -2081,7 +2057,6 @@
         </div>
     </section>
 
-    <!-- ══════════════ REPORT ══════════════ -->
     <section id="report" class="section-pad section-alt">
         <div class="inner">
             <div class="reveal">
@@ -2187,7 +2162,6 @@
 
     <div id="toast"></div>
 
-    <!-- Confirm Modal -->
     <div class="modal-bg" id="confirmModal">
         <div class="modal">
             <div class="modal-icon" id="modalIcon">📋</div>
@@ -2206,7 +2180,6 @@
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/login.html';
 
-        /* Central fetch helper */
         async function apiFetch(url, options = {}) {
             const opts = { ...options, headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) } };
             const res = await fetch(url, opts);
@@ -2219,9 +2192,6 @@
             return res.json();
         }
 
-        /* ════════════════════════════════════════
-           DRAWER - same as before
-        ════════════════════════════════════════ */
         const burgerBtn = document.getElementById('burgerBtn');
         const mobileDrawer = document.getElementById('mobileDrawer');
         const drawerBackdrop = document.getElementById('drawerBackdrop');
@@ -2272,18 +2242,12 @@
             if (delta > 60) closeDrawer();
         }, { passive: true });
 
-        /* ════════════════════════════════════════
-           REVEAL ON SCROLL
-        ════════════════════════════════════════ */
         const io = new IntersectionObserver(
             entries => entries.forEach(e => e.isIntersecting && e.target.classList.add('in')),
             { threshold: 0.1 }
         );
         document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-        /* ════════════════════════════════════════
-           MAP STATE - FIXED LOCATION SHARING
-        ════════════════════════════════════════ */
         let map, markerLayer, tileStreet, tileSat, tileRoadOverlay;
         let currentTruckId, truckMarker, userMarker, userCircle;
         let mrfMarkers = [];
@@ -2297,8 +2261,17 @@
             userLng = null;
         let truckLat = null,
             truckLng = null;
-        let lastKnownLocation = null; // Store the last known accurate location
-        let locationWatchId = null; // For continuous tracking
+        let lastKnownLocation = null;
+        let locationWatchId = null;
+
+        let animFrame = null;
+        let animating = false;
+        let animStart = null;
+        let animFrom = null;
+        let animTo = null;
+        let roadTrail = null;
+        let fullRoute = [];
+        let trailProgress = 0;
 
         tileStreet = L.tileLayer(
             'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM &amp; CARTO', subdomains: 'abcd', maxZoom: 20 }
@@ -2312,7 +2285,14 @@
 
         function initMap(lat = 8.2317, lng = 123.4018) {
             if (map) return;
-            map = L.map('map', { zoomControl: true, attributionControl: false }).setView([lat, lng], 14);
+            map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([lat, lng], 13);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            L.control.scale({ position: 'bottomleft', metric: true, imperial: false, maxWidth: 80 }).addTo(map);
+
             tileStreet.addTo(map);
             markerLayer = L.layerGroup().addTo(map);
             loadResidentLocations();
@@ -2355,39 +2335,165 @@
             } catch (e) { console.error("parseWaypointsJson error:", e); return { road: [], pins: [], mrfs: [] }; }
         }
 
-        function showRouteOnMap(routeData) {
+        function showRouteWithTrail(routeData) {
             if (!map) return;
+
             if (roadPolyline) {
                 map.removeLayer(roadPolyline);
                 roadPolyline = null;
+            }
+            if (roadTrail) {
+                map.removeLayer(roadTrail);
+                roadTrail = null;
             }
             pinMarkers.forEach(m => map.removeLayer(m));
             pinMarkers = [];
             mrfMarkers.forEach(m => map.removeLayer(m));
             mrfMarkers = [];
+            fullRoute = [];
+            trailProgress = 0;
+
             const { road, pins, mrfs } = routeData;
+
             if (road.length >= 2) {
-                roadPolyline = L.polyline(road.map(v => [v.lat, v.lng]), { color: "#f5a623", weight: 4, opacity: 0.9, dashArray: "8 6" }).addTo(map);
+                fullRoute = road.map(v => L.latLng(v.lat, v.lng));
+
+                L.polyline(fullRoute, {
+                    color: "#3d4558",
+                    weight: 4,
+                    opacity: 0.3,
+                    dashArray: "8 6"
+                }).addTo(map);
+
+                roadTrail = L.polyline([], {
+                    color: "#4ade80",
+                    weight: 5,
+                    opacity: 0.85
+                }).addTo(map);
+
+                roadTrail.setLatLngs(fullRoute);
+
+                let totalM = 0;
+                for (let i = 1; i < fullRoute.length; i++) {
+                    totalM += fullRoute[i - 1].distanceTo(fullRoute[i]);
+                }
+                const distEl = document.getElementById('routeDist');
+                if (distEl) {
+                    distEl.textContent = totalM > 1000 ? (totalM / 1000).toFixed(2) + " km" : Math.round(totalM) + " m";
+                }
             }
+
             pins.forEach((p, i) => {
-                const icon = L.divIcon({ html: `<div style="width:28px;height:28px;background:#1e2435;border:2px solid #5b9cf6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#5b9cf6;">${p.num}</div>`, iconSize: [28, 28], iconAnchor: [14, 14], className: '' });
+                const icon = L.divIcon({
+                    html: `<div style="width:22px;height:22px;background:#1e2435;border:2px solid #5b9cf6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#5b9cf6;box-shadow:0 1px 4px rgba(0,0,0,.3);">${p.num}</div>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
                 pinMarkers.push(L.marker([p.lat, p.lng], { icon }).bindPopup(`<b>📍 Stop ${p.num}</b><br>${p.name}`).addTo(map));
             });
+
             mrfs.forEach(m => {
-                const icon = L.divIcon({ html: `<div style="position:relative;width:42px;height:42px;display:flex;align-items:center;justify-content:center;"><div style="position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(45,212,160,.45);animation:mrfRing 2.4s ease-out infinite;"></div><div style="width:38px;height:38px;background:linear-gradient(135deg,#2dd4a0,#1aad82);border-radius:10px;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;position:relative;z-index:2;"><span style="font-size:18px">🏭</span></div></div>`, iconSize: [42, 42], iconAnchor: [21, 21], className: '' });
-                mrfMarkers.push(L.marker([m.lat, m.lng], { icon }).bindPopup(`<b style="color:#2dd4a0">🏭 ${m.name}</b><br>Material Recovery Facility`).addTo(map));
+                const icon = L.divIcon({
+                    html: `<div style="width:32px;height:32px;background:linear-gradient(135deg,#2dd4a0,#1aad82);border-radius:8px;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(45,212,160,.4);"><span style="font-size:14px">🏭</span></div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+                mrfMarkers.push(L.marker([m.lat, m.lng], { icon }).bindPopup(`<b style="color:#2dd4a0">🏭 ${m.name}</b>`).addTo(map));
             });
-            const allPoints = [...road.map(v => [v.lat, v.lng]), ...pins.map(p => [p.lat, p.lng]), ...mrfs.map(m => [m.lat, m.lng])];
-            if (allPoints.length) map.fitBounds(L.latLngBounds(allPoints).pad(0.15));
+
+            const allPoints = [
+                ...road.map(v => [v.lat, v.lng]),
+                ...pins.map(p => [p.lat, p.lng]),
+                ...mrfs.map(m => [m.lat, m.lng])
+            ];
+            if (allPoints.length) {
+                map.fitBounds(L.latLngBounds(allPoints).pad(0.12));
+            }
         }
 
-        function placeTruckMarker(lat, lng) {
+        function updateRoadTrail(lat, lng) {
+            if (!fullRoute.length || !roadTrail) return;
+            const current = L.latLng(lat, lng);
+            let nearest = 0;
+            let minDist = Infinity;
+            for (let i = trailProgress; i < fullRoute.length; i++) {
+                const d = current.distanceTo(fullRoute[i]);
+                if (d < minDist) {
+                    minDist = d;
+                    nearest = i;
+                }
+                if (d > minDist + 100 && i > trailProgress + 5) break;
+            }
+            if (nearest > trailProgress) {
+                trailProgress = nearest;
+                const trailPoints = fullRoute.slice(0, trailProgress + 1);
+                roadTrail.setLatLngs(trailPoints);
+            }
+        }
+
+        function animateTruck(from, to, duration = 1200) {
+            if (animating && animFrame) {
+                cancelAnimationFrame(animFrame);
+                animFrame = null;
+                from = { lat: truckMarker.getLatLng().lat, lng: truckMarker.getLatLng().lng };
+            }
+
+            animating = true;
+            animStart = Date.now();
+            animFrom = from;
+            animTo = to;
+
+            function step() {
+                const elapsed = Date.now() - animStart;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+                const lat = animFrom.lat + (animTo.lat - animFrom.lat) * ease;
+                const lng = animFrom.lng + (animTo.lng - animFrom.lng) * ease;
+
+                if (truckMarker) {
+                    truckMarker.setLatLng([lat, lng]);
+                }
+                updateRoadTrail(lat, lng);
+
+                if (progress < 1) {
+                    animFrame = requestAnimationFrame(step);
+                } else {
+                    animating = false;
+                    animFrame = null;
+                    if (truckMarker) {
+                        truckMarker.setLatLng([animTo.lat, animTo.lng]);
+                    }
+                    updateRoadTrail(animTo.lat, animTo.lng);
+                }
+            }
+            step();
+        }
+
+        function placeTruckMarker(lat, lng, animate = true) {
             truckLat = lat;
             truckLng = lng;
+
             if (!map) initMap(lat, lng);
-            if (truckMarker) { truckMarker.setLatLng([lat, lng]); } else {
-                const icon = L.divIcon({ html: `<div style="width:34px;height:34px;background:#f5a623;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(245,166,35,.35),0 0 18px rgba(245,166,35,.6);display:flex;align-items:center;justify-content:center;animation:truckPulse 2s ease-in-out infinite;"><span style="font-size:16px">🚛</span></div>`, iconSize: [34, 34], iconAnchor: [17, 17], className: '' });
-                truckMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).bindPopup('<b>🚛 Garbage Truck</b>').addTo(map);
+
+            if (truckMarker) {
+                const currentPos = truckMarker.getLatLng();
+                if (animate && currentPos) {
+                    animateTruck({ lat: currentPos.lat, lng: currentPos.lng }, { lat, lng });
+                } else {
+                    truckMarker.setLatLng([lat, lng]);
+                    updateRoadTrail(lat, lng);
+                }
+            } else {
+                const icon = L.divIcon({
+                    html: `<div style="width:30px;height:30px;background:#f5a623;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 3px rgba(245,166,35,.35),0 0 14px rgba(245,166,35,.5);display:flex;align-items:center;justify-content:center;animation:truckPulse 2s ease-in-out infinite;"><span style="font-size:14px">🚛</span></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                truckMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 })
+                    .bindPopup('<b>🚛 Garbage Truck</b>')
+                    .addTo(map);
+                updateRoadTrail(lat, lng);
             }
             updateDistanceHUD();
         }
@@ -2405,16 +2511,25 @@
                 });
                 list.forEach(r => {
                     const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
-                    const icon = L.divIcon({ html: `<div style="width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;${fresh ? 'background:rgba(91,156,246,.25);box-shadow:0 0 10px rgba(91,156,246,.5);border-color:rgba(91,156,246,.5);' : 'background:rgba(61,69,88,.5);opacity:.6;'}"><span style="font-size:13px">🏠</span></div>`, iconSize: [30, 30], iconAnchor: [15, 15], className: '' });
-                    if (residentMarkers[r.id]) { residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon); } else { residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon }).bindPopup(`<b style="color:#5b9cf6">🏠 ${r.name}</b><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`).addTo(map); }
+                    const icon = L.divIcon({
+                        html: `<div style="width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;${fresh ? 'background:rgba(91,156,246,.25);box-shadow:0 0 8px rgba(91,156,246,.4);border-color:rgba(91,156,246,.5);' : 'background:rgba(61,69,88,.5);opacity:.6;'}"><span style="font-size:11px">🏠</span></div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+                    if (residentMarkers[r.id]) {
+                        residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon);
+                    } else {
+                        residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon })
+                            .bindPopup(`<b style="color:#5b9cf6">🏠 ${r.name}</b><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`)
+                            .addTo(map);
+                    }
                 });
             } catch (e) { console.warn('Resident locations failed', e); }
         }
 
         const markerStyles = document.createElement('style');
         markerStyles.textContent = `
-        @keyframes truckPulse { 0%,100%{box-shadow:0 0 0 4px rgba(245,166,35,.35),0 0 18px rgba(245,166,35,.6)} 50%{box-shadow:0 0 0 8px rgba(245,166,35,.15),0 0 28px rgba(245,166,35,.4)} }
-        @keyframes mrfRing { 0%{transform:scale(.7);opacity:.8} 100%{transform:scale(1.6);opacity:0} }
+            @keyframes truckPulse { 0%,100%{box-shadow:0 0 0 3px rgba(245,166,35,.35),0 0 14px rgba(245,166,35,.5)} 50%{box-shadow:0 0 0 6px rgba(245,166,35,.15),0 0 24px rgba(245,166,35,.4)} }
         `;
         document.head.appendChild(markerStyles);
 
@@ -2429,17 +2544,26 @@
                 }
                 currentTruckId = data.truck_id;
                 document.getElementById('todayTruck').innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
+
                 if (data.route_id) {
                     try {
                         const routeData = await apiFetch(`/api/resident/route-waypoints?route_id=${data.route_id}`);
                         const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
                         if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
                             initMap(parsed.road[0]?.lat || data.latitude || 8.2317, parsed.road[0]?.lng || data.longitude || 123.4018);
-                            showRouteOnMap(parsed);
-                        } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
-                    } catch (e) { console.warn('route-waypoints failed', e); initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
-                } else { initMap(data.latitude || 8.2317, data.longitude || 123.4018); }
-                if (data.latitude && data.longitude) placeTruckMarker(data.latitude, data.longitude);
+                            showRouteWithTrail(parsed);
+                        } else {
+                            initMap(data.latitude || 8.2317, data.longitude || 123.4018);
+                        }
+                    } catch (e) {
+                        console.warn('route-waypoints failed', e);
+                        initMap(data.latitude || 8.2317, data.longitude || 123.4018);
+                    }
+                } else {
+                    initMap(data.latitude || 8.2317, data.longitude || 123.4018);
+                }
+
+                if (data.latitude && data.longitude) placeTruckMarker(data.latitude, data.longitude, false);
                 startUserTracking();
                 pollTruckLocation();
                 setInterval(pollTruckLocation, 10000);
@@ -2455,7 +2579,9 @@
             if (!currentTruckId) return;
             try {
                 const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
-                if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) placeTruckMarker(logs[0].latitude, logs[0].longitude);
+                if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) {
+                    placeTruckMarker(logs[0].latitude, logs[0].longitude, true);
+                }
             } catch (e) { console.warn('Truck poll failed', e); }
         }
 
@@ -2479,7 +2605,6 @@
 
         function centerOnUser() {
             if (!map) { showToast('Map not ready', 'error'); return; }
-            // Use the last known accurate location if available
             const lat = userLat || lastKnownLocation?.lat || 8.2317;
             const lng = userLng || lastKnownLocation?.lng || 123.4018;
             map.setView([lat, lng], 16, { animate: true });
@@ -2489,7 +2614,6 @@
         function placeUserMarker(lat, lng, accuracy) {
             if (!map) initMap(lat, lng);
 
-            // Store as last known location
             lastKnownLocation = { lat, lng, accuracy };
             userLat = lat;
             userLng = lng;
@@ -2497,22 +2621,31 @@
             if (userMarker) {
                 userMarker.setLatLng([lat, lng]);
             } else {
-                const icon = L.divIcon({ html: `<div style="width:16px;height:16px;background:#3b82f6;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 4px rgba(59,130,246,0.35),0 0 14px rgba(59,130,246,0.5);"></div>`, iconSize: [16, 16], iconAnchor: [8, 8], className: '' });
-                userMarker = L.marker([lat, lng], { icon, zIndexOffset: 500 }).bindPopup('<b>📍 You</b>').addTo(map);
+                const icon = L.divIcon({
+                    html: `<div style="width:14px;height:14px;background:#3b82f6;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 3px rgba(59,130,246,0.35),0 0 12px rgba(59,130,246,0.5);"></div>`,
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                });
+                userMarker = L.marker([lat, lng], { icon, zIndexOffset: 500 })
+                    .bindPopup('<b>📍 You</b>')
+                    .addTo(map);
             }
+
             if (userCircle) {
                 userCircle.setLatLng([lat, lng]).setRadius(accuracy || 30);
             } else {
-                userCircle = L.circle([lat, lng], { radius: accuracy || 30, color: '#3b82f6', weight: 1, fillOpacity: 0.08 }).addTo(map);
+                userCircle = L.circle([lat, lng], { radius: accuracy || 30, color: '#3b82f6', weight: 1, fillOpacity: 0.08 })
+                    .addTo(map);
             }
+
             const locInfo = document.getElementById('locationInfo');
-            if (locInfo) locInfo.innerHTML = `<span>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><span id="locAccuracy">±${Math.round(accuracy || 30)}m</span>`;
+            if (locInfo) {
+                locInfo.innerHTML = `<span>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><span id="locAccuracy">±${Math.round(accuracy || 30)}m</span>`;
+            }
             updateDistanceHUD();
         }
 
-        // FIXED: Better location tracking with watchPosition
         function startUserTracking() {
-            // First, get a single accurate position
             navigator.geolocation?.getCurrentPosition(
                 pos => {
                     const { latitude, longitude, accuracy } = pos.coords;
@@ -2522,15 +2655,12 @@
                 },
                 (err) => {
                     console.warn('Geolocation error:', err);
-                    // Use fallback if we have a last known location
                     if (lastKnownLocation) {
                         placeUserMarker(lastKnownLocation.lat, lastKnownLocation.lng, lastKnownLocation.accuracy);
                     }
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+                }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
             );
 
-            // Use watchPosition for continuous tracking (more accurate than setInterval)
             if (locationWatchId) {
                 navigator.geolocation?.clearWatch(locationWatchId);
             }
@@ -2538,23 +2668,16 @@
             locationWatchId = navigator.geolocation?.watchPosition(
                 pos => {
                     const { latitude, longitude, accuracy } = pos.coords;
-                    // Only update if accuracy is reasonable (less than 100m for high accuracy)
                     if (accuracy < 100) {
                         placeUserMarker(latitude, longitude, accuracy);
                     } else {
-                        // Still update but with a warning
-                        console.warn('Location accuracy is low:', accuracy);
                         placeUserMarker(latitude, longitude, accuracy);
                     }
                 },
-                (err) => {
-                    console.warn('Watch position error:', err);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+                (err) => { console.warn('Watch position error:', err); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
             );
         }
 
-        // FIXED: Share location with proper accuracy
         function toggleShareLocation() {
             const btn = document.getElementById('btnShare');
             const status = document.getElementById('shareStatus');
@@ -2569,11 +2692,10 @@
                     status.textContent = 'Sharing: ON';
                     status.style.color = '#4ade80';
                 }
-                // Use the last known location if available
+
                 if (lastKnownLocation) {
                     pushMyLocation(lastKnownLocation.lat, lastKnownLocation.lng);
                 } else {
-                    // Get fresh location
                     navigator.geolocation?.getCurrentPosition(
                         pos => {
                             const { latitude, longitude, accuracy } = pos.coords;
@@ -2581,8 +2703,6 @@
                                 placeUserMarker(latitude, longitude, accuracy);
                                 pushMyLocation(latitude, longitude);
                             } else {
-                                // Still share but warn
-                                showToast('Location accuracy is low. Sharing approximate location.', 'info');
                                 pushMyLocation(latitude, longitude);
                             }
                         },
@@ -2591,12 +2711,10 @@
                             if (lastKnownLocation) {
                                 pushMyLocation(lastKnownLocation.lat, lastKnownLocation.lng);
                             }
-                        },
-                        { enableHighAccuracy: true, timeout: 10000 }
+                        }, { enableHighAccuracy: true, timeout: 10000 }
                     );
                 }
                 shareInterval = setInterval(() => {
-                    // Use watchPosition for updates
                     navigator.geolocation?.getCurrentPosition(
                         pos => {
                             const { latitude, longitude, accuracy } = pos.coords;
@@ -2606,12 +2724,10 @@
                             }
                         },
                         () => {
-                            // If location fails, use last known
                             if (lastKnownLocation) {
                                 pushMyLocation(lastKnownLocation.lat, lastKnownLocation.lng);
                             }
-                        },
-                        { enableHighAccuracy: true, timeout: 8000 }
+                        }, { enableHighAccuracy: true, timeout: 8000 }
                     );
                 }, 15000);
                 showToast('📍 Location sharing ON');
@@ -2638,24 +2754,12 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ latitude: lat, longitude: lng })
                 });
-                // Update the location info with the shared location
-                const locInfo = document.getElementById('locationInfo');
-                if (locInfo) {
-                    const accuracySpan = document.getElementById('locAccuracy');
-                    locInfo.innerHTML = `<span>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)} (shared)</span>`;
-                    if (accuracySpan) {
-                        locInfo.appendChild(accuracySpan);
-                    }
-                }
             } catch (e) {
                 console.warn('Share push failed', e);
                 showToast('Failed to share location', 'error');
             }
         }
 
-        /* ════════════════════════════════════════
-           SCHEDULE — timeline + see all
-        ════════════════════════════════════════ */
         let scheduleShowAll = false;
         const SCHEDULE_LIMIT = 3;
 
@@ -2667,7 +2771,10 @@
                 if (!data.length) { el.innerHTML = '<p style="color:var(--text-2);">No schedule available.</p>'; return; }
                 window._scheduleData = data;
                 renderSchedule();
-            } catch (err) { console.error('loadSchedule failed:', err); el.innerHTML = '<p style="color:var(--text-2);">Failed to load schedule.</p>'; }
+            } catch (err) {
+                console.error('loadSchedule failed:', err);
+                el.innerHTML = '<p style="color:var(--text-2);">Failed to load schedule.</p>';
+            }
         }
 
         function renderSchedule() {
@@ -2685,25 +2792,25 @@
                         `<span class="badge badge-upcoming">Upcoming</span>`;
                 const isLast = i === visible.length - 1;
                 return `<div class="timeline-item">
-                      <div class="tl-left">
+                    <div class="tl-left">
                         <div class="tl-dot ${cls}"></div>
                         ${!isLast ? `<div class="tl-line"></div>` : ''}
-                      </div>
-                      <div class="tl-card ${cls}">
+                    </div>
+                    <div class="tl-card ${cls}">
                         <div class="tl-top">
-                          <div>
-                            <div class="tl-date">${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                            <div class="tl-day">${d.toLocaleDateString('en-US', { weekday: 'long' })}</div>
-                          </div>
-                          ${badge}
+                            <div>
+                                <div class="tl-date">${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                <div class="tl-day">${d.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                            </div>
+                            ${badge}
                         </div>
                         <div class="tl-meta">
-                          <span class="tl-meta-item">🚛 ${s.plate_number}</span>
-                          <span class="tl-meta-item">📍 ${s.zone_name}</span>
-                          <span class="tl-meta-item">♻ ${s.pickup_type}</span>
+                            <span class="tl-meta-item">🚛 ${s.plate_number}</span>
+                            <span class="tl-meta-item">📍 ${s.zone_name}</span>
+                            <span class="tl-meta-item">♻ ${s.pickup_type}</span>
                         </div>
-                      </div>
-                    </div>`;
+                    </div>
+                </div>`;
             }).join('');
             const btn = document.querySelector('.see-all-btn');
             if (btn) btn.textContent = scheduleShowAll ? 'Show less' : `See all (${data.length})`;
@@ -2714,9 +2821,6 @@
             renderSchedule();
         }
 
-        /* ════════════════════════════════════════
-           ANNOUNCEMENTS — cleaner cards + see all
-        ════════════════════════════════════════ */
         let annShowAll = false;
         const ANN_LIMIT = 2;
 
@@ -2727,7 +2831,10 @@
                 const data = await apiFetch('/api/resident/announcements');
                 window._annData = data;
                 renderAnnouncements();
-            } catch (err) { console.error('loadAnnouncements failed:', err); el.innerHTML = '<p style="color:var(--text-2);">Failed to load announcements.</p>'; }
+            } catch (err) {
+                console.error('loadAnnouncements failed:', err);
+                el.innerHTML = '<p style="color:var(--text-2);">Failed to load announcements.</p>';
+            }
         }
 
         function renderAnnouncements() {
@@ -2736,13 +2843,13 @@
             const visible = annShowAll ? data : data.slice(0, ANN_LIMIT);
             el.innerHTML = data.length ? visible.map(a => `
                 <div class="ann-card">
-                  ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" onerror="this.style.display='none'">` : ''}
-                  <div class="ann-card-body">
-                    <div class="ann-date">${a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</div>
-                    <div class="ann-title">${a.title}</div>
-                    <div class="ann-msg" style="-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">${a.message}</div>
-                    <button onclick="expandAnn(this)" style="background:none;border:none;color:var(--green);font-size:0.75rem;padding:4px 0;cursor:pointer;font-family:var(--ff-display)">Read more ›</button>
-                  </div>
+                    ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" onerror="this.style.display='none'">` : ''}
+                    <div class="ann-card-body">
+                        <div class="ann-date">${a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</div>
+                        <div class="ann-title">${a.title}</div>
+                        <div class="ann-msg" style="-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">${a.message}</div>
+                        <button onclick="expandAnn(this)" style="background:none;border:none;color:var(--green);font-size:0.75rem;padding:4px 0;cursor:pointer;font-family:var(--ff-display)">Read more ›</button>
+                    </div>
                 </div>`).join('') : '<p style="color:var(--text-2);">No announcements yet.</p>';
             const btn = document.getElementById('annSeeAll');
             if (btn) btn.textContent = annShowAll ? 'Show less' : `See all (${data.length})`;
@@ -2759,9 +2866,6 @@
             renderAnnouncements();
         }
 
-        /* ════════════════════════════════════════
-           REPORT — WITH REQUIRED PHOTO & LOCATION
-        ════════════════════════════════════════ */
         let reportPhotoBase64 = null,
             reportLat = null,
             reportLng = null;
@@ -2816,7 +2920,6 @@
                     showToast('Location captured', 'success');
                 },
                 () => {
-                    // If geolocation fails, use last known location
                     if (lastKnownLocation) {
                         reportLat = lastKnownLocation.lat;
                         reportLng = lastKnownLocation.lng;
@@ -2840,20 +2943,9 @@
             const type = document.getElementById('rtype')?.value;
             const desc = document.getElementById('rdesc')?.value.trim();
 
-            if (!desc) {
-                showToast('Please describe the issue.', 'error');
-                return;
-            }
-
-            if (reportLat === null || reportLng === null) {
-                showToast('Please capture your location first.', 'error');
-                return;
-            }
-
-            if (!reportPhotoBase64) {
-                showToast('Please take a photo of the issue.', 'error');
-                return;
-            }
+            if (!desc) { showToast('Please describe the issue.', 'error'); return; }
+            if (reportLat === null || reportLng === null) { showToast('Please capture your location first.', 'error'); return; }
+            if (!reportPhotoBase64) { showToast('Please take a photo of the issue.', 'error'); return; }
 
             const modalIcon = document.getElementById('modalIcon');
             const modalTitle = document.getElementById('modalTitle');
@@ -2940,7 +3032,6 @@
             setTimeout(() => t.classList.remove('show'), 3500);
         }
 
-        // Expose all functions to global scope
         Object.assign(window, {
             setTile,
             centerOnUser,
@@ -2956,7 +3047,6 @@
             toggleDrawer
         });
 
-        // Init
         loadTodayTruck();
         loadSchedule();
         loadAnnouncements();

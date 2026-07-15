@@ -1,7 +1,6 @@
 const mysql = require("mysql2");
 require('dotenv').config();
 
-// Build connection config from environment variables
 const dbConfig = {
     host: process.env.MYSQLHOST || 'mysql.railway.internal',
     port: parseInt(process.env.MYSQLPORT) || 3306,
@@ -14,7 +13,6 @@ const dbConfig = {
     connectTimeout: 10000
 };
 
-// Add SSL for production (Railway requires this sometimes)
 if (process.env.NODE_ENV === 'production') {
     dbConfig.ssl = { rejectUnauthorized: false };
 }
@@ -27,10 +25,8 @@ console.log('📊 Database Config:', {
     ssl: dbConfig.ssl ? 'enabled' : 'disabled'
 });
 
-// Create connection pool
 const db = mysql.createPool(dbConfig);
 
-// Test connection
 db.getConnection((err, connection) => {
     if (err) {
         console.error('❌ Database connection failed:', err.message);

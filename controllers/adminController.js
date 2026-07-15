@@ -26,10 +26,6 @@ exports.dashboardStats = async (req, res) => {
     }
 };
 
-// ============================================
-// USER MANAGEMENT (UPDATED)
-// ============================================
-
 exports.getUsers = async (req, res) => {
     try {
         const [users] = await db.query(
@@ -42,7 +38,6 @@ exports.getUsers = async (req, res) => {
     }
 };
 
-// Get single user by ID
 exports.getUserById = async (req, res) => {
     try {
         const [users] = await db.query(
@@ -59,18 +54,17 @@ exports.getUserById = async (req, res) => {
     }
 };
 
-// Update user (including password)
+
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, email, phone, address, role, password } = req.body;
 
-        // Validate required fields
         if (!name || !email) {
             return res.status(400).json({ error: "Name and email are required" });
         }
 
-        // Check if user exists
+
         const [existing] = await db.query(
             "SELECT id FROM users WHERE id = ?",
             [id]
@@ -79,7 +73,6 @@ exports.updateUser = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Check if email is already taken by another user
         const [emailCheck] = await db.query(
             "SELECT id FROM users WHERE email = ? AND id != ?",
             [email, id]
@@ -91,7 +84,7 @@ exports.updateUser = async (req, res) => {
         let query = "UPDATE users SET name = ?, email = ?, phone = ?, address = ?, role = ?";
         let values = [name, email, phone || null, address || null, role || 'resident'];
 
-        // If password is provided, hash and update it
+
         if (password) {
             if (password.length < 6) {
                 return res.status(400).json({ error: "Password must be at least 6 characters" });
@@ -106,7 +99,7 @@ exports.updateUser = async (req, res) => {
 
         await db.query(query, values);
 
-        // Log the update
+
         await db.query(
             "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
             [req.user.id, `Updated user ID ${id}`]
@@ -121,7 +114,7 @@ exports.updateUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
     try {
-        // Check if user exists
+
         const [existing] = await db.query(
             "SELECT id, name FROM users WHERE id = ?",
             [req.params.id]
@@ -130,12 +123,11 @@ exports.deleteUser = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Prevent deleting yourself
+
         if (req.params.id == req.user.id) {
             return res.status(400).json({ error: "You cannot delete your own account" });
         }
 
-        // Check if user has any active assignments (if driver)
         const [assignments] = await db.query(
             `SELECT id FROM route_assignments 
              WHERE driver_id = ? AND status IN ('pending', 'in_progress')
@@ -160,9 +152,6 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
-// ============================================
-// TRUCK MANAGEMENT
-// ============================================
 
 exports.addTruck = async (req, res) => {
     try {
@@ -244,9 +233,6 @@ exports.updateTruckLocation = async (req, res) => {
     }
 };
 
-// ============================================
-// ROUTE MANAGEMENT
-// ============================================
 
 exports.addRoute = async (req, res) => {
     try {
@@ -405,7 +391,7 @@ exports.getRoutes = async (req, res) => {
 
 exports.deleteRoute = async (req, res) => {
     try {
-        // Check if route is being used
+
         const [assignments] = await db.query(
             `SELECT id FROM route_assignments WHERE route_id = ? AND status IN ('pending', 'in_progress') LIMIT 1`,
             [req.params.id]
@@ -424,9 +410,6 @@ exports.deleteRoute = async (req, res) => {
     }
 };
 
-// ============================================
-// ROUTE ASSIGNMENT
-// ============================================
 
 exports.assignRoute = async (req, res) => {
     try {
@@ -443,10 +426,6 @@ exports.assignRoute = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-// ============================================
-// REPORTS FUNCTIONS WITH LONGTEXT SUPPORT
-// ============================================
 
 exports.getReports = async (req, res) => {
     try {
@@ -758,9 +737,6 @@ exports.exportAnalytics = async (req, res) => {
     }
 };
 
-// ============================================
-// RESIDENT LOCATIONS
-// ============================================
 
 exports.getResidentLocations = async (req, res) => {
     try {
@@ -779,10 +755,6 @@ exports.getResidentLocations = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-// ============================================
-// ANNOUNCEMENTS
-// ============================================
 
 exports.createAnnouncement = async (req, res) => {
     try {
@@ -859,9 +831,6 @@ exports.deleteAnnouncement = async (req, res) => {
     }
 };
 
-// ============================================
-// PROFILE
-// ============================================
 
 exports.getProfile = async (req, res) => {
     try {
@@ -890,9 +859,6 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
-// ============================================
-// PICKUPS / SCHEDULES
-// ============================================
 
 exports.getPickups = async (req, res) => {
     try {
