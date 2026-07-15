@@ -232,7 +232,6 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -261,8 +260,8 @@
         function showToast(msg, type = 'info') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = msg;
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${msg}</span>`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         }
@@ -280,33 +279,36 @@
         async function loadDashStats() {
             try {
                 const res = await API.get("/admin/dashboard");
-                if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const d = await res.json();
                 document.getElementById("k-users").textContent = d.totalUsers ?? "—";
                 document.getElementById("k-trucks").textContent = d.totalTrucks ?? "—";
                 document.getElementById("k-reports").textContent = d.totalReports ?? "—";
                 document.getElementById("k-fuel").textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) : "0";
-            } catch { }
+            } catch (err) {
+                console.error('Load dashboard stats error:', err);
+            }
         }
 
         async function loadScheduleStats() {
             try {
                 const res = await API.get("/admin/pickups");
-                if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                document.getElementById("k-sched").textContent = data.length;
-                document.getElementById("k-done").textContent = data.filter(s => s.status === "completed").length;
+                document.getElementById("k-sched").textContent = Array.isArray(data) ? data.length : "—";
+                const completed = Array.isArray(data) ? data.filter(s => s.status === "completed").length : 0;
+                document.getElementById("k-done").textContent = completed;
 
-                const pending = data.filter(s => s.status === "pending").length;
-                const completed = data.filter(s => s.status === "completed").length;
-                const missed = data.filter(s => s.status === "missed").length;
+                const pending = Array.isArray(data) ? data.filter(s => s.status === "pending" || s.status === "in_progress").length : 0;
+                const completedCount = completed;
+                const missed = Array.isArray(data) ? data.filter(s => s.status === "missed").length : 0;
 
                 new Chart(document.getElementById("barChart"), {
                     type: "bar",
                     data: {
                         labels: ["Pending", "Completed", "Missed"],
                         datasets: [{
-                            data: [pending, completed, missed],
+                            data: [pending, completedCount, missed],
                             backgroundColor: ["#ffc13c", "#3ddc84", "#ff5c5c"],
                             borderRadius: 6,
                             borderWidth: 0,
@@ -321,65 +323,110 @@
                         }
                     }
                 });
-            } catch { }
+            } catch (err) {
+                console.error('Load schedule stats error:', err);
+            }
         }
 
         async function loadAnalytics() {
             try {
                 const res = await API.get("/admin/analytics");
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    console.error('Analytics API error:', res.status);
+                    throw new Error(`HTTP ${res.status}`);
+                }
                 const data = await res.json();
-                const total = data.reduce((s, d) => s + Number(d.total), 0);
-                const labels = data.map(d => d.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
-                const values = data.map(d => Number(d.total));
+                console.log('📊 Analytics data:', data);
 
-                // Donut
-                new Chart(document.getElementById("donutChart"), {
-                    type: "doughnut",
-                    data: {
-                        labels,
-                        datasets: [{
-                            data: values,
-                            backgroundColor: PALETTE,
-                            borderWidth: 0,
-                            hoverOffset: 10
-                        }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: "bottom", labels: { color: "#8d99a8", font: { family: "Outfit", size: 11 }, padding: 16, boxWidth: 10 } }
-                        },
-                        cutout: "68%"
-                    }
+                // Handle different response formats
+                let reportData = [];
+                if (Array.isArray(data)) {
+                    reportData = data;
+                } else if (data && data.type_breakdown && Array.isArray(data.type_breakdown)) {
+                    reportData = data.type_breakdown;
+                } else if (data && data.data && Array.isArray(data.data)) {
+                    reportData = data.data;
+                } else {
+                    reportData = [];
+                }
+
+                const total = reportData.reduce((s, d) => s + Number(d.total || d.count || 0), 0);
+                const labels = reportData.map(d => {
+                    const type = d.type || d.report_type || '';
+                    return type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown';
                 });
+                const values = reportData.map(d => Number(d.total || d.count || 0));
+
+                // Donut Chart
+                const donutCtx = document.getElementById("donutChart");
+                if (donutCtx) {
+                    new Chart(donutCtx, {
+                        type: "doughnut",
+                        data: {
+                            labels: labels.length ? labels : ['No Data'],
+                            datasets: [{
+                                data: labels.length ? values : [1],
+                                backgroundColor: labels.length ? PALETTE : ['#333'],
+                                borderWidth: 0,
+                                hoverOffset: 10
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: "bottom", labels: { color: "#8d99a8", font: { family: "Outfit", size: 11 }, padding: 16, boxWidth: 10 } }
+                            },
+                            cutout: "68%"
+                        }
+                    });
+                }
 
                 // Metric bars
-                document.getElementById("metricRows").innerHTML = data.map((d, i) => {
-                    const pct = total ? Math.round(Number(d.total) / total * 100) : 0;
-                    return `
-                <div class="metric-item">
-                    <div class="metric-label">${labels[i]}</div>
-                    <div class="metric-bar-wrap">
-                        <div class="metric-bar-fill" style="width:${pct}%;background:${PALETTE[i % PALETTE.length]}"></div>
-                    </div>
-                    <div class="metric-count">${d.total}</div>
-                </div>`;
-                }).join("") || '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No data yet</div></div>';
+                const metricRows = document.getElementById("metricRows");
+                if (metricRows) {
+                    if (!reportData.length) {
+                        metricRows.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No data yet</div></div>';
+                    } else {
+                        metricRows.innerHTML = reportData.map((d, i) => {
+                            const val = Number(d.total || d.count || 0);
+                            const pct = total ? Math.round(val / total * 100) : 0;
+                            return `
+                            <div class="metric-item">
+                                <div class="metric-label">${labels[i] || 'Unknown'}</div>
+                                <div class="metric-bar-wrap">
+                                    <div class="metric-bar-fill" style="width:${Math.max(pct, 2)}%;background:${PALETTE[i % PALETTE.length]}"></div>
+                                </div>
+                                <div class="metric-count">${val}</div>
+                            </div>`;
+                        }).join("");
+                    }
+                }
 
                 // Table
-                document.getElementById("analyticsTable").innerHTML = data.map((d, i) => {
-                    const pct = total ? (Number(d.total) / total * 100).toFixed(1) : 0;
-                    return `
-                <tr>
-                    <td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${PALETTE[i % PALETTE.length]};display:inline-block"></span>${labels[i]}</span></td>
-                    <td class="table-mono text-gold">${d.total}</td>
-                    <td class="table-muted">${pct}%</td>
-                    <td><div style="width:${Math.min(pct * 2, 100)}%;height:6px;background:${PALETTE[i % PALETTE.length]};border-radius:3px;min-width:4px"></div></td>
-                </tr>`;
-                }).join("") || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text2)">No data</td></tr>';
+                const tableBody = document.getElementById("analyticsTable");
+                if (tableBody) {
+                    if (!reportData.length) {
+                        tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text2)">No data</td></tr>';
+                    } else {
+                        tableBody.innerHTML = reportData.map((d, i) => {
+                            const val = Number(d.total || d.count || 0);
+                            const pct = total ? (val / total * 100).toFixed(1) : 0;
+                            return `
+                            <tr>
+                                <td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${PALETTE[i % PALETTE.length]};display:inline-block"></span>${labels[i] || 'Unknown'}</span></td>
+                                <td class="table-mono text-gold">${val}</td>
+                                <td class="table-muted">${pct}%</td>
+                                <td><div style="width:${Math.min(pct * 2, 100)}%;height:6px;background:${PALETTE[i % PALETTE.length]};border-radius:3px;min-width:4px"></div></td>
+                            </tr>`;
+                        }).join("");
+                    }
+                }
 
-            } catch { showToast("Failed to load analytics", "error"); }
+            } catch (err) {
+                console.error('Load analytics error:', err);
+                showToast("Failed to load analytics", "error");
+                document.getElementById("analyticsTable").innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text2)">Failed to load data</td></tr>';
+            }
         }
 
         async function exportExcel() {
@@ -389,7 +436,7 @@
                 const res = await fetch(API_URL + "/admin/export-analytics", {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
@@ -398,7 +445,10 @@
                 a.click();
                 URL.revokeObjectURL(url);
                 showToast("Export downloaded!", "success");
-            } catch { showToast("Export failed", "error"); }
+            } catch (err) {
+                console.error('Export error:', err);
+                showToast("Export failed: " + err.message, "error");
+            }
         }
 
         async function loadAdminProfile() {

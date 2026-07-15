@@ -85,6 +85,7 @@
                         style="width:130px;padding:8px 12px;font-size:0.82rem">
                         <option value="">All Status</option>
                         <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
                         <option value="completed">Completed</option>
                         <option value="missed">Missed</option>
                     </select>
@@ -173,12 +174,22 @@
                     <div class="form-group"><label class="form-label">Status</label>
                         <select class="form-control" id="editStatus">
                             <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
                             <option value="completed">Completed</option>
                             <option value="missed">Missed</option>
                         </select>
                     </div>
                     <div class="form-group"><label class="form-label">Date</label>
                         <input class="form-control" type="date" id="editDate">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1">
+                        <label class="form-label">Pickup Type</label>
+                        <select class="form-control" id="editType">
+                            <option value="regular">Regular</option>
+                            <option value="special">Special</option>
+                            <option value="recyclable">Recyclable</option>
+                            <option value="hazardous">Hazardous</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -192,7 +203,6 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -264,7 +274,7 @@
                 'missed': 'badge-danger',
                 'cancelled': 'badge-danger'
             };
-            return `<span class="badge ${map[status] || 'badge-gray'}">${status.replace('_', ' ').toUpperCase()}</span>`;
+            return `<span class="badge ${map[status] || 'badge-gray'}">${(status || 'pending').replace('_', ' ').toUpperCase()}</span>`;
         }
 
         let allSchedules = [];
@@ -272,18 +282,26 @@
         async function loadSchedules() {
             try {
                 const res = await API.get("/admin/pickups");
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    console.error('Failed to load schedules:', res.status);
+                    throw new Error(`HTTP ${res.status}`);
+                }
                 allSchedules = await res.json();
+                console.log('📊 Schedules loaded:', allSchedules.length);
                 renderSchedules(allSchedules);
                 document.getElementById("totalSched").textContent = allSchedules.length;
-                document.getElementById("pendingSched").textContent = allSchedules.filter(s => s.status === "pending").length;
+                document.getElementById("pendingSched").textContent = allSchedules.filter(s => s.status === "pending" || s.status === "in_progress").length;
                 document.getElementById("doneSched").textContent = allSchedules.filter(s => s.status === "completed").length;
-            } catch { showToast("Failed to load schedules", "error"); }
+            } catch (err) {
+                console.error('Load schedules error:', err);
+                showToast("Failed to load schedules", "error");
+                document.getElementById("schedBody").innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text2)">Failed to load schedules</td></tr>';
+            }
         }
 
         function renderSchedules(data) {
             const tbody = document.getElementById("schedBody");
-            if (!data.length) {
+            if (!data || !data.length) {
                 tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">No schedules found</div></div></td></tr>';
                 return;
             }
@@ -298,7 +316,7 @@
             <td>${statusBadge(s.status)}</td>
             <td>
                 <div class="flex-row" style="gap:6px">
-                    <button class="btn btn-outline btn-sm btn-icon" title="Edit" onclick="openEdit(${s.id},'${s.status}','${s.assigned_date?.slice(0, 10)}')">✏️</button>
+                    <button class="btn btn-outline btn-sm btn-icon" title="Edit" onclick="openEdit(${s.id},'${s.status || 'pending'}','${s.assigned_date?.slice(0, 10) || ''}','${s.pickup_type || 'regular'}')">✏️</button>
                     <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="deleteSchedule(${s.id})">🗑</button>
                 </div>
             </td>
@@ -308,10 +326,11 @@
         function filterSchedules() {
             const q = document.getElementById("searchInput").value.toLowerCase();
             const st = document.getElementById("statusFilter").value;
-            renderSchedules(allSchedules.filter(s =>
+            const filtered = allSchedules.filter(s =>
                 (!q || (s.driver_name || "").toLowerCase().includes(q) || (s.zone_name || "").toLowerCase().includes(q) || (s.truck_plate || "").toLowerCase().includes(q)) &&
                 (!st || s.status === st)
-            ));
+            );
+            renderSchedules(filtered);
         }
 
         async function loadFormData() {
@@ -325,12 +344,14 @@
                 const trucks = await tRes.json();
                 const routes = await rRes.json();
                 document.getElementById("aDriver").innerHTML = '<option value="">Select driver…</option>' +
-                    users.filter(u => u.role === "driver").map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+                    (Array.isArray(users) ? users.filter(u => u.role === "driver").map(u => `<option value="${u.id}">${u.name}</option>`).join("") : '');
                 document.getElementById("aTruck").innerHTML = '<option value="">Select truck…</option>' +
-                    trucks.map(t => `<option value="${t.id}">${t.plate_number}</option>`).join("");
+                    (Array.isArray(trucks) ? trucks.map(t => `<option value="${t.id}">${t.plate_number}</option>`).join("") : '');
                 document.getElementById("aRoute").innerHTML = '<option value="">Select route…</option>' +
-                    routes.map(r => `<option value="${r.id}">${r.zone_name}</option>`).join("");
-            } catch { }
+                    (Array.isArray(routes) ? routes.map(r => `<option value="${r.id}">${r.zone_name}</option>`).join("") : '');
+            } catch (err) {
+                console.error('Load form data error:', err);
+            }
         }
 
         async function assignRoute() {
@@ -347,17 +368,25 @@
             }
             try {
                 const res = await API.post("/admin/assign-route", body);
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    const err = await res.text();
+                    console.error('Assign error:', err);
+                    throw new Error(err);
+                }
                 closeModal("assignModal");
                 showToast("Route assigned successfully", "success");
                 loadSchedules();
-            } catch { showToast("Assignment failed", "error"); }
+            } catch (err) {
+                console.error('Assign failed:', err);
+                showToast("Assignment failed: " + err.message, "error");
+            }
         }
 
-        function openEdit(id, status, date) {
+        function openEdit(id, status, date, type) {
             document.getElementById("editId").value = id;
-            document.getElementById("editStatus").value = status;
+            document.getElementById("editStatus").value = status || 'pending';
             document.getElementById("editDate").value = date || "";
+            document.getElementById("editType").value = type || 'regular';
             openModal("editModal");
         }
 
@@ -365,23 +394,41 @@
             const id = document.getElementById("editId").value;
             const status = document.getElementById("editStatus").value;
             const date = document.getElementById("editDate").value;
+            const pickup_type = document.getElementById("editType").value;
+
             try {
-                const res = await API.put(`/admin/pickups/${id}`, { status, assigned_date: date });
-                if (!res.ok) throw new Error();
+                const payload = { status, assigned_date: date, pickup_type };
+                console.log('Updating schedule:', id, payload);
+
+                const res = await API.put(`/admin/pickups/${id}`, payload);
+                if (!res.ok) {
+                    const err = await res.text();
+                    console.error('Update error:', err);
+                    throw new Error(err);
+                }
                 closeModal("editModal");
                 showToast("Schedule updated", "success");
                 loadSchedules();
-            } catch { showToast("Update failed", "error"); }
+            } catch (err) {
+                console.error('Update failed:', err);
+                showToast("Update failed: " + err.message, "error");
+            }
         }
 
         async function deleteSchedule(id) {
             if (!confirm("Delete this schedule?")) return;
             try {
                 const res = await API.del(`/admin/pickups/${id}`);
-                if (!res.ok) throw new Error();
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
                 showToast("Schedule deleted", "success");
                 loadSchedules();
-            } catch { showToast("Delete failed", "error"); }
+            } catch (err) {
+                console.error('Delete failed:', err);
+                showToast("Delete failed: " + err.message, "error");
+            }
         }
 
         async function loadAdminProfile() {
@@ -395,7 +442,6 @@
         }
 
         function openModal(id) { document.getElementById(id).classList.add('open'); }
-
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
         // Pre-fill today's date
