@@ -25,7 +25,6 @@ const bcrypt = require("bcrypt");
 
 const connectedDrivers = new Map();
 
-
 io.on('connection', (socket) => {
     console.log('🔌 New client connected:', socket.id);
 
@@ -285,7 +284,6 @@ io.on('connection', (socket) => {
     });
 });
 
-
 const cron = require("node-cron");
 cron.schedule("0 0 * * 1", async () => {
     try {
@@ -303,17 +301,6 @@ cron.schedule("0 0 * * 1", async () => {
     }
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Route not found',
-        path: req.path
-    });
-});
-
 app.use(cors({
     origin: process.env.CORS_ORIGIN || '*',
     credentials: true
@@ -321,8 +308,11 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/driver/api/')) {
@@ -348,7 +338,6 @@ app.use((req, res, next) => {
     next();
 });
 
-
 app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
         const cleanPath = req.path.replace(/\.html$/, '');
@@ -357,7 +346,6 @@ app.use((req, res, next) => {
     next();
 });
 
-
 if (process.env.NODE_ENV === 'development') {
     app.use((req, res, next) => {
         console.log(`${req.method} ${req.path}`);
@@ -365,12 +353,10 @@ if (process.env.NODE_ENV === 'development') {
     });
 }
 
-
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/resident", require("./routes/residentRoutes"));
 app.use("/driver/api", require("./routes/driverRoutes"));
-
 
 app.get('/migrate', async (req, res) => {
     try {
@@ -444,7 +430,6 @@ app.get('/migrate', async (req, res) => {
     }
 });
 
-
 app.get('/setup-admin', async (req, res) => {
     try {
         const secret = req.query.secret;
@@ -490,7 +475,6 @@ app.get('/setup-admin', async (req, res) => {
     }
 });
 
-
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -500,7 +484,6 @@ app.get('/health', (req, res) => {
         connectedDrivers: connectedDrivers.size
     });
 });
-
 
 app.get('/api/drivers/online', (req, res) => {
     const online = Array.from(connectedDrivers.entries()).map(([id, data]) => ({
@@ -514,7 +497,6 @@ app.get('/api/drivers/online', (req, res) => {
     res.json(online);
 });
 
-
 app.use((req, res) => {
     const notFoundPath = path.join(__dirname, 'public', '404.html');
     if (fs.existsSync(notFoundPath)) {
@@ -526,7 +508,6 @@ app.use((req, res) => {
     });
 });
 
-
 app.use((err, req, res, next) => {
     console.error('❌ Unhandled error:', err);
     res.status(500).json({
@@ -535,7 +516,6 @@ app.use((err, req, res, next) => {
             : err.message
     });
 });
-
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
