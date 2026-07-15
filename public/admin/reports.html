@@ -745,7 +745,13 @@
                     iconSize: [14, 14], iconAnchor: [7, 7], className: ''
                 });
 
-                const marker = L.marker([r.latitude, r.longitude], { icon })
+                // ✅ FIX: Convert latitude/longitude to numbers
+                const lat = parseFloat(r.latitude);
+                const lng = parseFloat(r.longitude);
+
+                if (isNaN(lat) || isNaN(lng)) return;
+
+                const marker = L.marker([lat, lng], { icon })
                     .addTo(reportMap)
                     .bindPopup(buildReportPopupHtml(r), { maxWidth: 280, className: 'rp-popup' });
 
@@ -791,15 +797,21 @@
                     iconSize: [12, 12], iconAnchor: [6, 6], className: ''
                 });
 
+                // ✅ FIX: Convert latitude/longitude to numbers
+                const lat = parseFloat(r.latitude);
+                const lng = parseFloat(r.longitude);
+
+                if (isNaN(lat) || isNaN(lng)) return;
+
                 const lastSeen = new Date(r.location_updated_at);
                 const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
 
-                const marker = L.marker([r.latitude, r.longitude], { icon })
+                const marker = L.marker([lat, lng], { icon })
                     .addTo(reportMap)
                     .bindPopup(`
                         <div>
                             <strong style="color:#60a5fa;">👤 ${escHtml(r.name || 'Resident')}</strong><br>
-                            <span style="font-size:0.7rem;">📍 ${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)}</span><br>
+                            <span style="font-size:0.7rem;">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
                             <span style="font-size:0.65rem;color:${isRecent ? '#4ade80' : '#7a8499'}">
                                 Last seen: ${fmtTime(r.location_updated_at)}
                             </span>
@@ -840,12 +852,26 @@
         async function loadReports() {
             try {
                 const res = await API.get('/admin/reports');
-                if (!res.ok) throw new Error();
-                allReports = await res.json();
+                if (!res.ok) throw new Error('Failed to fetch reports');
+                const data = await res.json();
+
+                // ✅ FIX: Handle both array and paginated response
+                if (Array.isArray(data)) {
+                    allReports = data;
+                } else if (data && data.data && Array.isArray(data.data)) {
+                    allReports = data.data;
+                } else {
+                    allReports = [];
+                }
+
+                console.log('📊 Reports loaded:', allReports.length);
                 updateStatCards(allReports);
                 applyFilters();
             } catch (err) {
-                console.error(err);
+                console.error('Load reports error:', err);
+                allReports = [];
+                updateStatCards([]);
+                applyFilters();
                 showToast('Failed to load reports', 'error');
             }
         }
@@ -853,14 +879,21 @@
         async function loadResidents() {
             try {
                 const res = await API.get('/admin/resident-locations');
-                if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error('Failed to fetch residents');
                 allResidents = await res.json();
+
+                // Ensure allResidents is an array
+                if (!Array.isArray(allResidents)) {
+                    allResidents = [];
+                }
+
                 document.getElementById('c-residents').textContent = allResidents.length;
                 document.getElementById('residentCount').textContent = allResidents.length;
                 renderResidentList();
                 updateAllMapPins();
             } catch (err) {
-                console.error(err);
+                console.error('Load residents error:', err);
+                allResidents = [];
                 showToast('Failed to load resident locations', 'error');
             }
         }
@@ -875,13 +908,19 @@
             container.innerHTML = allResidents.map(r => {
                 const lastSeen = new Date(r.location_updated_at);
                 const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
+                // ✅ FIX: Safe access to latitude/longitude with fallback
+                const lat = r.latitude != null ? parseFloat(r.latitude) : null;
+                const lng = r.longitude != null ? parseFloat(r.longitude) : null;
+                const latStr = lat != null && !isNaN(lat) ? lat.toFixed(5) : '—';
+                const lngStr = lng != null && !isNaN(lng) ? lng.toFixed(5) : '—';
+
                 return `
                     <div class="resident-card" onclick="viewResident(${r.id})">
                         <div class="resident-avatar">👤</div>
                         <div class="resident-info">
                             <div class="resident-name">${escHtml(r.name || 'Resident')}</div>
                             <div class="resident-loc-time">
-                                📍 ${r.latitude?.toFixed(5) || '—'}, ${r.longitude?.toFixed(5) || '—'}<br>
+                                📍 ${latStr}, ${lngStr}<br>
                                 🕐 ${fmtTime(r.location_updated_at)} ${isRecent ? '<span style="color:#4ade80;">(Active)</span>' : ''}
                             </div>
                         </div>
@@ -892,9 +931,11 @@
         }
 
         function updateStatCards(data) {
-            document.getElementById('c-missed').textContent = data.filter(r => r.type === 'missed_pickup').length;
-            document.getElementById('c-overflow').textContent = data.filter(r => r.type === 'overflowing_bin').length;
-            document.getElementById('c-illegal').textContent = data.filter(r => r.type === 'illegal_dumping').length;
+            // ✅ FIX: Use Array.isArray check
+            const reports = Array.isArray(data) ? data : [];
+            document.getElementById('c-missed').textContent = reports.filter(r => r.type === 'missed_pickup').length;
+            document.getElementById('c-overflow').textContent = reports.filter(r => r.type === 'overflowing_bin').length;
+            document.getElementById('c-illegal').textContent = reports.filter(r => r.type === 'illegal_dumping').length;
         }
 
         /* ════════════════════════════════════════════════════
@@ -912,7 +953,10 @@
             const q = document.getElementById('searchInput').value.toLowerCase();
             const tp = document.getElementById('typeFilter').value;
 
-            filtered = allReports.filter(r => {
+            // ✅ FIX: Ensure allReports is an array
+            const reports = Array.isArray(allReports) ? allReports : [];
+
+            filtered = reports.filter(r => {
                 const matchQ = !q || (r.description || '').toLowerCase().includes(q);
                 const matchTp = !tp || r.type === tp;
                 const matchDt = inDateRange(r, activeDateFilter);
@@ -1022,6 +1066,12 @@
             const lastSeen = new Date(r.location_updated_at);
             const isRecent = (Date.now() - lastSeen.getTime()) < 30 * 60 * 1000;
 
+            // ✅ FIX: Safe access to latitude/longitude
+            const lat = r.latitude != null ? parseFloat(r.latitude) : null;
+            const lng = r.longitude != null ? parseFloat(r.longitude) : null;
+            const latStr = lat != null && !isNaN(lat) ? lat.toFixed(6) : '—';
+            const lngStr = lng != null && !isNaN(lng) ? lng.toFixed(6) : '—';
+
             document.getElementById('residentModalBody').innerHTML = `
                 <div style="display:flex;flex-direction:column;gap:16px;">
                     <div style="display:flex;align-items:center;gap:12px;">
@@ -1034,7 +1084,7 @@
                     <div>
                         <div class="form-label">Location</div>
                         <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
-                            📍 ${r.latitude?.toFixed(6) || '—'}, ${r.longitude?.toFixed(6) || '—'}
+                            📍 ${latStr}, ${lngStr}
                         </div>
                         <button class="btn btn-outline btn-sm" style="margin-top:6px;"
                                 onclick="closeModal('viewResidentModal');flyToResident(${r.id})">
