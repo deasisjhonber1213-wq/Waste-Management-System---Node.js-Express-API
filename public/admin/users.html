@@ -436,31 +436,39 @@
                 document.getElementById("totalUsers").textContent = allUsers.length;
                 document.getElementById("totalDrivers").textContent = allUsers.filter(u => u.role === "driver").length;
                 document.getElementById("totalResidents").textContent = allUsers.filter(u => u.role === "resident").length;
-            } catch { showToast("Failed to load users", "error"); }
+            } catch (err) {
+                console.error('Load users error:', err);
+                showToast("Failed to load users", "error");
+            }
         }
 
         function renderUsers(data) {
             const tbody = document.getElementById("usersBody");
-            if (!data.length) {
+            if (!data || !data.length) {
                 tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No users found</div></div></td></tr>';
                 return;
             }
             tbody.innerHTML = data.map((u, i) => `
         <tr>
             <td class="table-muted table-mono">${String(i + 1).padStart(2, "0")}</td>
-            <td><strong>${u.name}</strong></td>
-            <td class="table-muted">${u.email}</td>
+            <td><strong>${escHtml(u.name)}</strong></td>
+            <td class="table-muted">${escHtml(u.email)}</td>
             <td>${statusBadge(u.role)}</td>
-            <td class="table-muted">${u.phone || "—"}</td>
-            <td class="table-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.address || "—"}</td>
+            <td class="table-muted">${escHtml(u.phone || "—")}</td>
+            <td class="table-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(u.address || "—")}</td>
             <td>
                 <div class="flex-row" style="gap:6px">
                     <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${u.id})">👁</button>
                     <button class="btn btn-gold btn-icon btn-sm" title="Edit" onclick="openEditUser(${u.id})">✏️</button>
-                    <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="openDeleteConfirm(${u.id},'${u.name}')">🗑</button>
+                    <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="openDeleteConfirm(${u.id},'${escHtml(u.name)}')">🗑</button>
                 </div>
             </td>
         </tr>`).join("");
+        }
+
+        function escHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
         function filterUsers() {
@@ -475,14 +483,17 @@
 
         async function addUser() {
             const body = {
-                name: document.getElementById("uName").value,
-                email: document.getElementById("uEmail").value,
+                name: document.getElementById("uName").value.trim(),
+                email: document.getElementById("uEmail").value.trim(),
                 password: document.getElementById("uPass").value,
                 role: document.getElementById("uRole").value,
-                phone: document.getElementById("uPhone").value,
-                address: document.getElementById("uAddress").value,
+                phone: document.getElementById("uPhone").value.trim(),
+                address: document.getElementById("uAddress").value.trim(),
             };
-            if (!body.name || !body.email || !body.password) { showToast("Name, email and password required", "error"); return; }
+            if (!body.name || !body.email || !body.password) {
+                showToast("Name, email and password required", "error");
+                return;
+            }
             try {
                 const res = await API.post("/auth/register", body);
                 if (!res.ok) {
@@ -506,7 +517,10 @@
         // ===================== EDIT USER =====================
         function openEditUser(id) {
             const user = allUsers.find(u => u.id === id);
-            if (!user) return;
+            if (!user) {
+                showToast("User not found", "error");
+                return;
+            }
 
             document.getElementById("editUserId").value = user.id;
             document.getElementById("editName").value = user.name || '';
@@ -567,23 +581,35 @@
         // ===================== VIEW USER =====================
         async function viewUser(id) {
             try {
+                // Try to get user from local data first
+                const user = allUsers.find(u => u.id === id);
+                if (user) {
+                    showUserDetails(user);
+                    return;
+                }
+
+                // Fallback to API call
                 const res = await API.get(`/admin/users/${id}`);
                 if (!res.ok) throw new Error();
                 const u = await res.json();
-                currentViewUser = u;
-
-                document.getElementById("viewUserBody").innerHTML = `
-                <div class="form-grid form-grid-2" style="gap:14px">
-                    <div><div class="form-label">Name</div><div style="font-weight:600;margin-top:4px">${u.name}</div></div>
-                    <div><div class="form-label">Email</div><div style="margin-top:4px">${u.email}</div></div>
-                    <div><div class="form-label">Role</div><div style="margin-top:4px">${statusBadge(u.role)}</div></div>
-                    <div><div class="form-label">Phone</div><div style="margin-top:4px">${u.phone || "—"}</div></div>
-                    <div style="grid-column:1/-1"><div class="form-label">Address</div><div style="margin-top:4px">${u.address || "—"}</div></div>
-                </div>`;
-                openModal("viewUserModal");
-            } catch {
+                showUserDetails(u);
+            } catch (err) {
+                console.error('View user error:', err);
                 showToast("Failed to load user details", "error");
             }
+        }
+
+        function showUserDetails(u) {
+            currentViewUser = u;
+            document.getElementById("viewUserBody").innerHTML = `
+            <div class="form-grid form-grid-2" style="gap:14px">
+                <div><div class="form-label">Name</div><div style="font-weight:600;margin-top:4px">${escHtml(u.name)}</div></div>
+                <div><div class="form-label">Email</div><div style="margin-top:4px">${escHtml(u.email)}</div></div>
+                <div><div class="form-label">Role</div><div style="margin-top:4px">${statusBadge(u.role)}</div></div>
+                <div><div class="form-label">Phone</div><div style="margin-top:4px">${escHtml(u.phone || "—")}</div></div>
+                <div style="grid-column:1/-1"><div class="form-label">Address</div><div style="margin-top:4px">${escHtml(u.address || "—")}</div></div>
+            </div>`;
+            openModal("viewUserModal");
         }
 
         function openEditFromView() {
@@ -680,8 +706,13 @@
             } catch { }
         }
 
-        function openModal(id) { document.getElementById(id).classList.add('open'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+        function openModal(id) {
+            document.getElementById(id).classList.add('open');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
 
         // Close delete modal on Escape
         document.addEventListener('keydown', (e) => {
@@ -703,11 +734,10 @@
             }
         });
 
-        // Expose globals
+        // ===================== EXPOSE FUNCTIONS TO GLOBAL SCOPE =====================
         window.openModal = openModal;
         window.closeModal = closeModal;
         window.addUser = addUser;
-        window.deleteUser = deleteUser;
         window.viewUser = viewUser;
         window.filterUsers = filterUsers;
         window.openEditUser = openEditUser;
@@ -718,6 +748,7 @@
         window.onDeleteConfirmInput = onDeleteConfirmInput;
         window.togglePasswordVisibility = togglePasswordVisibility;
 
+        // ===================== INIT =====================
         loadAdminProfile();
         loadUsers();
     </script>

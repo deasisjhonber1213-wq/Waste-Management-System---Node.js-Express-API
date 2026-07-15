@@ -1,957 +1,738 @@
-const path = require("path");
-const db = require("../config/db");
-const ExcelJS = require("exceljs");
-const bcrypt = require("bcrypt");
+< !DOCTYPE html >
+    <html lang="en">
 
-exports.dashboardStats = async (req, res) => {
-    try {
-        const [[users]] = await db.query("SELECT COUNT(*) total FROM users");
-        const [[drivers]] = await db.query("SELECT COUNT(*) total FROM users WHERE role='driver'");
-        const [[trucks]] = await db.query("SELECT COUNT(*) total FROM trucks");
-        const [[routes]] = await db.query("SELECT COUNT(*) total FROM routes");
-        const [[reports]] = await db.query("SELECT COUNT(*) total FROM reports");
-        const [[fuel]] = await db.query("SELECT SUM(fuel_used) total FROM trip_logs");
-
-        res.json({
-            totalUsers: users.total,
-            totalDrivers: drivers.total,
-            totalTrucks: trucks.total,
-            totalRoutes: routes.total,
-            totalReports: reports.total,
-            totalFuelUsed: fuel.total || 0,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// USER MANAGEMENT (UPDATED)
-// ============================================
-
-exports.getUsers = async (req, res) => {
-    try {
-        const [users] = await db.query(
-            "SELECT id, name, email, role, phone, address FROM users"
-        );
-        res.json(users);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// Get single user by ID
-exports.getUserById = async (req, res) => {
-    try {
-        const [users] = await db.query(
-            "SELECT id, name, email, role, phone, address FROM users WHERE id = ?",
-            [req.params.id]
-        );
-        if (!users.length) {
-            return res.status(404).json({ error: "User not found" });
+        <head>
+            <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1.0">
+                    <title>Users · SmartWaste Admin</title>
+                    <link rel="stylesheet" href="../css/style.css">
+                        <style>
+                            .confirm-delete-text {
+                                color: var(--red);
+                            font-weight: 600;
+                            font-size: 0.9rem;
         }
-        res.json(users[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
+                            .confirm-delete-input {
+                                background: rgba(255, 0, 0, 0.05);
+                            border: 2px solid var(--red);
+                            padding: 10px 14px;
+                            border-radius: 8px;
+                            color: var(--text);
+                            font-family: var(--ui);
+                            font-size: 0.9rem;
+                            width: 100%;
+                            outline: none;
+                            transition: all 0.2s;
+        }
+                            .confirm-delete-input:focus {
+                                border - color: #ff4444;
+                            box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.15);
+        }
+                            .confirm-delete-input.error {
+                                border - color: var(--red);
+                            background: rgba(255, 0, 0, 0.1);
+        }
+                            .confirm-delete-input.success {
+                                border - color: var(--green);
+                            background: rgba(74, 222, 128, 0.05);
+        }
+                            .user-edit-section {
+                                border - top: 1px solid var(--border);
+                            padding-top: 16px;
+                            margin-top: 16px;
+        }
+                            .user-edit-section:first-of-type {
+                                border - top: none;
+                            padding-top: 0;
+                            margin-top: 0;
+        }
+                            .section-title-sm {
+                                font - size: 0.8rem;
+                            font-weight: 700;
+                            color: var(--text2);
+                            text-transform: uppercase;
+                            letter-spacing: 0.05em;
+                            margin-bottom: 12px;
+        }
+                            .password-toggle {
+                                position: relative;
+        }
+                            .password-toggle .toggle-btn {
+                                position: absolute;
+                            right: 10px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            background: none;
+                            border: none;
+                            color: var(--text3);
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                            padding: 4px 8px;
+        }
+                            .password-toggle .toggle-btn:hover {
+                                color: var(--text);
+        }
+                        </style>
+                    </head>
 
-// Update user (including password)
-exports.updateUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { name, email, phone, address, role, password } = req.body;
+                    <body>
 
-        // Validate required fields
-        if (!name || !email) {
-            return res.status(400).json({ error: "Name and email are required" });
+                        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+                        <aside class="sidebar">
+                            <div class="sidebar-logo">
+                                <div class="sidebar-logo-icon">♻</div>
+                                <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
+                            </div>
+                            <nav class="sidebar-nav">
+                                <div class="nav-section-label">Overview</div>
+                                <a href="dashboard.html" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+                                <div class="nav-section-label">Management</div>
+                                <a href="users.html" class="nav-item active"><span class="nav-icon">👥</span>Users</a>
+                                <a href="trucks.html" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+                                <a href="routes.html" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+                                <a href="schedules.html" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+                                <div class="nav-section-label">Community</div>
+                                <a href="reports.html" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+                                <a href="announcements.html" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+                                <div class="nav-section-label">Analytics</div>
+                                <a href="analytics.html" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+                            </nav>
+                            <div class="sidebar-footer">
+                                <div class="sidebar-user">
+                                    <div class="sidebar-avatar">👤</div>
+                                    <div>
+                                        <div class="sidebar-user-name" id="adminName">Admin</div>
+                                        <div class="sidebar-user-role">Administrator</div>
+                                    </div>
+                                </div>
+                                <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+                            </div>
+                        </aside>
+
+                        <div class="topbar">
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+                                <div class="topbar-left">
+                                    <div class="topbar-title">Users</div>
+                                    <div class="topbar-breadcrumb">Jose Dalman WM/ Management / <span>Users</span></div>
+                                </div>
+                            </div>
+                            <div class="topbar-right">
+                                <button class="topbar-btn" onclick="openModal('addUserModal')">+ Add User</button>
+                            </div>
+                        </div>
+
+                        <main class="main">
+
+                            <!-- STAT ROW -->
+                            <div class="stat-grid reveal" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px" id="userStats">
+                                <div class="stat-card" data-icon="👥">
+                                    <div class="stat-label">Total Users</div>
+                                    <div class="stat-value" id="totalUsers">—</div>
+                                </div>
+                                <div class="stat-card" data-icon="🧑‍✈️">
+                                    <div class="stat-label">Drivers</div>
+                                    <div class="stat-value" id="totalDrivers">—</div>
+                                </div>
+                                <div class="stat-card" data-icon="🏘️">
+                                    <div class="stat-label">Residents</div>
+                                    <div class="stat-value" id="totalResidents">—</div>
+                                </div>
+                            </div>
+
+                            <div class="panel reveal">
+                                <div class="panel-header">
+                                    <div class="panel-title">
+                                        <div class="panel-title-icon">👥</div>All Users
+                                    </div>
+                                    <div class="flex-row">
+                                        <div class="search-bar"><input type="text" placeholder="Search users…" id="searchInput"
+                                            oninput="filterUsers()"></div>
+                                        <select class="form-control" id="roleFilter" onchange="filterUsers()"
+                                            style="width:130px;padding:8px 12px;font-size:0.82rem">
+                                            <option value="">All Roles</option>
+                                            <option value="admin">Admin</option>
+                                            <option value="driver">Driver</option>
+                                            <option value="resident">Resident</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="panel-body-flush">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Phone</th>
+                                                <th>Address</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="usersBody">
+                                            <tr>
+                                                <td colspan="7" style="text-align:center;padding:32px;color:var(--text2)"><span
+                                                    class="loading-spinner"></span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </main>
+
+                        <!-- ADD USER MODAL -->
+                        <div class="modal-overlay" id="addUserModal">
+                            <div class="modal">
+                                <div class="modal-header">
+                                    <div class="modal-title">👤 Add New User</div>
+                                    <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-grid form-grid-2">
+                                        <div class="form-group"><label class="form-label">Full Name</label><input class="form-control"
+                                            id="uName" placeholder="John Doe"></div>
+                                        <div class="form-group"><label class="form-label">Email</label><input class="form-control"
+                                            id="uEmail" type="email" placeholder="john@example.com"></div>
+                                        <div class="form-group"><label class="form-label">Password</label><input class="form-control"
+                                            id="uPass" type="password" placeholder="••••••••"></div>
+                                        <div class="form-group"><label class="form-label">Role</label>
+                                            <select class="form-control" id="uRole">
+                                                <option value="resident">Resident</option>
+                                                <option value="driver">Driver</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group"><label class="form-label">Phone</label><input class="form-control"
+                                            id="uPhone" placeholder="+1 555 0000"></div>
+                                        <div class="form-group"><label class="form-label">Address</label><input class="form-control"
+                                            id="uAddress" placeholder="123 Main St"></div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
+                                    <button class="btn btn-gold" onclick="addUser()">Create User</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EDIT USER MODAL -->
+                        <div class="modal-overlay" id="editUserModal">
+                            <div class="modal" style="max-width:550px;">
+                                <div class="modal-header">
+                                    <div class="modal-title">✏️ Edit User</div>
+                                    <button class="modal-close" onclick="closeModal('editUserModal')">✕</button>
+                                </div>
+                                <div class="modal-body">
+                                    <input type="hidden" id="editUserId">
+
+                                        <!-- Personal Information Section -->
+                                        <div class="user-edit-section">
+                                            <div class="section-title-sm">📋 Personal Information</div>
+                                            <div class="form-grid form-grid-2">
+                                                <div class="form-group"><label class="form-label">Full Name</label>
+                                                    <input class="form-control" id="editName" placeholder="John Doe">
+                                                </div>
+                                                <div class="form-group"><label class="form-label">Email</label>
+                                                    <input class="form-control" id="editEmail" type="email" placeholder="john@example.com">
+                                                </div>
+                                                <div class="form-group"><label class="form-label">Phone</label>
+                                                    <input class="form-control" id="editPhone" placeholder="+1 555 0000">
+                                                </div>
+                                                <div class="form-group"><label class="form-label">Address</label>
+                                                    <input class="form-control" id="editAddress" placeholder="123 Main St">
+                                                </div>
+                                                <div class="form-group"><label class="form-label">Role</label>
+                                                    <select class="form-control" id="editRole">
+                                                        <option value="resident">Resident</option>
+                                                        <option value="driver">Driver</option>
+                                                        <option value="admin">Admin</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Change Password Section -->
+                                        <div class="user-edit-section">
+                                            <div class="section-title-sm">🔑 Change Password</div>
+                                            <div class="form-grid form-grid-2">
+                                                <div class="form-group password-toggle" style="grid-column:1/-1">
+                                                    <label class="form-label">New Password <span style="color:var(--text3);font-weight:400;text-transform:none;">(leave blank to keep current)</span></label>
+                                                    <div style="position:relative;">
+                                                        <input class="form-control" id="editPassword" type="password" placeholder="Enter new password…">
+                                                            <button type="button" class="toggle-btn" onclick="togglePasswordVisibility('editPassword', this)">👁</button>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group password-toggle" style="grid-column:1/-1">
+                                                    <label class="form-label">Confirm New Password</label>
+                                                    <div style="position:relative;">
+                                                        <input class="form-control" id="editPasswordConfirm" type="password" placeholder="Confirm new password…">
+                                                            <button type="button" class="toggle-btn" onclick="togglePasswordVisibility('editPasswordConfirm', this)">👁</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-outline" onclick="closeModal('editUserModal')">Cancel</button>
+                                    <button class="btn btn-gold" onclick="updateUser()">💾 Save Changes</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIEW USER MODAL -->
+                        <div class="modal-overlay" id="viewUserModal">
+                            <div class="modal">
+                                <div class="modal-header">
+                                    <div class="modal-title">👤 User Details</div>
+                                    <button class="modal-close" onclick="closeModal('viewUserModal')">✕</button>
+                                </div>
+                                <div class="modal-body" id="viewUserBody"></div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-outline" onclick="closeModal('viewUserModal')">Close</button>
+                                    <button class="btn btn-gold" onclick="openEditFromView()">✏️ Edit User</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DELETE CONFIRMATION MODAL -->
+                        <div class="modal-overlay" id="deleteConfirmModal">
+                            <div class="modal" style="max-width:450px;">
+                                <div class="modal-header" style="border-bottom-color:var(--red);">
+                                    <div class="modal-title" style="color:var(--red);">⚠️ Delete User</div>
+                                    <button class="modal-close" onclick="closeModal('deleteConfirmModal')">✕</button>
+                                </div>
+                                <div class="modal-body">
+                                    <p style="color:var(--text2);margin-bottom:8px;">
+                                        You are about to delete <strong id="deleteUserName" style="color:var(--text);"></strong>.
+                                    </p>
+                                    <p style="color:var(--text3);font-size:0.85rem;margin-bottom:16px;">
+                                        This action <strong style="color:var(--red);">cannot be undone</strong>. All data associated with this user will be permanently removed.
+                                    </p>
+                                    <div style="background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.15);border-radius:8px;padding:12px;">
+                                        <label class="form-label" style="color:var(--red);">Type <span style="font-weight:800;font-size:1rem;">DELETE</span> to confirm</label>
+                                        <input type="text" id="deleteConfirmInput" class="confirm-delete-input"
+                                            placeholder="Type DELETE here..."
+                                            oninput="onDeleteConfirmInput()">
+                                            <div id="deleteConfirmError" style="color:var(--red);font-size:0.75rem;margin-top:6px;display:none;">
+                                                ⚠️ Please type "DELETE" exactly as shown
+                                            </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-outline" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                                    <button class="btn btn-danger" id="deleteConfirmBtn" disabled onclick="confirmDeleteUser()">
+                                        🗑 Delete User
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="toast-container" id="toastContainer"></div>
+
+                        <script src="../js/style.js"></script>
+                        <script>
+        // ✅ FIXED: API URL works on both localhost and Railway
+                            const API_URL = window.location.origin + '/api';
+                            console.log('📡 API URL:', API_URL);
+
+                            function getToken() {
+            return localStorage.getItem('token');
         }
 
-        // Check if user exists
-        const [existing] = await db.query(
-            "SELECT id FROM users WHERE id = ?",
-            [id]
-        );
-        if (!existing.length) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        // Check if email is already taken by another user
-        const [emailCheck] = await db.query(
-            "SELECT id FROM users WHERE email = ? AND id != ?",
-            [email, id]
-        );
-        if (emailCheck.length) {
-            return res.status(400).json({ error: "Email already in use by another user" });
-        }
-
-        let query = "UPDATE users SET name = ?, email = ?, phone = ?, address = ?, role = ?";
-        let values = [name, email, phone || null, address || null, role || 'resident'];
-
-        // If password is provided, hash and update it
-        if (password) {
-            if (password.length < 6) {
-                return res.status(400).json({ error: "Password must be at least 6 characters" });
+                            const API = {
+                                get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                                headers: {'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                                method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}`
+                    },
+                            body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                                method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}`
+                    },
+                            body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                                method: 'DELETE',
+                            headers: {'Authorization': `Bearer ${getToken()}` }
+                });
             }
-            const hashedPassword = await bcrypt.hash(password, 10);
-            query += ", password = ?";
-            values.push(hashedPassword);
+        };
+
+                            function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+                            const toast = document.createElement('div');
+                            toast.className = `toast ${type}`;
+                            toast.innerHTML = `<span>${msg}</span>`;
+                            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
         }
 
-        query += " WHERE id = ?";
-        values.push(id);
+                            function checkAuth() {
+            const token = getToken();
+                            if (!token) {
+                                window.location.href = '/login.html';
+            }
+        }
+                            checkAuth();
 
-        await db.query(query, values);
-
-        // Log the update
-        await db.query(
-            "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
-            [req.user.id, `Updated user ID ${id}`]
-        );
-
-        res.json({ message: "User updated successfully" });
-    } catch (err) {
-        console.error('Update user error:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.deleteUser = async (req, res) => {
-    try {
-        // Check if user exists
-        const [existing] = await db.query(
-            "SELECT id, name FROM users WHERE id = ?",
-            [req.params.id]
-        );
-        if (!existing.length) {
-            return res.status(404).json({ error: "User not found" });
+                            function statusBadge(role) {
+            const map = {
+                                'admin': 'badge-gold',
+                            'driver': 'badge-blue',
+                            'resident': 'badge-green'
+            };
+                            return `<span class="badge ${map[role] || 'badge-gray'}">${role.toUpperCase()}</span>`;
         }
 
-        // Prevent deleting yourself
-        if (req.params.id == req.user.id) {
-            return res.status(400).json({ error: "You cannot delete your own account" });
-        }
+                            let allUsers = [];
+                            let currentViewUser = null;
+                            let pendingDeleteId = null;
+                            let pendingDeleteName = null;
 
-        // Check if user has any active assignments (if driver)
-        const [assignments] = await db.query(
-            `SELECT id FROM route_assignments 
-             WHERE driver_id = ? AND status IN ('pending', 'in_progress')
-             LIMIT 1`,
-            [req.params.id]
-        );
-        if (assignments.length) {
-            return res.status(409).json({
-                error: "Cannot delete — user has active route assignments"
-            });
-        }
-
-        await db.query("DELETE FROM users WHERE id=?", [req.params.id]);
-        await db.query(
-            "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
-            [req.user.id, `Deleted user ID ${req.params.id}`]
-        );
-        res.json({ message: "User deleted successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// TRUCK MANAGEMENT
-// ============================================
-
-exports.addTruck = async (req, res) => {
-    try {
-        const { plate_number, model } = req.body;
-        if (!plate_number) return res.status(400).json({ error: "Plate number is required" });
-        await db.query(
-            "INSERT INTO trucks (plate_number, model) VALUES (?, ?)",
-            [plate_number, model || null]
-        );
-        res.json({ message: "Truck added successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.getTrucks = async (req, res) => {
-    try {
-        const [trucks] = await db.query(
-            "SELECT * FROM trucks ORDER BY id DESC"
-        );
-        res.json(trucks);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.editTruck = async (req, res) => {
-    try {
-        const { plate_number, model } = req.body;
-        if (!plate_number) return res.status(400).json({ error: "Plate number is required" });
-        await db.query(
-            "UPDATE trucks SET plate_number=?, model=? WHERE id=?",
-            [plate_number, model || null, req.params.id]
-        );
-        res.json({ message: "Truck updated successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.deleteTruck = async (req, res) => {
-    try {
-        const [[activeAssignment]] = await db.query(
-            `SELECT id FROM route_assignments
-             WHERE truck_id = ? AND status IN ('pending', 'in_progress')
-             LIMIT 1`,
-            [req.params.id]
-        );
-        if (activeAssignment) {
-            return res.status(409).json({
-                error: "Cannot delete — truck is assigned to an active or pending route."
-            });
-        }
-        await db.query("DELETE FROM trucks WHERE id=?", [req.params.id]);
-        res.json({ message: "Truck deleted successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.updateTruckLocation = async (req, res) => {
-    try {
-        const { latitude, longitude } = req.body;
-        if (latitude === undefined || longitude === undefined) {
-            return res.status(400).json({ error: "latitude and longitude are required" });
-        }
-        await db.query(
-            "UPDATE trucks SET latitude=?, longitude=?, location_updated_at=NOW() WHERE id=?",
-            [latitude, longitude, req.params.id]
-        );
-        res.json({ message: "Location updated successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// ROUTE MANAGEMENT
-// ============================================
-
-exports.addRoute = async (req, res) => {
-    try {
-        const { zone_name, description, waypoints_json, path_mode } = req.body;
-
-        if (!zone_name) {
-            return res.status(400).json({ error: "Zone name is required" });
-        }
-
-        let waypointsData = null;
-        if (waypoints_json) {
+                            async function loadUsers() {
             try {
-                const parsed = JSON.parse(waypoints_json);
-                if (!parsed.road && !parsed.pins && !parsed.mrf) {
-                    waypointsData = JSON.stringify({
-                        road: Array.isArray(parsed) ? parsed : [],
-                        pins: [],
-                        mrf: []
-                    });
-                } else {
-                    waypointsData = waypoints_json;
+                const res = await API.get("/admin/users");
+                            if (!res.ok) throw new Error();
+                            allUsers = await res.json();
+                            renderUsers(allUsers);
+                            // Stats
+                            document.getElementById("totalUsers").textContent = allUsers.length;
+                document.getElementById("totalDrivers").textContent = allUsers.filter(u => u.role === "driver").length;
+                document.getElementById("totalResidents").textContent = allUsers.filter(u => u.role === "resident").length;
+            } catch (err) {
+                                console.error('Load users error:', err);
+                            showToast("Failed to load users", "error");
+            }
+        }
+
+                            function renderUsers(data) {
+            const tbody = document.getElementById("usersBody");
+                            if (!data || !data.length) {
+                                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No users found</div></div></td></tr>';
+                            return;
+            }
+            tbody.innerHTML = data.map((u, i) => `
+                            <tr>
+                                <td class="table-muted table-mono">${String(i + 1).padStart(2, "0")}</td>
+                                <td><strong>${escHtml(u.name)}</strong></td>
+                                <td class="table-muted">${escHtml(u.email)}</td>
+                                <td>${statusBadge(u.role)}</td>
+                                <td class="table-muted">${escHtml(u.phone || "—")}</td>
+                                <td class="table-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(u.address || "—")}</td>
+                                <td>
+                                    <div class="flex-row" style="gap:6px">
+                                        <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${u.id})">👁</button>
+                                        <button class="btn btn-gold btn-icon btn-sm" title="Edit" onclick="openEditUser(${u.id})">✏️</button>
+                                        <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="openDeleteConfirm(${u.id},'${escHtml(u.name)}')">🗑</button>
+                                    </div>
+                                </td>
+                            </tr>`).join("");
+        }
+
+                            function escHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c =>
+                                ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+                                function filterUsers() {
+            const q = document.getElementById("searchInput").value.toLowerCase();
+                                const role = document.getElementById("roleFilter").value;
+            const filtered = allUsers.filter(u =>
+                                (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
+                                (!role || u.role === role)
+                                );
+                                renderUsers(filtered);
+        }
+
+                                async function addUser() {
+            const body = {
+                                    name: document.getElementById("uName").value.trim(),
+                                email: document.getElementById("uEmail").value.trim(),
+                                password: document.getElementById("uPass").value,
+                                role: document.getElementById("uRole").value,
+                                phone: document.getElementById("uPhone").value.trim(),
+                                address: document.getElementById("uAddress").value.trim(),
+            };
+                                if (!body.name || !body.email || !body.password) {
+                                    showToast("Name, email and password required", "error");
+                                return; 
+            }
+                                try {
+                const res = await API.post("/auth/register", body);
+                                if (!res.ok) {
+                    const err = await res.text();
+                                throw new Error(err);
                 }
-            } catch (e) {
-                console.error('Invalid JSON:', e);
-                waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
+                                closeModal("addUserModal");
+                                showToast("User created successfully", "success");
+                                loadUsers();
+                                // Clear form
+                                document.getElementById("uName").value = '';
+                                document.getElementById("uEmail").value = '';
+                                document.getElementById("uPass").value = '';
+                                document.getElementById("uPhone").value = '';
+                                document.getElementById("uAddress").value = '';
+            } catch (err) {
+                                    showToast("Failed to create user: " + err.message, "error");
             }
-        } else {
-            waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
         }
 
-        const [columns] = await db.query(
-            `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
-        );
-        const colNames = columns.map(c => c.COLUMN_NAME);
-        const hasWaypoints = colNames.includes('waypoints_json');
-        const hasPathMode = colNames.includes('path_mode');
-
-        const pathModeCol = columns.find(c => c.COLUMN_NAME === 'path_mode');
-        const isPathModeJSON = pathModeCol && pathModeCol.DATA_TYPE === 'json';
-
-        let query = `INSERT INTO routes (zone_name, description`;
-        let values = [zone_name, description || null];
-        let placeholders = ['?', '?'];
-
-        if (hasWaypoints) {
-            query += `, waypoints_json`;
-            values.push(waypointsData);
-            placeholders.push('?');
-        }
-
-        if (hasPathMode) {
-            query += `, path_mode`;
-            if (isPathModeJSON) {
-                values.push(JSON.stringify(path_mode || 'pin'));
-            } else {
-                values.push(path_mode || 'pin');
+                                // ===================== EDIT USER =====================
+                                function openEditUser(id) {
+            const user = allUsers.find(u => u.id === id);
+                                if (!user) {
+                                    showToast("User not found", "error");
+                                return;
             }
-            placeholders.push('?');
+
+                                document.getElementById("editUserId").value = user.id;
+                                document.getElementById("editName").value = user.name || '';
+                                document.getElementById("editEmail").value = user.email || '';
+                                document.getElementById("editPhone").value = user.phone || '';
+                                document.getElementById("editAddress").value = user.address || '';
+                                document.getElementById("editRole").value = user.role || 'resident';
+                                document.getElementById("editPassword").value = '';
+                                document.getElementById("editPasswordConfirm").value = '';
+
+                                openModal("editUserModal");
         }
 
-        query += `) VALUES (${placeholders.join(', ')})`;
+                                async function updateUser() {
+            const id = document.getElementById("editUserId").value;
+                                const name = document.getElementById("editName").value.trim();
+                                const email = document.getElementById("editEmail").value.trim();
+                                const phone = document.getElementById("editPhone").value.trim();
+                                const address = document.getElementById("editAddress").value.trim();
+                                const role = document.getElementById("editRole").value;
+                                const password = document.getElementById("editPassword").value;
+                                const passwordConfirm = document.getElementById("editPasswordConfirm").value;
 
-        await db.query(query, values);
-        res.json({ message: "Route added successfully" });
+                                if (!name || !email) {
+                                    showToast("Name and email are required", "error");
+                                return;
+            }
 
-    } catch (err) {
-        console.error('Add route error:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
+                                // Check if password is being changed
+                                if (password || passwordConfirm) {
+                if (password !== passwordConfirm) {
+                                    showToast("Passwords do not match", "error");
+                                return;
+                }
+                                if (password.length < 6) {
+                                    showToast("Password must be at least 6 characters", "error");
+                                return;
+                }
+            }
 
-exports.updateRoute = async (req, res) => {
-    try {
-        const { zone_name, description, waypoints_json, path_mode } = req.body;
+                                const payload = {name, email, phone, address, role};
+                                if (password) payload.password = password;
 
-        if (!zone_name) {
-            return res.status(400).json({ error: "Zone name is required" });
+                                try {
+                const res = await API.put(`/admin/users/${id}`, payload);
+                                if (!res.ok) {
+                    const err = await res.text();
+                                throw new Error(err);
+                }
+                                closeModal("editUserModal");
+                                showToast("User updated successfully", "success");
+                                loadUsers();
+            } catch (err) {
+                                    showToast("Failed to update user: " + err.message, "error");
+            }
         }
 
-        let waypointsData = null;
-        if (waypoints_json) {
+                                // ===================== VIEW USER =====================
+                                async function viewUser(id) {
             try {
-                const parsed = JSON.parse(waypoints_json);
-                waypointsData = waypoints_json;
-            } catch (e) {
-                console.error('Invalid JSON:', e);
-                waypointsData = JSON.stringify({ road: [], pins: [], mrf: [] });
+                // Try to get user from local data first
+                const user = allUsers.find(u => u.id === id);
+                                if (user) {
+                                    showUserDetails(user);
+                                return;
+                }
+
+                                // Fallback to API call
+                                const res = await API.get(`/admin/users/${id}`);
+                                if (!res.ok) throw new Error();
+                                const u = await res.json();
+                                showUserDetails(u);
+            } catch (err) {
+                                    console.error('View user error:', err);
+                                showToast("Failed to load user details", "error");
             }
         }
 
-        const [columns] = await db.query(
-            `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'routes'`
-        );
-        const colNames = columns.map(c => c.COLUMN_NAME);
-
-        const pathModeCol = columns.find(c => c.COLUMN_NAME === 'path_mode');
-        const isPathModeJSON = pathModeCol && pathModeCol.DATA_TYPE === 'json';
-
-        const updates = ['zone_name = ?', 'description = ?'];
-        const values = [zone_name, description || null];
-
-        if (colNames.includes('waypoints_json')) {
-            updates.push('waypoints_json = ?');
-            values.push(waypointsData || JSON.stringify({ road: [], pins: [], mrf: [] }));
+                                function showUserDetails(u) {
+                                    currentViewUser = u;
+                                document.getElementById("viewUserBody").innerHTML = `
+                                <div class="form-grid form-grid-2" style="gap:14px">
+                                    <div><div class="form-label">Name</div><div style="font-weight:600;margin-top:4px">${escHtml(u.name)}</div></div>
+                                    <div><div class="form-label">Email</div><div style="margin-top:4px">${escHtml(u.email)}</div></div>
+                                    <div><div class="form-label">Role</div><div style="margin-top:4px">${statusBadge(u.role)}</div></div>
+                                    <div><div class="form-label">Phone</div><div style="margin-top:4px">${escHtml(u.phone || "—")}</div></div>
+                                    <div style="grid-column:1/-1"><div class="form-label">Address</div><div style="margin-top:4px">${escHtml(u.address || "—")}</div></div>
+                                </div>`;
+                                openModal("viewUserModal");
         }
 
-        if (colNames.includes('path_mode')) {
-            updates.push('path_mode = ?');
-            if (isPathModeJSON) {
-                values.push(JSON.stringify(path_mode || 'pin'));
+                                function openEditFromView() {
+            if (currentViewUser) {
+                                    closeModal("viewUserModal");
+                                openEditUser(currentViewUser.id);
+            }
+        }
+
+                                // ===================== DELETE USER WITH CONFIRMATION =====================
+                                function openDeleteConfirm(id, name) {
+                                    pendingDeleteId = id;
+                                pendingDeleteName = name;
+                                document.getElementById("deleteUserName").textContent = name;
+                                document.getElementById("deleteConfirmInput").value = '';
+                                document.getElementById("deleteConfirmInput").className = 'confirm-delete-input';
+                                document.getElementById("deleteConfirmError").style.display = 'none';
+                                document.getElementById("deleteConfirmBtn").disabled = true;
+                                openModal("deleteConfirmModal");
+            // Focus the input after modal opens
+            setTimeout(() => {
+                                    document.getElementById("deleteConfirmInput").focus();
+            }, 300);
+        }
+
+                                function onDeleteConfirmInput() {
+            const input = document.getElementById("deleteConfirmInput");
+                                const btn = document.getElementById("deleteConfirmBtn");
+                                const error = document.getElementById("deleteConfirmError");
+                                const value = input.value.trim();
+
+                                if (value === "DELETE") {
+                                    input.className = 'confirm-delete-input success';
+                                error.style.display = 'none';
+                                btn.disabled = false;
+            } else if (value && value !== "DELETE") {
+                                    input.className = 'confirm-delete-input error';
+                                error.style.display = 'block';
+                                btn.disabled = true;
             } else {
-                values.push(path_mode || 'pin');
+                                    input.className = 'confirm-delete-input';
+                                error.style.display = 'none';
+                                btn.disabled = true;
             }
         }
 
-        values.push(req.params.id);
+                                async function confirmDeleteUser() {
+            const input = document.getElementById("deleteConfirmInput");
+                                const value = input.value.trim();
 
-        await db.query(
-            `UPDATE routes SET ${updates.join(', ')} WHERE id = ?`,
-            values
-        );
+                                if (value !== "DELETE") {
+                                    showToast('Please type "DELETE" to confirm', "error");
+                                return;
+            }
 
-        res.json({ message: "Route updated successfully" });
-    } catch (err) {
-        console.error('Update route error:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
+                                if (!pendingDeleteId) return;
 
-exports.getRoutes = async (req, res) => {
-    try {
-        const [routes] = await db.query("SELECT * FROM routes ORDER BY created_at DESC");
-
-        const processedRoutes = routes.map(route => {
-            if (route.waypoints_json) {
-                if (typeof route.waypoints_json === 'object') {
-                    return route;
+                                try {
+                const res = await API.del(`/admin/users/${pendingDeleteId}`);
+                                if (!res.ok) {
+                    const err = await res.text();
+                                throw new Error(err);
                 }
-                try {
-                    route.waypoints_json = JSON.parse(route.waypoints_json);
-                } catch (e) {
-                    console.error('Error parsing waypoints for route', route.id, e);
+                                closeModal("deleteConfirmModal");
+                                showToast(`User "${pendingDeleteName}" deleted successfully`, "success");
+                                pendingDeleteId = null;
+                                pendingDeleteName = null;
+                                loadUsers();
+            } catch (err) {
+                                    showToast("Failed to delete user: " + err.message, "error");
+            }
+        }
+
+                                // ===================== PASSWORD TOGGLE =====================
+                                function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+                                if (input.type === "password") {
+                                    input.type = "text";
+                                btn.textContent = "🙈";
+            } else {
+                                    input.type = "password";
+                                btn.textContent = "👁";
+            }
+        }
+
+                                // ===================== PROFILE & UTILITIES =====================
+                                async function loadAdminProfile() {
+            try {
+                const res = await API.get("/admin/profile");
+                                if (res.ok) {
+                    const data = await res.json();
+                                document.getElementById("adminName").textContent = data.name || "Admin";
+                }
+            } catch { }
+        }
+
+                                function openModal(id) {
+                                    document.getElementById(id).classList.add('open'); 
+        }
+
+                                function closeModal(id) {
+                                    document.getElementById(id).classList.remove('open'); 
+        }
+
+        // Close delete modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const deleteModal = document.getElementById('deleteConfirmModal');
+                                if (deleteModal && deleteModal.classList.contains('open')) {
+                                    closeModal('deleteConfirmModal');
                 }
             }
-            return route;
-        });
-
-        res.json(processedRoutes);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.deleteRoute = async (req, res) => {
-    try {
-        // Check if route is being used
-        const [assignments] = await db.query(
-            `SELECT id FROM route_assignments WHERE route_id = ? AND status IN ('pending', 'in_progress') LIMIT 1`,
-            [req.params.id]
-        );
-        if (assignments.length) {
-            return res.status(409).json({
-                error: "Cannot delete — route is assigned to an active or pending schedule."
-            });
-        }
-
-        await db.query("DELETE FROM routes WHERE id=?", [req.params.id]);
-        res.json({ message: "Route deleted successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// ROUTE ASSIGNMENT
-// ============================================
-
-exports.assignRoute = async (req, res) => {
-    try {
-        const { driver_id, truck_id, route_id, assigned_date, pickup_type } = req.body;
-        await db.query(
-            `INSERT INTO route_assignments
-                (driver_id, truck_id, route_id, assigned_date, pickup_type, status)
-             VALUES (?, ?, ?, ?, ?, 'pending')`,
-            [driver_id, truck_id, route_id, assigned_date, pickup_type || "regular"]
-        );
-        res.json({ message: "Route assigned successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// REPORTS FUNCTIONS WITH LONGTEXT SUPPORT
-// ============================================
-
-exports.getReports = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
-        const offset = (page - 1) * limit;
-        const status = req.query.status;
-        const type = req.query.type;
-
-        const [columns] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
-        );
-        const colNames = columns.map(c => c.COLUMN_NAME);
-
-        const hasResidentId = colNames.includes('resident_id');
-        const hasStatus = colNames.includes('status');
-
-        let whereClause = [];
-        let params = [];
-
-        if (status && status !== 'all' && hasStatus) {
-            whereClause.push('r.status = ?');
-            params.push(status);
-        }
-
-        if (type && type !== 'all') {
-            whereClause.push('r.type = ?');
-            params.push(type);
-        }
-
-        const whereStr = whereClause.length ? `WHERE ${whereClause.join(' AND ')}` : '';
-
-        const [countResult] = await db.query(
-            `SELECT COUNT(*) as total FROM reports r ${whereStr}`,
-            params
-        );
-        const total = countResult[0].total;
-
-        let selectCols = `
-            r.id,
-            r.type,
-            r.description,
-            r.latitude,
-            r.longitude,
-            r.created_at
-        `;
-
-        if (hasStatus) selectCols += `, r.status`;
-        if (hasResidentId) {
-            selectCols += `, r.resident_id AS user_id, u.name AS resident_name, u.email AS resident_email`;
-        } else {
-            selectCols += `, NULL AS user_id, NULL AS resident_name, NULL AS resident_email`;
-        }
-
-        let query = `
-            SELECT ${selectCols}
-            FROM reports r
-            ${hasResidentId ? 'LEFT JOIN users u ON u.id = r.resident_id' : ''}
-            ${whereStr}
-            ORDER BY r.created_at DESC
-            LIMIT ? OFFSET ?
-        `;
-
-        const [reports] = await db.query(query, [...params, limit, offset]);
-
-        res.json({
-            data: reports,
-            pagination: {
-                current_page: page,
-                per_page: limit,
-                total: total,
-                total_pages: Math.ceil(total / limit)
+                                // Enter key in delete confirm input triggers delete
+                                if (e.key === 'Enter') {
+                const deleteInput = document.getElementById('deleteConfirmInput');
+                                if (deleteInput && document.getElementById('deleteConfirmModal').classList.contains('open')) {
+                    const btn = document.getElementById('deleteConfirmBtn');
+                                if (!btn.disabled) {
+                                    confirmDeleteUser();
+                    }
+                }
             }
         });
-    } catch (err) {
-        console.error('Error in getReports:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
 
-exports.getReportById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const [columns] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
-        );
-        const colNames = columns.map(c => c.COLUMN_NAME);
-        const hasResidentId = colNames.includes('resident_id');
-
-        let query = `
-            SELECT 
-                r.*,
-                ${hasResidentId ? 'u.name as resident_name, u.email as resident_email, u.phone as resident_phone' : 'NULL as resident_name, NULL as resident_email, NULL as resident_phone'}
-            FROM reports r
-            ${hasResidentId ? 'LEFT JOIN users u ON u.id = r.resident_id' : ''}
-            WHERE r.id = ?
-        `;
-
-        const [reports] = await db.query(query, [id]);
-
-        if (!reports.length) {
-            return res.status(404).json({ error: "Report not found" });
-        }
-
-        const report = reports[0];
-
-        if (report.image_url) {
-            if (!report.image_url.startsWith('data:image') && !report.image_url.startsWith('http')) {
-                report.image_url = `data:image/jpeg;base64,${report.image_url}`;
-            }
-        }
-
-        res.json(report);
-    } catch (err) {
-        console.error('Error in getReportById:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.updateReportStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status, admin_notes } = req.body;
-
-        const validStatuses = ['pending', 'in_progress', 'resolved', 'rejected'];
-        if (status && !validStatuses.includes(status)) {
-            return res.status(400).json({ error: "Invalid status. Must be: pending, in_progress, resolved, rejected" });
-        }
-
-        const [columns] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
-        );
-        const colNames = columns.map(c => c.COLUMN_NAME);
-        const hasStatus = colNames.includes('status');
-        const hasAdminNotes = colNames.includes('admin_notes');
-
-        if (!hasStatus) {
-            return res.status(400).json({ error: "Status column does not exist in reports table" });
-        }
-
-        const [existing] = await db.query(
-            `SELECT id FROM reports WHERE id = ?`,
-            [id]
-        );
-
-        if (!existing.length) {
-            return res.status(404).json({ error: "Report not found" });
-        }
-
-        const updates = ['status = ?', 'updated_at = NOW()'];
-        const values = [status || 'pending'];
-
-        if (hasAdminNotes && admin_notes !== undefined) {
-            updates.push('admin_notes = ?');
-            values.push(admin_notes || null);
-        }
-
-        values.push(id);
-
-        await db.query(
-            `UPDATE reports SET ${updates.join(', ')} WHERE id = ?`,
-            values
-        );
-
-        const [updated] = await db.query(
-            `SELECT r.*, u.name as resident_name
-             FROM reports r
-             LEFT JOIN users u ON u.id = r.resident_id
-             WHERE r.id = ?`,
-            [id]
-        );
-
-        if (updated[0] && updated[0].image_url) {
-            if (!updated[0].image_url.startsWith('data:image') && !updated[0].image_url.startsWith('http')) {
-                updated[0].image_url = `data:image/jpeg;base64,${updated[0].image_url}`;
-            }
-        }
-
-        res.json({
-            message: "Report updated successfully",
-            report: updated[0]
-        });
-    } catch (err) {
-        console.error('Error in updateReportStatus:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.deleteReport = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const [existing] = await db.query(
-            `SELECT id, image_url FROM reports WHERE id = ?`,
-            [id]
-        );
-
-        if (!existing.length) {
-            return res.status(404).json({ error: "Report not found" });
-        }
-
-        await db.query(`DELETE FROM reports WHERE id = ?`, [id]);
-
-        await db.query(
-            "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
-            [req.user.id, `Deleted report ID ${id}`]
-        );
-
-        res.json({ message: "Report deleted successfully" });
-    } catch (err) {
-        console.error('Error in deleteReport:', err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.reportAnalytics = async (req, res) => {
-    try {
-        const [columns] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
-        );
-        const colNames = columns.map(c => c.COLUMN_NAME);
-        const hasStatus = colNames.includes('status');
-
-        let query = `
-            SELECT 
-                type, 
-                COUNT(*) AS total,
-                MIN(created_at) AS first_report,
-                MAX(created_at) AS last_report
-            FROM reports
-        `;
-
-        if (hasStatus) {
-            query += `
-                GROUP BY type
-                UNION ALL
-                SELECT 
-                    'ALL' AS type,
-                    COUNT(*) AS total,
-                    MIN(created_at) AS first_report,
-                    MAX(created_at) AS last_report
-                FROM reports
-            `;
-        } else {
-            query += ` GROUP BY type`;
-        }
-
-        const [data] = await db.query(query);
-
-        let statusBreakdown = [];
-        if (hasStatus) {
-            const [statusData] = await db.query(`
-                SELECT status, COUNT(*) AS total
-                FROM reports
-                GROUP BY status
-            `);
-            statusBreakdown = statusData;
-        }
-
-        res.json({
-            type_breakdown: data,
-            status_breakdown: statusBreakdown,
-            total_reports: data.reduce((sum, item) => sum + item.total, 0)
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.exportAnalytics = async (req, res) => {
-    try {
-        const [data] = await db.query(
-            "SELECT type, COUNT(*) total FROM reports GROUP BY type"
-        );
-
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("Analytics");
-
-        sheet.columns = [
-            { header: "Report Type", key: "type", width: 24 },
-            { header: "Total Reports", key: "total", width: 16 },
-        ];
-
-        sheet.getRow(1).font = { bold: true };
-        sheet.getRow(1).alignment = { horizontal: "center" };
-
-        sheet.addRows(data);
-
-        res.setHeader(
-            "Content-Type",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        );
-        res.setHeader(
-            "Content-Disposition",
-            `attachment; filename=analytics-${new Date().toISOString().slice(0, 10)}.xlsx`
-        );
-
-        await workbook.xlsx.write(res);
-        res.end();
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// RESIDENT LOCATIONS
-// ============================================
-
-exports.getResidentLocations = async (req, res) => {
-    try {
-        const [residents] = await db.query(
-            `SELECT id, name, latitude, longitude, location_updated_at, address
-             FROM users
-             WHERE role = 'resident'
-               AND latitude IS NOT NULL
-               AND longitude IS NOT NULL
-               AND location_updated_at > NOW() - INTERVAL 2 HOUR
-             ORDER BY location_updated_at DESC`
-        );
-        res.json(residents);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// ANNOUNCEMENTS
-// ============================================
-
-exports.createAnnouncement = async (req, res) => {
-    try {
-        const { title, message, pickup_date, image_url } = req.body;
-        if (!title || !message) {
-            return res.status(400).json({ error: "Title and message required" });
-        }
-
-        const [cols] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'announcements'`
-        );
-        const colNames = cols.map(c => c.COLUMN_NAME);
-
-        const fields = ["title", "message"];
-        const values = [title, message];
-
-        if (colNames.includes("pickup_date")) { fields.push("pickup_date"); values.push(pickup_date || null); }
-        if (colNames.includes("image_url")) { fields.push("image_url"); values.push(image_url || null); }
-        if (colNames.includes("created_by")) { fields.push("created_by"); values.push(req.user.id); }
-
-        await db.query(
-            `INSERT INTO announcements (${fields.join(", ")}) VALUES (${fields.map(() => "?").join(", ")})`,
-            values
-        );
-        res.json({ message: "Announcement created successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.getAnnouncements = async (req, res) => {
-    try {
-        const [cols] = await db.query(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'announcements'`
-        );
-        const colNames = cols.map(c => c.COLUMN_NAME);
-
-        const hasCreatedAt = colNames.includes("created_at");
-        const hasImageUrl = colNames.includes("image_url");
-        const hasCreatedBy = colNames.includes("created_by");
-
-        const selectCols = [
-            "a.id", "a.title", "a.message",
-            hasImageUrl ? "a.image_url" : "NULL AS image_url",
-            hasCreatedAt ? "a.created_at" : "NULL AS created_at",
-            hasCreatedBy ? "COALESCE(u.name, 'Admin') AS admin_name" : "'Admin' AS admin_name",
-        ];
-        const joinClause = hasCreatedBy ? "LEFT JOIN users u ON a.created_by = u.id" : "";
-        const orderClause = hasCreatedAt ? "ORDER BY a.created_at DESC" : "ORDER BY a.id DESC";
-
-        const [data] = await db.query(
-            `SELECT ${selectCols.join(", ")}
-             FROM announcements a
-             ${joinClause}
-             ${orderClause}`
-        );
-        res.json(data);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.deleteAnnouncement = async (req, res) => {
-    try {
-        await db.query("DELETE FROM announcements WHERE id=?", [req.params.id]);
-        res.json({ message: "Announcement deleted successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// PROFILE
-// ============================================
-
-exports.getProfile = async (req, res) => {
-    try {
-        const [[user]] = await db.query(
-            "SELECT id, name, email, phone, address FROM users WHERE id=?",
-            [req.user.id]
-        );
-        res.json(user);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.updateProfile = async (req, res) => {
-    try {
-        const { name, email, phone, address } = req.body;
-        await db.query(
-            "UPDATE users SET name=?, email=?, phone=?, address=? WHERE id=?",
-            [name, email, phone, address, req.user.id]
-        );
-        res.json({ message: "Profile updated successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-// ============================================
-// PICKUPS / SCHEDULES
-// ============================================
-
-exports.getPickups = async (req, res) => {
-    try {
-        const [pickups] = await db.query(`
-            SELECT
-                ra.*,
-                u.name        AS driver_name,
-                t.plate_number AS truck_plate,
-                r.zone_name
-            FROM route_assignments ra
-            JOIN users  u ON ra.driver_id = u.id
-            JOIN trucks t ON ra.truck_id  = t.id
-            JOIN routes r ON ra.route_id  = r.id
-            ORDER BY ra.assigned_date DESC
-        `);
-        res.json(pickups);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.updatePickup = async (req, res) => {
-    try {
-        const { driver_id, truck_id, route_id, assigned_date, status, pickup_type } = req.body;
-        const updates = [];
-        const values = [];
-
-        if (driver_id !== undefined) { updates.push("driver_id=?"); values.push(driver_id); }
-        if (truck_id !== undefined) { updates.push("truck_id=?"); values.push(truck_id); }
-        if (route_id !== undefined) { updates.push("route_id=?"); values.push(route_id); }
-        if (assigned_date) { updates.push("assigned_date=?"); values.push(assigned_date); }
-        if (status) { updates.push("status=?"); values.push(status); }
-        if (pickup_type) { updates.push("pickup_type=?"); values.push(pickup_type); }
-
-        if (updates.length === 0) {
-            return res.status(400).json({ error: "Nothing to update" });
-        }
-
-        values.push(req.params.id);
-
-        await db.query(
-            `UPDATE route_assignments SET ${updates.join(", ")} WHERE id=?`,
-            values
-        );
-
-        res.json({ message: "Pickup schedule updated successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-exports.deletePickup = async (req, res) => {
-    try {
-        await db.query("DELETE FROM route_assignments WHERE id=?", [req.params.id]);
-        res.json({ message: "Pickup schedule deleted successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-};
+                                // ===================== EXPOSE FUNCTIONS TO GLOBAL SCOPE =====================
+                                window.openModal = openModal;
+                                window.closeModal = closeModal;
+                                window.addUser = addUser;
+                                window.viewUser = viewUser;
+                                window.filterUsers = filterUsers;
+                                window.openEditUser = openEditUser;
+                                window.updateUser = updateUser;
+                                window.openEditFromView = openEditFromView;
+                                window.openDeleteConfirm = openDeleteConfirm;
+                                window.confirmDeleteUser = confirmDeleteUser;
+                                window.onDeleteConfirmInput = onDeleteConfirmInput;
+                                window.togglePasswordVisibility = togglePasswordVisibility;
+
+                                // ===================== INIT =====================
+                                loadAdminProfile();
+                                loadUsers();
+                            </script>
+                    </body>
+
+                </html>
