@@ -672,3 +672,101 @@ exports.getPerformanceStats = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// ═══════════════════════════════════════
+// NEARBY ISSUES (resident-reported problems, visible to any driver)
+// ═══════════════════════════════════════
+
+// Returns all reports that are still open (pending/in_progress, or unset)
+// so any driver can see what's been reported and go handle it.
+exports.getOpenReports = async (req, res) => {
+    try {
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
+        );
+        const colNames = columns.map(c => c.COLUMN_NAME);
+        const hasStatus = colNames.includes('status');
+        const hasResidentId = colNames.includes('resident_id');
+
+        let selectCols = `
+            r.id,
+            r.type,
+            r.description,
+            r.latitude,
+            r.longitude,
+            r.image_url,
+            r.created_at
+        `;
+        if (hasStatus) selectCols += `, r.status`;
+        if (hasResidentId) selectCols += `, r.resident_id AS user_id`;
+
+        const conditions = ['r.latitude IS NOT NULL', 'r.longitude IS NOT NULL'];
+        if (hasStatus) {
+            conditions.push(`(r.status IS NULL OR r.status IN ('pending', 'in_progress'))`);
+        }
+
+        const [reports] = await db.query(
+            `SELECT ${selectCols}
+             FROM reports r
+             WHERE ${conditions.join(' AND ')}
+             ORDER BY r.created_at DESC
+             LIMIT 100`
+        );
+
+        res.json(reports);
+    } catch (err) {
+        console.error('getOpenReports error:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Lets a driver mark a resident report as resolved (or another status) once handled.
+exports.updateReportStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const allowed = ['pending', 'in_progress', 'resolved', 'rejected'];
+        const nextStatus = allowed.includes(status) ? status : 'resolved';
+
+        const [columns] = await db.query(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports'`
+        );
+        const colNames = columns.map(c => c.COLUMN_NAME);
+
+        if (!colNames.includes('status')) {
+            return res.status(400).json({ error: 'Status column does not exist on reports table' });
+        }
+
+        const [existing] = await db.query(`SELECT id FROM reports WHERE id = ?`, [id]);
+        if (!existing.length) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+
+        const setClauses = ['status = ?'];
+        const values = [nextStatus];
+
+        if (colNames.includes('updated_at')) {
+            setClauses.push('updated_at = NOW()');
+        }
+        if (colNames.includes('resolved_by') && nextStatus === 'resolved') {
+            setClauses.push('resolved_by = ?');
+            values.push(req.user.id);
+        }
+        values.push(id);
+
+        await db.query(`UPDATE reports SET ${setClauses.join(', ')} WHERE id = ?`, values);
+
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.emit('report-status-changed', { reportId: Number(id), status: nextStatus, resolvedBy: req.user.id });
+        }
+
+        res.json({ message: `Report marked as ${nextStatus}`, status: nextStatus });
+    } catch (err) {
+        console.error('updateReportStatus (driver) error:', err);
+        res.status(500).json({ error: err.message });
+    }
+};

@@ -798,6 +798,16 @@
             border-color: var(--blue);
         }
 
+        .map-btn.red-btn {
+            border-color: rgba(255, 94, 94, .3);
+            color: var(--red);
+        }
+
+        .map-btn.red-btn:hover {
+            background: rgba(255, 94, 94, .1);
+            border-color: var(--red);
+        }
+
         #driverMap {
             height: 480px;
             width: 100%;
@@ -854,6 +864,10 @@
 
         .legend-dot.stop {
             background: #5b9cf6;
+        }
+
+        .legend-dot.issue {
+            background: #f87171;
         }
 
         .hud-residents {
@@ -1174,6 +1188,14 @@
             font-weight: 500;
         }
 
+        .report-photo-thumb {
+            width: 100%;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
         /* ── Announcements ── */
         .ann-card {
             background: var(--panel);
@@ -1436,6 +1458,31 @@
             opacity: .6;
         }
 
+        .issue-marker {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2.5px solid #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            animation: issuePulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes issuePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 2px 10px rgba(0, 0, 0, .5), 0 0 0 0 rgba(248, 113, 113, .35);
+            }
+
+            50% {
+                box-shadow: 0 2px 10px rgba(0, 0, 0, .5), 0 0 0 6px rgba(248, 113, 113, 0);
+            }
+        }
+
         /* ── Toast ── */
         #toast {
             position: fixed;
@@ -1598,6 +1645,10 @@
             <button class="nav-item" data-tab="report" onclick="switchTab('report',this)">
                 <span class="nav-icon">⚠️</span> File Report
             </button>
+            <button class="nav-item" data-tab="issues" onclick="switchTab('issues',this)">
+                <span class="nav-icon">🚨</span> Nearby Issues
+                <span class="nav-badge" id="issuesBadge" style="display:none">0</span>
+            </button>
             <button class="nav-item" data-tab="announcements" onclick="switchTab('announcements',this)">
                 <span class="nav-icon">📢</span> Notices
                 <span class="nav-badge" id="annBadge" style="display:none">0</span>
@@ -1666,6 +1717,8 @@
                         <button class="map-btn" onclick="toggleRoutePanel()">📋 Stops</button>
                         <button class="map-btn blue-btn" onclick="loadResidents();toast('Refreshed','success')">🏠
                             Residents</button>
+                        <button class="map-btn red-btn active" id="issuesToggleBtn" onclick="toggleIssueMarkers()">🚨
+                            Issues</button>
                         <button class="map-btn" onclick="goToMRF()">🏭 MRF</button>
                     </div>
                     <div id="driverMap"></div>
@@ -1681,6 +1734,9 @@
                         </div>
                         <div class="legend-item">
                             <div class="legend-dot resident"></div>Residents
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot issue"></div>Reported Issue
                         </div>
                         <div class="legend-item">
                             <div class="legend-dot remaining"></div>Route Ahead
@@ -1775,6 +1831,19 @@
                 <div class="divider"></div>
                 <div class="section-title">My Reports</div>
                 <div class="list-stack" id="myReportsList"></div>
+            </div>
+
+            <!-- NEARBY ISSUES TAB -->
+            <div class="tab-panel" id="tab-issues">
+                <div class="section-title">Nearby Reported Issues</div>
+                <div style="font-size:.75rem;color:var(--text2);margin-bottom:16px;line-height:1.6;">
+                    Issues reported by residents that haven't been resolved yet. Tap <strong>🧭 Go</strong> to locate
+                    one on the map, or <strong>✓ Done</strong> once you've handled it.
+                </div>
+                <div class="list-stack" id="issuesListPanel">
+                    <div class="skel" style="height:100px"></div>
+                    <div class="skel" style="height:100px"></div>
+                </div>
             </div>
 
             <!-- ANNOUNCEMENTS TAB -->
@@ -2040,6 +2109,17 @@
             socket.on('driver-disconnected', (data) => {
                 console.log('👋 Driver disconnected:', data.driverId);
             });
+
+            // A resident/other driver/admin resolved a report — keep the map/list in sync.
+            socket.on('report-status-changed', (data) => {
+                if (!data || !data.reportId) return;
+                if (data.status && data.status !== 'pending' && data.status !== 'in_progress') {
+                    allIssues = allIssues.filter(r => r.id !== data.reportId);
+                    renderIssueMarkers();
+                    renderIssuesListPanel();
+                    updateIssuesBadge();
+                }
+            });
         }
 
         function updateConnectionStatus(connected) {
@@ -2111,7 +2191,7 @@
         let loadFlags = { schedule: false, report: false, announcements: false, trips: false, profile: false };
         const tabTitles = {
             today: "Today's Route", schedule: "My Schedule", report: "File Report",
-            announcements: "Notices", trips: "Trip History", profile: "My Profile"
+            issues: "Nearby Issues", announcements: "Notices", trips: "Trip History", profile: "My Profile"
         };
 
         function switchTab(id, btn) {
@@ -2125,6 +2205,7 @@
             switch (id) {
                 case 'schedule': if (!loadFlags.schedule) loadSchedule(); break;
                 case 'report': if (!loadFlags.report) loadMyReports(); break;
+                case 'issues': renderIssuesListPanel(); break;
                 case 'announcements': if (!loadFlags.announcements) loadAnnouncements(); break;
                 case 'trips': if (!loadFlags.trips) loadTrips(); break;
                 case 'profile': if (!loadFlags.profile) loadProfile(); break;
@@ -2156,6 +2237,15 @@
         let animTo = null;
         let animDuration = 1000;
 
+        // ── Nearby Issues (resident reports) ──
+        let issueMarkers = [];
+        let allIssues = [];
+        let issuesVisible = true;
+
+        const ISSUE_COLORS = { missed_pickup: '#ffc13c', overflowing_bin: '#4ade80', illegal_dumping: '#f87171', road_blocked: '#f87171', equipment_fault: '#a78bfa', other: '#a78bfa' };
+        const ISSUE_LABELS = { missed_pickup: 'Missed Pickup', overflowing_bin: 'Overflowing Bin', illegal_dumping: 'Illegal Dumping', road_blocked: 'Road Blocked', equipment_fault: 'Equipment Fault', other: 'Other Issue' };
+        const ISSUE_ICON = { missed_pickup: '🗑️', overflowing_bin: '♻️', illegal_dumping: '🚯', road_blocked: '🚧', equipment_fault: '🔧', other: '⚠️' };
+
         const MRF_FALLBACK = { name: "Jose Dalman MRF", latitude: 8.2317, longitude: 123.4018 };
 
         function initMap(lat = 8.2380, lng = 123.0, zoom = 14) {
@@ -2173,6 +2263,9 @@
             loadFallbackMRF();
             loadResidents();
             setInterval(loadResidents, 30000);
+            renderIssueMarkers();
+            loadOpenReports();
+            setInterval(loadOpenReports, 30000);
         }
 
         function addTileLayer(style) {
@@ -2533,6 +2626,162 @@
             } catch (e) { console.warn("loadResidents:", e); }
         }
 
+        // ── Nearby Issues (resident reports) ──
+        function haversineKm(lat1, lng1, lat2, lng2) {
+            const R = 6371,
+                dLat = (lat2 - lat1) * Math.PI / 180,
+                dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function updateIssuesBadge() {
+            const badge = document.getElementById('issuesBadge');
+            if (!badge) return;
+            if (allIssues.length) { badge.textContent = allIssues.length; badge.style.display = 'flex'; }
+            else badge.style.display = 'none';
+        }
+
+        async function loadOpenReports() {
+            try {
+                const data = await api('GET', '/reports/open');
+                allIssues = Array.isArray(data) ? data : [];
+                renderIssueMarkers();
+                renderIssuesListPanel();
+                updateIssuesBadge();
+            } catch (e) {
+                console.warn('loadOpenReports failed:', e);
+            }
+        }
+
+        function buildIssuePopup(r) {
+            const color = ISSUE_COLORS[r.type] || '#a78bfa';
+            const label = ISSUE_LABELS[r.type] || (r.type || '').replace(/_/g, ' ');
+            const desc = r.description ? (r.description.length > 100 ? r.description.slice(0, 100) + '…' : r.description) : 'No description';
+            const img = r.image_url
+                ? `<img src="${r.image_url}" style="width:100%;max-height:110px;object-fit:cover;border-radius:8px;margin:6px 0" onerror="this.style.display='none'">`
+                : '';
+            return `<div style="min-width:210px">
+                <strong style="color:${color};font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;">${ISSUE_ICON[r.type] || '⚠️'} ${label}</strong>
+                ${img}
+                <div style="font-size:.75rem;color:#c7d0da;margin:6px 0;line-height:1.5;">${desc}</div>
+                <div style="font-size:.62rem;color:#7a8499;margin-bottom:8px;">${r.created_at ? fmtDate(r.created_at) : ''}</div>
+                <button onclick="markIssueResolved(${r.id})"
+                    style="width:100%;padding:7px;border-radius:8px;border:1px solid rgba(45,212,160,.4);background:rgba(45,212,160,.12);color:#2dd4a0;font-weight:700;font-size:.68rem;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;">
+                    ✓ MARK RESOLVED
+                </button>
+            </div>`;
+        }
+
+        function renderIssueMarkers() {
+            if (!dMap) return;
+            issueMarkers.forEach(m => dMap.removeLayer(m));
+            issueMarkers = [];
+            if (!issuesVisible) return;
+
+            allIssues.forEach(r => {
+                const lat = parseFloat(r.latitude), lng = parseFloat(r.longitude);
+                if (isNaN(lat) || isNaN(lng)) return;
+                const color = ISSUE_COLORS[r.type] || '#a78bfa';
+                const icon = L.divIcon({
+                    className: "",
+                    html: `<div class="issue-marker" style="background:${color}"><span>${ISSUE_ICON[r.type] || '⚠️'}</span></div>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
+                const marker = L.marker([lat, lng], { icon, zIndexOffset: 800, reportId: r.id })
+                    .addTo(dMap)
+                    .bindPopup(buildIssuePopup(r), { maxWidth: 260 });
+                issueMarkers.push(marker);
+            });
+        }
+
+        function toggleIssueMarkers() {
+            issuesVisible = !issuesVisible;
+            const btn = document.getElementById('issuesToggleBtn');
+            if (btn) btn.classList.toggle('active', issuesVisible);
+            renderIssueMarkers();
+            toast(issuesVisible ? 'Showing reported issues' : 'Issues hidden', 'info');
+        }
+
+        function locateIssue(id) {
+            const issue = allIssues.find(r => r.id === id);
+            if (!issue) return;
+            const todayBtn = document.querySelector('.nav-item[data-tab="today"]');
+            if (todayBtn) switchTab('today', todayBtn);
+            if (!issuesVisible) toggleIssueMarkers();
+            setTimeout(() => {
+                if (!dMap) return;
+                const lat = parseFloat(issue.latitude), lng = parseFloat(issue.longitude);
+                if (isNaN(lat) || isNaN(lng)) { toast('No location on this report', 'error'); return; }
+                dMap.flyTo([lat, lng], 17, { duration: 0.8 });
+                const marker = issueMarkers.find(m => m.options.reportId === id);
+                if (marker) setTimeout(() => marker.openPopup(), 850);
+            }, 150);
+        }
+
+        async function markIssueResolved(id) {
+            try {
+                await api('PATCH', `/reports/${id}/status`, { status: 'resolved' });
+                toast('Issue marked as resolved ✓', 'success');
+                allIssues = allIssues.filter(r => r.id !== id);
+                renderIssueMarkers();
+                renderIssuesListPanel();
+                updateIssuesBadge();
+                if (dMap) dMap.closePopup();
+            } catch (e) {
+                toast(e.message || 'Failed to update report', 'error');
+            }
+        }
+
+        function renderIssuesListPanel() {
+            const el = document.getElementById('issuesListPanel');
+            if (!el) return;
+            if (!allIssues.length) {
+                el.innerHTML = `<div class="empty"><div class="empty-icon">🚨</div><div class="empty-title">No Open Issues</div><div class="empty-sub">All reported problems are resolved</div></div>`;
+                return;
+            }
+
+            const withDist = allIssues.map(r => {
+                let dist = null;
+                const lat = parseFloat(r.latitude), lng = parseFloat(r.longitude);
+                if (lastPos && !isNaN(lat) && !isNaN(lng)) {
+                    dist = haversineKm(lastPos.lat, lastPos.lng, lat, lng);
+                }
+                return { ...r, _dist: dist };
+            }).sort((a, b) => {
+                if (a._dist == null && b._dist == null) return new Date(b.created_at) - new Date(a.created_at);
+                if (a._dist == null) return 1;
+                if (b._dist == null) return -1;
+                return a._dist - b._dist;
+            });
+
+            el.innerHTML = withDist.map(r => {
+                const color = ISSUE_COLORS[r.type] || '#a78bfa';
+                const label = ISSUE_LABELS[r.type] || (r.type || '').replace(/_/g, ' ');
+                const distText = r._dist != null
+                    ? (r._dist < 1 ? `~${Math.round(r._dist * 1000)}m away` : `~${r._dist.toFixed(1)}km away`)
+                    : '';
+                return `<div class="report-card">
+                    <div class="report-icon" style="background:${color}22;color:${color}">${ISSUE_ICON[r.type] || '⚠️'}</div>
+                    <div class="report-body">
+                        <span class="badge" style="background:${color}22;border:1px solid ${color}66;color:${color}">${label.toUpperCase()}</span>
+                        <div class="report-desc">${r.description || 'No description'}</div>
+                        ${r.image_url ? `<img class="report-photo-thumb" src="${r.image_url}" onerror="this.style.display='none'">` : ''}
+                        <div class="report-note">
+                            ${r.latitude ? `📍 ${parseFloat(r.latitude).toFixed(5)}, ${parseFloat(r.longitude).toFixed(5)}` : 'No location'}
+                            ${distText ? ` · ${distText}` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch;">
+                        <button class="btn btn-ghost" style="padding:8px 14px;font-size:.65rem" onclick="locateIssue(${r.id})">🧭 Go</button>
+                        <button class="btn btn-success" style="padding:8px 14px;font-size:.65rem" onclick="markIssueResolved(${r.id})">✓ Done</button>
+                    </div>
+                    <div class="report-ts" style="width:100%;text-align:left;margin-top:-6px;">${r.created_at ? fmtDate(r.created_at) : ''}</div>
+                 </div>`;
+            }).join('');
+        }
+
         // ── GPS ──
         let gpsActive = false;
         let gpsWatchId = null;
@@ -2875,6 +3124,9 @@
         window.toggleSidebar = toggleSidebar;
         window.closeSidebar = closeSidebar;
         window.toast = toast;
+        window.toggleIssueMarkers = toggleIssueMarkers;
+        window.locateIssue = locateIssue;
+        window.markIssueResolved = markIssueResolved;
 
         console.log('🚀 Hybrid Driver Portal initialized');
         console.log(`📡 WebSocket: ${WS_URL}`);

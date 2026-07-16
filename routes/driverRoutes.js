@@ -23,5 +23,7 @@ router.get('/route-waypoints', auth.protect, driverController.getRouteWaypoints)
 router.get('/notifications', auth.protect, driverController.getNotifications);
 router.patch('/notifications/:notification_id/read', auth.protect, driverController.markNotificationRead);
 router.get('/online', auth.protect, driverController.getConnectedDrivers);
+router.get('/reports/open', auth.protect, driverController.getOpenReports);
+router.patch('/reports/:id/status', auth.protect, driverController.updateReportStatus);
 
 module.exports = router;
