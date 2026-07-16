@@ -656,6 +656,130 @@
             background: var(--bg-1) !important;
         }
 
+        /* ── Map Markers (matches driver portal design language) ── */
+        .truck-marker {
+            width: 30px;
+            height: 30px;
+            background: #f5a623;
+            border-radius: 50%;
+            border: 2.5px solid #fff;
+            box-shadow: 0 0 0 3px rgba(245, 166, 35, .35), 0 0 14px rgba(245, 166, 35, .5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: truckPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes truckPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 3px rgba(245, 166, 35, .35), 0 0 14px rgba(245, 166, 35, .5);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(245, 166, 35, .15), 0 0 24px rgba(245, 166, 35, .4);
+            }
+        }
+
+        .mrf-wrap {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mrf-pulse-ring {
+            position: absolute;
+            inset: -7px;
+            border-radius: 50%;
+            border: 2px solid rgba(45, 212, 160, .45);
+            animation: mrfRing 2.4s ease-out infinite;
+        }
+
+        @keyframes mrfRing {
+            0% {
+                transform: scale(.7);
+                opacity: .8;
+            }
+
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
+
+        .mrf-pin {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #2dd4a0, #1aad82);
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, .2);
+            box-shadow: 0 2px 10px rgba(45, 212, 160, .4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stop-pin {
+            width: 24px;
+            height: 24px;
+            background: #1e2435;
+            border: 2px solid #5b9cf6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #5b9cf6;
+            font-family: var(--ff-mono);
+            box-shadow: 0 1px 6px rgba(91, 156, 246, .35);
+            transition: all .3s;
+        }
+
+        .stop-pin.done {
+            background: #2dd4a0;
+            border-color: #2dd4a0;
+            color: #05130a;
+            box-shadow: 0 2px 10px rgba(45, 212, 160, .5);
+        }
+
+        .resident-pin {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, .15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform .15s;
+        }
+
+        .resident-pin.fresh {
+            background: rgba(91, 156, 246, .25);
+            box-shadow: 0 0 8px rgba(91, 156, 246, .4);
+            border-color: rgba(91, 156, 246, .5);
+        }
+
+        .resident-pin.stale {
+            background: rgba(61, 69, 88, .5);
+            opacity: .6;
+        }
+
+        .user-marker {
+            width: 14px;
+            height: 14px;
+            background: #3b82f6;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .35), 0 0 12px rgba(59, 130, 246, .5);
+        }
+
         .truck-card {
             position: relative;
             border-radius: var(--r-lg);
@@ -2251,7 +2375,7 @@
         let map, markerLayer, tileStreet, tileSat, tileRoadOverlay;
         let currentTruckId, truckMarker, userMarker, userCircle;
         let mrfMarkers = [];
-        let roadPolyline = null;
+        let fallbackMRF = null;
         let pinMarkers = [];
         let residentMarkers = {};
         let activeTile = 'street';
@@ -2269,9 +2393,15 @@
         let animStart = null;
         let animFrom = null;
         let animTo = null;
-        let roadTrail = null;
-        let fullRoute = [];
-        let trailProgress = 0;
+
+        // Route trail: two polylines create the "erasing line" effect —
+        // amber = remaining road ahead (shrinks), green = road already driven (grows)
+        let progressPolyline = null;
+        let trailPolyline = null;
+        let drawnCoords = [];
+        let progressIndex = 0;
+        let pinStops = [];
+        const MRF_FALLBACK = { name: "Jose Dalman MRF", latitude: 8.2317, longitude: 123.4018 };
 
         tileStreet = L.tileLayer(
             'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM &amp; CARTO', subdomains: 'abcd', maxZoom: 20 }
@@ -2295,8 +2425,28 @@
 
             tileStreet.addTo(map);
             markerLayer = L.layerGroup().addTo(map);
+            loadFallbackMRF();
             loadResidentLocations();
             setInterval(loadResidentLocations, 30000);
+        }
+
+        async function loadFallbackMRF() {
+            let mrf = MRF_FALLBACK;
+            try {
+                const data = await apiFetch('/api/resident/mrf-location');
+                if (data && data.latitude && data.longitude) mrf = data;
+            } catch (e) {
+                console.warn('MRF lookup failed, using fallback coordinates:', e);
+            }
+            const icon = L.divIcon({
+                className: "",
+                html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
+            fallbackMRF = L.marker([mrf.latitude, mrf.longitude], { icon, zIndexOffset: 400, opacity: 0.55 })
+                .addTo(map)
+                .bindPopup(`<b style="color:#2dd4a0">🏭 ${mrf.name}</b><br><span style="color:#8fb89a">MRF collection point</span>`);
         }
 
         function setTile(mode) {
@@ -2338,44 +2488,39 @@
         function showRouteWithTrail(routeData) {
             if (!map) return;
 
-            if (roadPolyline) {
-                map.removeLayer(roadPolyline);
-                roadPolyline = null;
-            }
-            if (roadTrail) {
-                map.removeLayer(roadTrail);
-                roadTrail = null;
-            }
+            if (progressPolyline) { map.removeLayer(progressPolyline); progressPolyline = null; }
+            if (trailPolyline) { map.removeLayer(trailPolyline); trailPolyline = null; }
             pinMarkers.forEach(m => map.removeLayer(m));
             pinMarkers = [];
             mrfMarkers.forEach(m => map.removeLayer(m));
             mrfMarkers = [];
-            fullRoute = [];
-            trailProgress = 0;
+            drawnCoords = [];
+            progressIndex = 0;
+            pinStops = [];
 
             const { road, pins, mrfs } = routeData;
 
             if (road.length >= 2) {
-                fullRoute = road.map(v => L.latLng(v.lat, v.lng));
+                drawnCoords = road.map(v => L.latLng(v.lat, v.lng));
 
-                L.polyline(fullRoute, {
-                    color: "#3d4558",
-                    weight: 4,
-                    opacity: 0.3,
-                    dashArray: "8 6"
+                // Amber = remaining road ahead. This line visibly "erases" as the truck advances.
+                progressPolyline = L.polyline(drawnCoords, {
+                    color: "#f5a623",
+                    weight: 5,
+                    opacity: .9,
+                    dashArray: "10 6"
                 }).addTo(map);
 
-                roadTrail = L.polyline([], {
+                // Green = road already driven, grows behind the truck as it moves.
+                trailPolyline = L.polyline([], {
                     color: "#4ade80",
                     weight: 5,
-                    opacity: 0.85
+                    opacity: .85
                 }).addTo(map);
 
-                roadTrail.setLatLngs(fullRoute);
-
                 let totalM = 0;
-                for (let i = 1; i < fullRoute.length; i++) {
-                    totalM += fullRoute[i - 1].distanceTo(fullRoute[i]);
+                for (let i = 1; i < drawnCoords.length; i++) {
+                    totalM += drawnCoords[i - 1].distanceTo(drawnCoords[i]);
                 }
                 const distEl = document.getElementById('routeDist');
                 if (distEl) {
@@ -2383,23 +2528,35 @@
                 }
             }
 
+            pinStops = pins;
             pins.forEach((p, i) => {
                 const icon = L.divIcon({
-                    html: `<div style="width:22px;height:22px;background:#1e2435;border:2px solid #5b9cf6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#5b9cf6;box-shadow:0 1px 4px rgba(0,0,0,.3);">${p.num}</div>`,
-                    iconSize: [22, 22],
-                    iconAnchor: [11, 11]
+                    className: "",
+                    html: `<div class="stop-pin" id="resStop${i}">${p.num}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
                 });
-                pinMarkers.push(L.marker([p.lat, p.lng], { icon }).bindPopup(`<b>📍 Stop ${p.num}</b><br>${p.name}`).addTo(map));
+                pinMarkers.push(
+                    L.marker([p.lat, p.lng], { icon, zIndexOffset: 300 })
+                        .bindPopup(`<b>📍 Stop ${p.num}</b><br>${p.name}`)
+                        .addTo(map)
+                );
             });
 
             mrfs.forEach(m => {
                 const icon = L.divIcon({
-                    html: `<div style="width:32px;height:32px;background:linear-gradient(135deg,#2dd4a0,#1aad82);border-radius:8px;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(45,212,160,.4);"><span style="font-size:14px">🏭</span></div>`,
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
+                    className: "",
+                    html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
                 });
-                mrfMarkers.push(L.marker([m.lat, m.lng], { icon }).bindPopup(`<b style="color:#2dd4a0">🏭 ${m.name}</b>`).addTo(map));
+                mrfMarkers.push(
+                    L.marker([m.lat, m.lng], { icon, zIndexOffset: 600 })
+                        .bindPopup(`<b style="color:#2dd4a0">🏭 ${m.name}</b>`)
+                        .addTo(map)
+                );
             });
+            if (mrfs.length && fallbackMRF) fallbackMRF.setOpacity(0);
 
             const allPoints = [
                 ...road.map(v => [v.lat, v.lng]),
@@ -2411,27 +2568,39 @@
             }
         }
 
-        function updateRoadTrail(lat, lng) {
-            if (!fullRoute.length || !roadTrail) return;
+        // Splits the road line at the truck's current position: everything behind becomes
+        // the green "driven" trail, everything ahead stays amber — so the amber line
+        // visibly erases as the truck moves along the route.
+        function updateRouteProgress(lat, lng) {
+            if (!drawnCoords.length || !progressPolyline || !trailPolyline) return;
             const current = L.latLng(lat, lng);
-            let nearest = 0;
+            let nearest = progressIndex;
             let minDist = Infinity;
-            for (let i = trailProgress; i < fullRoute.length; i++) {
-                const d = current.distanceTo(fullRoute[i]);
-                if (d < minDist) {
-                    minDist = d;
-                    nearest = i;
+            const start = Math.max(0, progressIndex - 5);
+            for (let i = start; i < drawnCoords.length; i++) {
+                const d = current.distanceTo(drawnCoords[i]);
+                if (d < minDist) { minDist = d; nearest = i; }
+                if (d > minDist + 200 && i > progressIndex + 10) break;
+            }
+            if (nearest <= progressIndex) return;
+            progressIndex = nearest;
+            trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
+            progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+
+            pinStops.forEach((p, i) => {
+                if (current.distanceTo(L.latLng(p.lat, p.lng)) < 80) {
+                    const pin = document.getElementById(`resStop${i}`);
+                    if (pin && !pin.classList.contains('done')) {
+                        pin.classList.add('done');
+                        pin.textContent = '✓';
+                    }
                 }
-                if (d > minDist + 100 && i > trailProgress + 5) break;
-            }
-            if (nearest > trailProgress) {
-                trailProgress = nearest;
-                const trailPoints = fullRoute.slice(0, trailProgress + 1);
-                roadTrail.setLatLngs(trailPoints);
-            }
+            });
         }
 
-        function animateTruck(from, to, duration = 1200) {
+        function animateTruck(from, to, duration = 3000) {
+            // Duration is tuned close to the 10s truck-poll interval (pollTruckLocation)
+            // so the marker glides continuously instead of jump-then-pause.
             if (animating && animFrame) {
                 cancelAnimationFrame(animFrame);
                 animFrame = null;
@@ -2454,7 +2623,7 @@
                 if (truckMarker) {
                     truckMarker.setLatLng([lat, lng]);
                 }
-                updateRoadTrail(lat, lng);
+                updateRouteProgress(lat, lng);
 
                 if (progress < 1) {
                     animFrame = requestAnimationFrame(step);
@@ -2464,7 +2633,7 @@
                     if (truckMarker) {
                         truckMarker.setLatLng([animTo.lat, animTo.lng]);
                     }
-                    updateRoadTrail(animTo.lat, animTo.lng);
+                    updateRouteProgress(animTo.lat, animTo.lng);
                 }
             }
             step();
@@ -2482,18 +2651,19 @@
                     animateTruck({ lat: currentPos.lat, lng: currentPos.lng }, { lat, lng });
                 } else {
                     truckMarker.setLatLng([lat, lng]);
-                    updateRoadTrail(lat, lng);
+                    updateRouteProgress(lat, lng);
                 }
             } else {
                 const icon = L.divIcon({
-                    html: `<div style="width:30px;height:30px;background:#f5a623;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 3px rgba(245,166,35,.35),0 0 14px rgba(245,166,35,.5);display:flex;align-items:center;justify-content:center;animation:truckPulse 2s ease-in-out infinite;"><span style="font-size:14px">🚛</span></div>`,
+                    className: "",
+                    html: `<div class="truck-marker"><span style="font-size:14px">🚛</span></div>`,
                     iconSize: [30, 30],
                     iconAnchor: [15, 15]
                 });
                 truckMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 })
                     .bindPopup('<b>🚛 Garbage Truck</b>')
                     .addTo(map);
-                updateRoadTrail(lat, lng);
+                updateRouteProgress(lat, lng);
             }
             updateDistanceHUD();
         }
@@ -2512,7 +2682,8 @@
                 list.forEach(r => {
                     const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
                     const icon = L.divIcon({
-                        html: `<div style="width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;${fresh ? 'background:rgba(91,156,246,.25);box-shadow:0 0 8px rgba(91,156,246,.4);border-color:rgba(91,156,246,.5);' : 'background:rgba(61,69,88,.5);opacity:.6;'}"><span style="font-size:11px">🏠</span></div>`,
+                        className: "",
+                        html: `<div class="resident-pin ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
                         iconSize: [24, 24],
                         iconAnchor: [12, 12]
                     });
@@ -2526,12 +2697,6 @@
                 });
             } catch (e) { console.warn('Resident locations failed', e); }
         }
-
-        const markerStyles = document.createElement('style');
-        markerStyles.textContent = `
-            @keyframes truckPulse { 0%,100%{box-shadow:0 0 0 3px rgba(245,166,35,.35),0 0 14px rgba(245,166,35,.5)} 50%{box-shadow:0 0 0 6px rgba(245,166,35,.15),0 0 24px rgba(245,166,35,.4)} }
-        `;
-        document.head.appendChild(markerStyles);
 
         async function loadTodayTruck() {
             try {
@@ -2622,7 +2787,8 @@
                 userMarker.setLatLng([lat, lng]);
             } else {
                 const icon = L.divIcon({
-                    html: `<div style="width:14px;height:14px;background:#3b82f6;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 3px rgba(59,130,246,0.35),0 0 12px rgba(59,130,246,0.5);"></div>`,
+                    className: "",
+                    html: `<div class="user-marker"></div>`,
                     iconSize: [14, 14],
                     iconAnchor: [7, 7]
                 });
