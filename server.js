@@ -4,26 +4,168 @@ const socketIo = require("socket.io");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const session = require("express-session");
+const crypto = require("crypto");
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 
+
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:", "https://images.unsplash.com"],
+            connectSrc: ["'self'", process.env.CORS_ORIGIN || "*"],
+        },
+    },
+    xssFilter: true,
+    noSniff: true,
+    referrerPolicy: { policy: "same-origin" },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+
+
+const corsOptions = {
+    origin: process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : ['http://localhost:5000', 'https://smartwaste.railway.app'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true,
+    maxAge: 86400
+};
+app.use(cors(corsOptions));
+
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            error: 'Rate limit exceeded',
+            message: 'Too many requests, please try again later.'
+        });
+    }
+});
+app.use('/api/', limiter);
+
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: 'Too many login attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            error: 'Rate limit exceeded',
+            message: 'Too many login attempts, please try again later.'
+        });
+    }
+});
+app.use('/api/auth/login', authLimiter);
+
+const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex');
+app.use(session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000,
+        domain: process.env.COOKIE_DOMAIN || undefined
+    },
+    name: 'swm.sid'
+}));
+
+app.use((req, res, next) => {
+    req.requestId = crypto.randomBytes(16).toString('hex');
+    res.setHeader('X-Request-ID', req.requestId);
+    next();
+});
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.set('trust proxy', 1);
+
+const xss = require('xss');
+app.use((req, res, next) => {
+    const originalJson = res.json;
+    res.json = function (data) {
+        if (typeof data === 'object' && data !== null) {
+            const sanitize = (obj) => {
+                for (let key in obj) {
+                    if (typeof obj[key] === 'string') {
+                        obj[key] = xss(obj[key]);
+                    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        sanitize(obj[key]);
+                    }
+                }
+                return obj;
+            };
+            data = sanitize(data);
+        }
+        return originalJson.call(this, data);
+    };
+    next();
+});
+
 const io = socketIo(server, {
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: process.env.CORS_ORIGIN || 'http://localhost:5000',
         methods: ["GET", "POST"],
         credentials: true
     },
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
     pingTimeout: 60000,
-    pingInterval: 25000
+    pingInterval: 25000,
+    allowEIO3: true,
+    cookie: {
+        name: 'swm.io',
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production'
+    }
+});
+
+io.use((socket, next) => {
+    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return next(new Error('Authentication required'));
+    }
+
+    try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        socket.userId = decoded.id;
+        socket.userRole = decoded.role;
+        next();
+    } catch (err) {
+        next(new Error('Invalid token'));
+    }
 });
 
 const db = require("./config/db");
 const bcrypt = require("bcrypt");
-
+const jwt = require("jsonwebtoken");
 const connectedDrivers = new Map();
+app.set('connectedDrivers', connectedDrivers);
 
 io.on('connection', (socket) => {
     console.log('🔌 New client connected:', socket.id);
@@ -31,10 +173,14 @@ io.on('connection', (socket) => {
     socket.on('driver-auth', async (data) => {
         try {
             const { driverId, token } = data;
-            const jwt = require('jsonwebtoken');
+
             let decoded;
             try {
                 decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+                if (decoded.id !== parseInt(driverId)) {
+                    socket.emit('auth-error', { message: 'Token mismatch' });
+                    return;
+                }
             } catch (e) {
                 socket.emit('auth-error', { message: 'Invalid token' });
                 return;
@@ -53,11 +199,13 @@ io.on('connection', (socket) => {
             socket.driverId = driverId;
             socket.driverName = user[0].name;
             socket.join(`driver-${driverId}`);
+            socket.join(`dispatcher-${driverId}`);
 
             connectedDrivers.set(driverId, {
                 socketId: socket.id,
                 name: user[0].name,
-                connectedAt: new Date()
+                connectedAt: new Date(),
+                userId: socket.userId
             });
 
             console.log(`✅ Driver ${driverId} (${user[0].name}) authenticated`);
@@ -132,7 +280,7 @@ io.on('connection', (socket) => {
 
             if (assignment.length) {
                 await db.query(
-                    'UPDATE trucks SET latitude = ?, longitude = ?, last_location_update = NOW() WHERE id = ?',
+                    'UPDATE trucks SET latitude = ?, longitude = ?, location_updated_at = NOW() WHERE id = ?',
                     [latitude, longitude, assignment[0].truck_id]
                 );
 
@@ -301,17 +449,52 @@ cron.schedule("0 0 * * 1", async () => {
     }
 });
 
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true
-}));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public"), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+}));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/resident", require("./routes/residentRoutes"));
+app.use("/driver/api", require("./routes/driverRoutes"));
+
+const htmlPages = ['login', 'register', 'dashboard', 'forgot-password'];
+htmlPages.forEach(page => {
+    app.get(`/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public', `${page}.html`);
+        if (fs.existsSync(filePath)) {
+            res.sendFile(filePath);
+        } else {
+            res.status(404).json({ error: 'Page not found' });
+        }
+    });
+});
+
+const adminPages = ['dashboard', 'users', 'trucks', 'routes', 'schedules', 'reports', 'announcements', 'analytics'];
+adminPages.forEach(page => {
+    app.get(`/admin/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public', 'admin', `${page}.html`);
+        if (fs.existsSync(filePath)) {
+            res.sendFile(filePath);
+        } else {
+            res.status(404).json({ error: 'Page not found', path: req.path });
+        }
+    });
+});
+
+app.use((req, res, next) => {
+    if (req.path.endsWith('.html')) {
+        const cleanPath = req.path.replace(/\.html$/, '');
+        return res.redirect(301, cleanPath);
+    }
+    next();
 });
 
 app.use((req, res, next) => {
@@ -338,42 +521,12 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use((req, res, next) => {
-    if (req.path.endsWith('.html')) {
-        const cleanPath = req.path.replace(/\.html$/, '');
-        return res.redirect(301, cleanPath);
-    }
-    next();
-});
-
-if (process.env.NODE_ENV === 'development') {
-    app.use((req, res, next) => {
-        console.log(`${req.method} ${req.path}`);
-        next();
-    });
-}
-
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
-app.use("/api/resident", require("./routes/residentRoutes"));
-app.use("/driver/api", require("./routes/driverRoutes"));
-
-const adminPages = ['dashboard', 'users', 'trucks', 'routes', 'schedules', 'reports', 'announcements', 'analytics'];
-adminPages.forEach(page => {
-    app.get(`/${page}`, (req, res) => {
-        const filePath = path.join(__dirname, 'public', 'admin', `${page}.html`);
-        if (fs.existsSync(filePath)) {
-            res.sendFile(filePath);
-        } else {
-            res.status(404).json({ error: 'Page not found', path: req.path });
-        }
-    });
-});
-
 app.get('/migrate', async (req, res) => {
     try {
         const secret = req.query.secret;
-        if (secret !== 'your_migration_secret_123') {
+        const expectedSecret = process.env.MIGRATION_SECRET || 'your_migration_secret_123';
+
+        if (secret !== expectedSecret) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
@@ -419,6 +572,55 @@ app.get('/migrate', async (req, res) => {
         `);
         migrations.push('✅ Updated existing rows with default values');
 
+        const [userColumns] = await db.query(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'users'
+        `);
+        const userColNames = userColumns.map(c => c.COLUMN_NAME);
+
+        if (!userColNames.includes('last_login')) {
+            await db.query(`ALTER TABLE users ADD COLUMN last_login DATETIME NULL`);
+            migrations.push('✅ Added last_login column');
+        }
+        if (!userColNames.includes('last_ip')) {
+            await db.query(`ALTER TABLE users ADD COLUMN last_ip VARCHAR(45) NULL`);
+            migrations.push('✅ Added last_ip column');
+        }
+        if (!userColNames.includes('failed_attempts')) {
+            await db.query(`ALTER TABLE users ADD COLUMN failed_attempts INT DEFAULT 0`);
+            migrations.push('✅ Added failed_attempts column');
+        }
+        if (!userColNames.includes('locked_at')) {
+            await db.query(`ALTER TABLE users ADD COLUMN locked_at DATETIME NULL`);
+            migrations.push('✅ Added locked_at column');
+        }
+
+
+        const [tables] = await db.query(`
+            SELECT TABLE_NAME 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'audit_logs'
+        `);
+
+        if (!tables.length) {
+            await db.query(`
+                CREATE TABLE audit_logs (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    user_id VARCHAR(255) NOT NULL,
+                    action VARCHAR(255) NOT NULL,
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_created_at (created_at)
+                )
+            `);
+            migrations.push('✅ Created audit_logs table');
+        }
+
         const [finalColumns] = await db.query(`
             SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE
             FROM INFORMATION_SCHEMA.COLUMNS 
@@ -445,8 +647,14 @@ app.get('/migrate', async (req, res) => {
 app.get('/setup-admin', async (req, res) => {
     try {
         const secret = req.query.secret;
-        if (secret !== 'setup123') {
-            return res.status(401).json({ error: 'Unauthorized. Use ?secret=setup123' });
+        const expectedSecret = process.env.SETUP_SECRET || 'setup123';
+
+        if (secret !== expectedSecret) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_SETUP_IN_PROD) {
+            return res.status(403).json({ error: 'Setup disabled in production' });
         }
 
         const email = 'admin@smartwaste.com';
@@ -493,7 +701,8 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV,
-        connectedDrivers: connectedDrivers.size
+        connectedDrivers: connectedDrivers.size,
+        requestId: req.requestId
     });
 });
 
@@ -516,22 +725,25 @@ app.use((req, res) => {
     }
     res.status(404).json({
         error: 'Page not found',
-        path: req.path
+        path: req.path,
+        requestId: req.requestId
     });
 });
 
 app.use((err, req, res, next) => {
     console.error('❌ Unhandled error:', err);
-    res.status(500).json({
+    res.status(err.status || 500).json({
         error: process.env.NODE_ENV === 'production'
             ? 'Internal server error'
-            : err.message
+            : err.message,
+        requestId: req.requestId
     });
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🔒 Security: ${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'}`);
     console.log(`📱 Access: http://localhost:${PORT}/login`);
     console.log(`📱 Resident: http://localhost:${PORT}/resident`);
     console.log(`📱 Driver: http://localhost:${PORT}/driver`);

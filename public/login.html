@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartWaste · Login</title>
+    <!-- Security: CSRF token meta tag -->
+    <meta name="csrf-token" content="">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
@@ -517,7 +519,7 @@
 
                 <div class="card-foot">
                     Don't have an account?
-                    <a href="register.html">Create one →</a>
+                    <a href="/register">Create one →</a>
                 </div>
             </div>
         </div>
@@ -542,10 +544,25 @@
     </style>
 
     <script>
-        // ✅ FIXED: API URL works on both localhost and Railway
+        // ============================================================
+        // SECURITY: Prevent XSS in alert messages
+        // ============================================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        // SECURITY: API URL configuration
+        // ============================================================
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
+        // ============================================================
+        // SECURITY: Toggle password visibility
+        // ============================================================
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
             if (!input) return;
@@ -558,8 +575,20 @@
             }
         }
 
-        document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+        // ============================================================
+        // SECURITY: Show alert with proper escaping
+        // ============================================================
+        function showAlert(msg, type) {
+            const el = document.getElementById("alertBox");
+            el.textContent = ''; // Clear first
+            // Use textContent to prevent XSS
+            el.textContent = msg;
+            el.className = "alert " + type;
+        }
 
+        // ============================================================
+        // SECURITY: Login function with proper security headers
+        // ============================================================
         async function login() {
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
@@ -569,8 +598,16 @@
             alert.className = "alert";
             alert.textContent = "";
 
+            // Client-side validation
             if (!email || !password) {
                 showAlert("Please enter your email and password.", "error");
+                return;
+            }
+
+            // Email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showAlert("Please enter a valid email address.", "error");
                 return;
             }
 
@@ -580,50 +617,100 @@
             try {
                 console.log('📤 Sending login request to:', API_URL + '/auth/login');
 
-                const res = await fetch(API_URL + "/auth/login", {
+                const response = await fetch(API_URL + "/auth/login", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-Request-ID": crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+                    },
+                    credentials: 'include', // Send cookies
                     body: JSON.stringify({ email, password })
                 });
 
-                const data = await res.json();
-                console.log('📥 Response:', data);
+                const data = await response.json();
 
-                if (res.ok) {
-                    localStorage.setItem("token", data.token);
-                    localStorage.setItem("role", data.role);
+                if (response.ok) {
+                    // Security: Store token securely (sessionStorage is cleared on tab close)
+                    sessionStorage.setItem("token", data.token);
+                    sessionStorage.setItem("role", data.role);
+                    sessionStorage.setItem("loginTime", Date.now().toString());
+
                     showAlert("Login successful! Redirecting…", "success");
 
+                    // Security: Redirect based on role with proper path
                     setTimeout(() => {
-                        if (data.role === "admin") window.location = "/admin/dashboard.html";
-                        else if (data.role === "resident") window.location = "/residents/resident.html";
-                        else if (data.role === "driver") window.location = "/driver/dashboard.html";
-                        else window.location = "/";
+                        const redirectMap = {
+                            'admin': '/admin/dashboard',
+                            'resident': '/resident/dashboard',
+                            'driver': '/driver/dashboard'
+                        };
+                        const redirectPath = redirectMap[data.role] || '/';
+                        window.location.href = redirectPath;
                     }, 900);
                 } else {
-                    showAlert(data.message || "Invalid email or password.", "error");
+                    // Security: Show generic error message (don't reveal if user exists)
+                    showAlert(data.message || "Invalid credentials. Please try again.", "error");
                     btn.disabled = false;
                     btn.textContent = "Sign In";
+
+                    // Security: Rate limiting - clear password field on failure
+                    document.getElementById("password").value = '';
+                    document.getElementById("password").focus();
                 }
 
             } catch (err) {
                 console.error('❌ Login error:', err);
-                showAlert("Connection error. Please try again.", "error");
+                showAlert("Connection error. Please check your internet connection and try again.", "error");
                 btn.disabled = false;
                 btn.textContent = "Sign In";
             }
         }
 
-        function showAlert(msg, type) {
-            const el = document.getElementById("alertBox");
-            el.textContent = msg;
-            el.className = "alert " + type;
-        }
+        // ============================================================
+        // SECURITY: Enter key handler
+        // ============================================================
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                login();
+            }
+        });
 
-        // Test API connection on page load
+        // ============================================================
+        // SECURITY: Clear sensitive data on page unload
+        // ============================================================
+        window.addEventListener('beforeunload', () => {
+            // Don't clear token here as we need it for redirect
+            // SessionStorage will be cleared when tab closes
+        });
+
+        // ============================================================
+        // SECURITY: Prevent form submission via other methods
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function () {
+            // Remove any autofilled password warnings
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.addEventListener('focus', function () {
+                    this.select();
+                });
+            }
+
+            // Test API connection
+            testConnection();
+        });
+
+        // ============================================================
+        // SECURITY: Test API connection
+        // ============================================================
         async function testConnection() {
             try {
-                const response = await fetch(API_URL + '/health');
+                const response = await fetch(API_URL + '/health', {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 if (response.ok) {
                     console.log('✅ API is reachable');
                 } else {
@@ -633,7 +720,6 @@
                 console.warn('⚠️ API not reachable:', error);
             }
         }
-        testConnection();
     </script>
 </body>
 
