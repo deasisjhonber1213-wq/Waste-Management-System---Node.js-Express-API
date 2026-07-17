@@ -17,11 +17,38 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            scriptSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "'unsafe-eval'",
+                "https://unpkg.com",
+                "https://cdn.socket.io",
+                "https://cdn.jsdelivr.net"
+            ],
+            styleSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "https://fonts.googleapis.com",
+                "https://unpkg.com"
+            ],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:", "blob:", "https://images.unsplash.com"],
-            connectSrc: ["'self'", process.env.CORS_ORIGIN || "*"],
+            imgSrc: [
+                "'self'",
+                "data:",
+                "blob:",
+                "https://images.unsplash.com",
+                "https://unpkg.com",
+                "https://*.basemaps.cartocdn.com",
+                "https://server.arcgisonline.com"
+            ],
+            connectSrc: [
+                "'self'",
+                process.env.CORS_ORIGIN || "*",
+                "https://*.basemaps.cartocdn.com",
+                "https://server.arcgisonline.com",
+                "wss:",
+                "ws:"
+            ],
         },
     },
     xssFilter: true,
@@ -506,7 +533,7 @@ app.get('/resident/dashboard', (req, res) => {
 app.get('/resident', (req, res) => {
     const residentPath = path.join(__dirname, 'public', 'residents', 'resident.html');
     const dashboardPath = path.join(__dirname, 'public', 'residents', 'dashboard.html');
-    
+
     if (fs.existsSync(residentPath)) {
         res.sendFile(residentPath);
     } else if (fs.existsSync(dashboardPath)) {
