@@ -837,6 +837,36 @@
             }
         }
 
+        /* ========== TRUCK MAP MARKER (copied from Resident Portal) ========== */
+        .truck-marker {
+            width: 30px;
+            height: 30px;
+            background: #f5a623;
+            border-radius: 50%;
+            border: 2.5px solid #fff;
+            box-shadow: 0 0 0 3px rgba(245, 166, 35, .35), 0 0 14px rgba(245, 166, 35, .5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: truckPulse 2s ease-in-out infinite;
+        }
+
+        .truck-marker span {
+            font-size: 14px;
+        }
+
+        @keyframes truckPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 3px rgba(245, 166, 35, .35), 0 0 14px rgba(245, 166, 35, .5);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(245, 166, 35, .15), 0 0 24px rgba(245, 166, 35, .4);
+            }
+        }
+
         /* ========== RESPONSIVE ========== */
         @media (max-width: 820px) {
             .sidebar {
@@ -1039,6 +1069,11 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
+            <!-- Theme Toggle in Sidebar -->
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span class="icon">🌙</span>
+                <span class="label">Dark</span>
+            </button>
             <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
         </div>
     </aside>
@@ -1337,8 +1372,7 @@
         }
         checkAuth();
 
-        let fleetMap, mapMarkers = [],
-            trucks = [];
+        let fleetMap, mapMarkers = [], trucks = [];
         let isFleetMapSatellite = false;
 
         // ---- map tile layers ----
@@ -1516,7 +1550,7 @@
                 </tr>`).join("");
         }
 
-        // ---- render map ----
+        // ---- render map with Resident Portal truck marker style ----
         function renderMap(data) {
             if (!fleetMap) {
                 fleetMap = L.map("fleetMap").setView([14.5995, 120.9842], 12);
@@ -1528,10 +1562,12 @@
             const positioned = data.filter(t => t.latitude != null && t.longitude != null);
             positioned.forEach(t => {
                 const color = dotColor(t.location_updated_at);
+                // Using the same truck marker style as the Resident Portal
                 const icon = L.divIcon({
-                    html: `<div style="background:#1a1e24;border:2px solid ${color};color:${color};font-size:10px;font-weight:700;font-family:monospace;padding:3px 7px;border-radius:6px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.5)">${escHtml(t.plate_number)}</div>`,
                     className: "",
-                    iconAnchor: [0, 0]
+                    html: `<div class="truck-marker" style="border-color:#fff;box-shadow:0 0 0 3px ${color}, 0 0 14px ${color};"><span>🚛</span></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
                 });
                 const m = L.marker([t.latitude, t.longitude], { icon })
                     .addTo(fleetMap)
@@ -1641,7 +1677,6 @@
 
         // ---- modal helpers ----
         function openModal(id) { document.getElementById(id).classList.add("open"); }
-
         function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
         // ---- expose to window ----

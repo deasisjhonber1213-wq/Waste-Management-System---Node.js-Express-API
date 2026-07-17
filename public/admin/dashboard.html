@@ -7,753 +7,6 @@
     <title>Dashboard · SmartWaste Admin</title>
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* ----- reset / base overrides for responsiveness ----- */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f5f7fb;
-            color: #1e293b;
-            line-height: 1.5;
-        }
-
-        /* ----- layout variables (fallback) ----- */
-        :root {
-            --border2: #e9edf2;
-            --bg3: #f8fafc;
-            --gold-mid: #d4a02b;
-            --gold: #c9921e;
-            --gold-dim: rgba(201, 146, 30, 0.08);
-            --text: #0f172a;
-            --text2: #475569;
-            --mono: 'SF Mono', 'Menlo', monospace;
-            --red: #e74c3c;
-            --green: #2ecc71;
-        }
-
-        /* ----- sidebar (collapsible on mobile) ----- */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: 260px;
-            background: #ffffff;
-            border-right: 1px solid var(--border2);
-            padding: 20px 16px;
-            overflow-y: auto;
-            z-index: 1000;
-            transform: translateX(0);
-            transition: transform 0.25s ease;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.25);
-            z-index: 999;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.25s ease;
-        }
-
-        .sidebar-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 28px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border2);
-        }
-
-        .sidebar-logo-icon {
-            font-size: 1.7rem;
-        }
-
-        .sidebar-logo-text {
-            font-weight: 600;
-            font-size: 1.05rem;
-            letter-spacing: -0.3px;
-        }
-
-        .sidebar-logo-text span {
-            display: block;
-            font-weight: 400;
-            font-size: 0.7rem;
-            color: var(--text2);
-            letter-spacing: 0.3px;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-        }
-
-        .nav-section-label {
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text2);
-            margin: 18px 0 6px 8px;
-            font-weight: 600;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            color: var(--text2);
-            text-decoration: none;
-            font-size: 0.88rem;
-            transition: 0.15s;
-            margin-bottom: 2px;
-        }
-
-        .nav-item:hover {
-            background: #f1f5f9;
-            color: #0f172a;
-        }
-
-        .nav-item.active {
-            background: #eef2ff;
-            color: #4f46e5;
-            font-weight: 500;
-        }
-
-        .nav-icon {
-            font-size: 1.15rem;
-            width: 24px;
-            text-align: center;
-        }
-
-        .sidebar-footer {
-            border-top: 1px solid var(--border2);
-            padding-top: 16px;
-            margin-top: 8px;
-        }
-
-        .sidebar-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .sidebar-avatar {
-            width: 34px;
-            height: 34px;
-            background: #eef2ff;
-            border-radius: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .sidebar-user-name {
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .sidebar-user-role {
-            font-size: 0.7rem;
-            color: var(--text2);
-        }
-
-        .sidebar-logout {
-            color: var(--text2);
-            text-decoration: none;
-            font-size: 0.82rem;
-            padding: 6px 0;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: 0.15s;
-        }
-
-        .sidebar-logout:hover {
-            color: #b91c1c;
-        }
-
-        /* ----- topbar ----- */
-        .topbar {
-            background: #ffffff;
-            padding: 14px 24px;
-            border-bottom: 1px solid var(--border2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .topbar-left {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .topbar-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-
-        .topbar-breadcrumb {
-            font-size: 0.7rem;
-            color: var(--text2);
-        }
-
-        .topbar-hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-        }
-
-        .topbar-hamburger span {
-            display: block;
-            width: 22px;
-            height: 2.5px;
-            background: #1e293b;
-            border-radius: 10px;
-            transition: 0.2s;
-        }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .topbar-btn {
-            background: #0f172a;
-            color: white;
-            padding: 6px 16px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-size: 0.75rem;
-            font-weight: 500;
-            white-space: nowrap;
-            transition: 0.15s;
-            border: none;
-        }
-
-        .topbar-btn:hover {
-            background: #1e293b;
-        }
-
-        /* ----- main content ----- */
-        .main {
-            margin-left: 260px;
-            padding: 28px 28px 40px;
-            transition: margin 0.25s ease;
-        }
-
-        /* ----- stats grid (flexible) ----- */
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 18px;
-            margin-bottom: 28px;
-        }
-
-        .stat-card {
-            background: #ffffff;
-            padding: 16px 14px;
-            border-radius: 14px;
-            border: 1px solid var(--border2);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.01);
-            transition: 0.15s;
-            position: relative;
-        }
-
-        .stat-card::before {
-            content: attr(data-icon);
-            font-size: 1.4rem;
-            position: absolute;
-            right: 14px;
-            top: 14px;
-            opacity: 0.5;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            color: var(--text2);
-        }
-
-        .stat-value {
-            font-size: 1.9rem;
-            font-weight: 600;
-            line-height: 1.2;
-            margin: 6px 0 2px;
-        }
-
-        .stat-sub {
-            font-size: 0.7rem;
-            color: var(--text2);
-        }
-
-        /* ----- panels ----- */
-        .panel {
-            background: #ffffff;
-            border-radius: 16px;
-            border: 1px solid var(--border2);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-            overflow: hidden;
-            margin-bottom: 24px;
-        }
-
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 20px;
-            border-bottom: 1px solid var(--border2);
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .panel-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            font-size: 1rem;
-        }
-
-        .panel-title-icon {
-            font-size: 1.2rem;
-        }
-
-        .panel-body {
-            padding: 16px 20px 20px;
-        }
-
-        .panel-body-flush {
-            padding: 0;
-            overflow-x: auto;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            text-decoration: none;
-            border: 1px solid var(--border2);
-            background: transparent;
-            color: var(--text2);
-            transition: 0.15s;
-            white-space: nowrap;
-        }
-
-        .btn-outline:hover {
-            background: #f1f5f9;
-            border-color: #94a3b8;
-        }
-
-        .btn-sm {
-            padding: 2px 12px;
-            font-size: 0.7rem;
-        }
-
-        /* ----- dashboard grid (responsive) ----- */
-        .dash-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-
-        .dash-grid-wide {
-            grid-column: 1 / -1;
-        }
-
-        /* ----- quick actions ----- */
-        .quick-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-        }
-
-        .quick-action {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            padding: 18px 8px;
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            text-decoration: none;
-            color: var(--text2);
-            font-size: 0.78rem;
-            text-align: center;
-        }
-
-        .quick-action:hover {
-            border-color: var(--gold-mid);
-            color: var(--gold);
-            background: var(--gold-dim);
-        }
-
-        .quick-action-icon {
-            font-size: 1.6rem;
-        }
-
-        /* ----- table ----- */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.82rem;
-            min-width: 420px;
-        }
-
-        .data-table th {
-            text-align: left;
-            padding: 12px 16px;
-            background: #f8fafc;
-            font-weight: 500;
-            color: var(--text2);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            border-bottom: 1px solid var(--border2);
-        }
-
-        .data-table td {
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border2);
-        }
-
-        .data-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .table-mono {
-            font-family: var(--mono);
-            font-size: 0.8rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 12px;
-            border-radius: 50px;
-            font-size: 0.68rem;
-            font-weight: 500;
-            text-transform: capitalize;
-        }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .badge-info {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .badge-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-danger {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .badge-secondary {
-            background: #e9edf2;
-            color: #475569;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 28px 12px;
-            color: var(--text2);
-        }
-
-        .empty-state-icon {
-            font-size: 2.4rem;
-            opacity: 0.5;
-            margin-bottom: 6px;
-        }
-
-        .empty-state-text {
-            font-size: 0.85rem;
-        }
-
-        .activity-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border2);
-        }
-
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-
-        .activity-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-top: 5px;
-            flex-shrink: 0;
-        }
-
-        .activity-text {
-            font-size: 0.82rem;
-            color: var(--text);
-            line-height: 1.5;
-        }
-
-        .activity-time {
-            font-size: 0.7rem;
-            color: var(--text2);
-            margin-top: 2px;
-        }
-
-        .chart-wrap {
-            position: relative;
-            height: 220px;
-        }
-
-        .toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 9999;
-            max-width: 320px;
-            width: 100%;
-        }
-
-        .toast {
-            padding: 12px 18px;
-            border-radius: 12px;
-            background: #1e293b;
-            color: white;
-            font-size: 0.82rem;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            animation: slideUp 0.25s ease;
-        }
-
-        .toast-error {
-            background: #b91c1c;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(16px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ========== RESPONSIVE BREAKPOINTS ========== */
-        @media (max-width: 1024px) {
-            .main {
-                padding: 20px 20px 32px;
-            }
-
-            .dash-grid {
-                gap: 20px;
-            }
-        }
-
-        @media (max-width: 820px) {
-            .sidebar {
-                transform: translateX(-100%);
-                width: 280px;
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .sidebar-overlay.active {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            .topbar-hamburger {
-                display: flex;
-            }
-
-            .main {
-                margin-left: 0;
-                padding: 16px 16px 28px;
-            }
-
-            .topbar {
-                padding: 12px 16px;
-            }
-
-            .dash-grid {
-                grid-template-columns: 1fr;
-                gap: 18px;
-            }
-
-            .dash-grid-wide {
-                grid-column: 1;
-            }
-
-            .quick-actions-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .stat-grid {
-                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-                gap: 12px;
-            }
-        }
-
-        @media (max-width: 550px) {
-            .topbar-title {
-                font-size: 1rem;
-            }
-
-            .topbar-btn {
-                font-size: 0.65rem;
-                padding: 4px 12px;
-            }
-
-            .stat-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-
-            .stat-card {
-                padding: 14px 12px;
-            }
-
-            .stat-value {
-                font-size: 1.4rem;
-            }
-
-            .stat-card::before {
-                font-size: 1.1rem;
-                right: 10px;
-                top: 10px;
-            }
-
-            .quick-actions-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-
-            .quick-action {
-                padding: 14px 6px;
-                font-size: 0.7rem;
-            }
-
-            .quick-action-icon {
-                font-size: 1.3rem;
-            }
-
-            .panel-header {
-                padding: 12px 14px;
-            }
-
-            .panel-body {
-                padding: 12px 14px 16px;
-            }
-
-            .data-table {
-                font-size: 0.75rem;
-                min-width: 360px;
-            }
-
-            .data-table th,
-            .data-table td {
-                padding: 8px 10px;
-            }
-
-            .chart-wrap {
-                height: 170px;
-            }
-
-            .toast-container {
-                right: 12px;
-                bottom: 12px;
-                max-width: 260px;
-            }
-
-            .sidebar {
-                width: 250px;
-                padding: 16px 12px;
-            }
-        }
-
-        @media (max-width: 400px) {
-            .stat-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }
-
-            .stat-card {
-                padding: 10px 10px;
-            }
-
-            .stat-value {
-                font-size: 1.2rem;
-            }
-
-            .stat-label {
-                font-size: 0.6rem;
-            }
-
-            .topbar-right {
-                gap: 8px;
-            }
-
-            .topbar-btn {
-                font-size: 0.6rem;
-                padding: 3px 10px;
-            }
-        }
-
-        /* utility */
-        .section-gap {
-            margin-bottom: 24px;
-        }
-
-        .reveal {
-            animation: none;
-        }
-    </style>
 </head>
 
 <body>
@@ -787,14 +40,18 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
-            <a href="/login.html" class="sidebar-logout" style="margin-top:10px; display:flex;">⎋ &nbsp;Logout</a>
+            <!-- Theme Toggle in Sidebar -->
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span class="icon">🌙</span>
+                <span class="label">Dark</span>
+            </button>
+            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
         </div>
     </aside>
 
     <div class="topbar">
         <div style="display:flex;align-items:center;gap:14px;">
-            <button class="topbar-hamburger" id="hamburger"
-                aria-label="Toggle sidebar"><span></span><span></span><span></span></button>
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
             <div class="topbar-left">
                 <div class="topbar-title">Dashboard</div>
                 <div class="topbar-breadcrumb">Jose Dalman WM / <span>Overview</span></div>
@@ -911,176 +168,173 @@
 
     <script src="/js/style.js"></script>
     <script>
-        (function () {
-            // ---- hamburger toggle ----
-            const hamburger = document.getElementById('hamburger');
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
+        // ---- hamburger toggle ----
+        const hamburger = document.getElementById('hamburger');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
 
-            function toggleSidebar() {
-                sidebar.classList.toggle('open');
-                overlay.classList.toggle('active');
-            }
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
 
-            if (hamburger) {
-                hamburger.addEventListener('click', toggleSidebar);
-            }
-            if (overlay) {
-                overlay.addEventListener('click', toggleSidebar);
-            }
+        if (hamburger) {
+            hamburger.addEventListener('click', toggleSidebar);
+        }
+        if (overlay) {
+            overlay.addEventListener('click', toggleSidebar);
+        }
 
-            // close sidebar on any nav link click (mobile)
-            document.querySelectorAll('.sidebar-nav .nav-item').forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth <= 820) {
-                        sidebar.classList.remove('open');
-                        overlay.classList.remove('active');
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 820) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+
+        // ---- API and dashboard logic ----
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() { return localStorage.getItem('token'); }
+
+        const API = {
+            get: async (endpoint) => fetch(API_URL + endpoint, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
+            post: async (endpoint, data) => fetch(API_URL + endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                body: JSON.stringify(data)
+            }),
+            put: async (endpoint, data) => fetch(API_URL + endpoint, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                body: JSON.stringify(data)
+            }),
+            del: async (endpoint) => fetch(API_URL + endpoint, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
+        };
+
+        function fmtDate(date) {
+            if (!date) return '—';
+            const d = new Date(date);
+            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function statusBadge(status) {
+            const map = { 'pending': 'badge-warning', 'in_progress': 'badge-info', 'completed': 'badge-success', 'cancelled': 'badge-danger' };
+            return `<span class="badge ${map[status] || 'badge-gray'}">${status.replace('_', ' ')}</span>`;
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const el = document.getElementById("clock");
+            if (el) el.textContent = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        async function loadStats() {
+            try {
+                const res = await API.get("/admin/dashboard");
+                if (!res.ok) throw new Error();
+                const d = await res.json();
+                document.getElementById("s-users").textContent = d.totalUsers ?? "—";
+                document.getElementById("s-drivers").textContent = d.totalDrivers ?? "—";
+                document.getElementById("s-trucks").textContent = d.totalTrucks ?? "—";
+                document.getElementById("s-routes").textContent = d.totalRoutes ?? "—";
+                document.getElementById("s-reports").textContent = d.totalReports ?? "—";
+                document.getElementById("s-fuel").textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) + "L" : "0L";
+            } catch { showToast("Failed to load stats", "error"); }
+        }
+
+        async function loadChart() {
+            try {
+                const res = await API.get("/admin/analytics");
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                new Chart(document.getElementById("reportChart"), {
+                    type: "doughnut",
+                    data: {
+                        labels: data.map(d => d.type.replace("_", " ").toUpperCase()),
+                        datasets: [{ data: data.map(d => d.total), backgroundColor: ["#ffc13c", "#3ddc84", "#ff5c5c", "#60a5fa"], borderWidth: 0, hoverOffset: 8 }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: "bottom", labels: { color: "var(--text2)", font: { family: "Outfit", size: 11 }, padding: 16, boxWidth: 10 } } },
+                        cutout: "65%"
                     }
                 });
-            });
+            } catch { /* ignore */ }
+        }
 
-            // ---- API and dashboard logic (same as original, adapted) ----
-            const API_URL = window.location.origin + '/api';
-            console.log('📡 API URL:', API_URL);
+        async function loadRecentReports() {
+            try {
+                const res = await API.get("/admin/reports");
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                const el = document.getElementById("recentReports");
+                if (!data.length) { el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">No reports yet</div></div>'; return; }
+                el.innerHTML = data.slice(0, 5).map(r => `
+                    <div class="activity-item">
+                        <div class="activity-dot" style="background:${r.type === 'missed_pickup' ? 'var(--gold)' : r.type === 'overflowing_bin' ? 'var(--green)' : 'var(--red)'}"></div>
+                        <div>
+                            <div class="activity-text">${r.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</div>
+                            <div class="activity-time">${r.description?.slice(0, 60) || "No description"}</div>
+                            <div class="activity-time">${fmtDate(r.created_at || new Date())}</div>
+                        </div>
+                    </div>`).join("");
+            } catch { /* ignore */ }
+        }
 
-            function getToken() { return localStorage.getItem('token'); }
+        async function loadPickups() {
+            try {
+                const res = await API.get("/admin/pickups");
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                const tbody = document.getElementById("pickupBody");
+                if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">No schedules found</td></tr>'; return; }
+                tbody.innerHTML = data.slice(0, 7).map(p => `
+                    <tr>
+                        <td class="table-mono">${fmtDate(p.assigned_date)}</td>
+                        <td>${p.driver_name || "—"}</td>
+                        <td class="table-mono">${p.truck_plate || "—"}</td>
+                        <td>${p.zone_name || "—"}</td>
+                        <td>${statusBadge(p.status)}</td>
+                    </tr>`).join("");
+            } catch { /* ignore */ }
+        }
 
-            const API = {
-                get: async (endpoint) => fetch(API_URL + endpoint, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
-                post: async (endpoint, data) => fetch(API_URL + endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-                    body: JSON.stringify(data)
-                }),
-                put: async (endpoint, data) => fetch(API_URL + endpoint, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-                    body: JSON.stringify(data)
-                }),
-                del: async (endpoint) => fetch(API_URL + endpoint, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
-            };
+        async function loadProfile() {
+            try {
+                const res = await API.get("/admin/profile");
+                if (!res.ok) throw new Error();
+                const d = await res.json();
+                document.getElementById("adminName").textContent = d.name || "Admin";
+            } catch { /* ignore */ }
+        }
 
-            function fmtDate(date) {
-                if (!date) return '—';
-                const d = new Date(date);
-                return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
-            }
+        function checkAuth() {
+            if (!getToken()) window.location.href = '/login.html';
+        }
+        checkAuth();
 
-            function statusBadge(status) {
-                const map = { 'pending': 'badge-warning', 'in_progress': 'badge-info', 'completed': 'badge-success', 'cancelled': 'badge-danger' };
-                return `<span class="badge ${map[status] || 'badge-secondary'}">${status.replace('_', ' ')}</span>`;
-            }
-
-            function showToast(msg, type = 'info') {
-                const container = document.getElementById('toastContainer');
-                if (!container) return;
-                const toast = document.createElement('div');
-                toast.className = `toast ${type === 'error' ? 'toast-error' : ''}`;
-                toast.textContent = msg;
-                container.appendChild(toast);
-                setTimeout(() => toast.remove(), 4000);
-            }
-
-            function updateClock() {
-                const now = new Date();
-                const el = document.getElementById("clock");
-                if (el) el.textContent = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-            }
-            setInterval(updateClock, 1000);
-            updateClock();
-
-            async function loadStats() {
-                try {
-                    const res = await API.get("/admin/dashboard");
-                    if (!res.ok) throw new Error();
-                    const d = await res.json();
-                    document.getElementById("s-users").textContent = d.totalUsers ?? "—";
-                    document.getElementById("s-drivers").textContent = d.totalDrivers ?? "—";
-                    document.getElementById("s-trucks").textContent = d.totalTrucks ?? "—";
-                    document.getElementById("s-routes").textContent = d.totalRoutes ?? "—";
-                    document.getElementById("s-reports").textContent = d.totalReports ?? "—";
-                    document.getElementById("s-fuel").textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) + "L" : "0L";
-                } catch { showToast("Failed to load stats", "error"); }
-            }
-
-            async function loadChart() {
-                try {
-                    const res = await API.get("/admin/analytics");
-                    if (!res.ok) throw new Error();
-                    const data = await res.json();
-                    new Chart(document.getElementById("reportChart"), {
-                        type: "doughnut",
-                        data: {
-                            labels: data.map(d => d.type.replace("_", " ").toUpperCase()),
-                            datasets: [{ data: data.map(d => d.total), backgroundColor: ["#ffc13c", "#3ddc84", "#ff5c5c", "#60a5fa"], borderWidth: 0, hoverOffset: 8 }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { position: "bottom", labels: { color: "#475569", font: { family: "Outfit", size: 11 }, padding: 16, boxWidth: 10 } } },
-                            cutout: "65%"
-                        }
-                    });
-                } catch { /* ignore */ }
-            }
-
-            async function loadRecentReports() {
-                try {
-                    const res = await API.get("/admin/reports");
-                    if (!res.ok) throw new Error();
-                    const data = await res.json();
-                    const el = document.getElementById("recentReports");
-                    if (!data.length) { el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">No reports yet</div></div>'; return; }
-                    el.innerHTML = data.slice(0, 5).map(r => `
-            <div class="activity-item">
-              <div class="activity-dot" style="background:${r.type === 'missed_pickup' ? '#d4a02b' : r.type === 'overflowing_bin' ? '#2ecc71' : '#e74c3c'}"></div>
-              <div>
-                <div class="activity-text">${r.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</div>
-                <div class="activity-time">${r.description?.slice(0, 60) || "No description"}</div>
-                <div class="activity-time">${fmtDate(r.created_at || new Date())}</div>
-              </div>
-            </div>`).join("");
-                } catch { /* ignore */ }
-            }
-
-            async function loadPickups() {
-                try {
-                    const res = await API.get("/admin/pickups");
-                    if (!res.ok) throw new Error();
-                    const data = await res.json();
-                    const tbody = document.getElementById("pickupBody");
-                    if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">No schedules found</td></tr>'; return; }
-                    tbody.innerHTML = data.slice(0, 7).map(p => `
-            <tr>
-              <td class="table-mono">${fmtDate(p.assigned_date)}</td>
-              <td>${p.driver_name || "—"}</td>
-              <td class="table-mono">${p.truck_plate || "—"}</td>
-              <td>${p.zone_name || "—"}</td>
-              <td>${statusBadge(p.status)}</td>
-            </tr>`).join("");
-                } catch { /* ignore */ }
-            }
-
-            async function loadProfile() {
-                try {
-                    const res = await API.get("/admin/profile");
-                    if (!res.ok) throw new Error();
-                    const d = await res.json();
-                    document.getElementById("adminName").textContent = d.name || "Admin";
-                } catch { /* ignore */ }
-            }
-
-            function checkAuth() {
-                if (!getToken()) window.location.href = '/login.html';
-            }
-            checkAuth();
-
-            loadStats();
-            loadChart();
-            loadRecentReports();
-            loadPickups();
-            loadProfile();
-        })();
+        loadStats();
+        loadChart();
+        loadRecentReports();
+        loadPickups();
+        loadProfile();
     </script>
 </body>
 

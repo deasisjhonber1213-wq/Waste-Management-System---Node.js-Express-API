@@ -3,89 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
     <title>Analytics · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .chart-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .chart-grid-wide {
-            grid-column: 1 / -1;
-        }
-
-        .chart-box {
-            position: relative;
-            height: 280px;
-        }
-
-        .metric-row {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .metric-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            border-radius: 9px;
-            transition: border-color 0.2s;
-        }
-
-        .metric-item:hover {
-            border-color: var(--gold-mid);
-        }
-
-        .metric-bar-wrap {
-            flex: 1;
-            height: 6px;
-            background: var(--bg2);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .metric-bar-fill {
-            height: 100%;
-            border-radius: 3px;
-            transition: width 1s ease;
-        }
-
-        .metric-count {
-            font-family: var(--mono);
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: var(--gold);
-            min-width: 28px;
-            text-align: right;
-        }
-
-        .metric-label {
-            font-size: 0.82rem;
-            color: var(--text);
-            min-width: 130px;
-        }
-
-        @media(max-width:768px) {
-            .chart-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </head>
 
 <body>
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <aside class="sidebar">
+
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
             <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
@@ -112,6 +40,11 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
+            <!-- Theme Toggle in Sidebar -->
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span class="icon">🌙</span>
+                <span class="label">Dark</span>
+            </button>
             <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
         </div>
     </aside>
@@ -121,7 +54,7 @@
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
             <div class="topbar-left">
                 <div class="topbar-title">Analytics</div>
-                <div class="topbar-breadcrumb">Jose Dalman WM/ <span>Analytics</span></div>
+                <div class="topbar-breadcrumb">Jose Dalman WM / <span>Analytics</span></div>
             </div>
         </div>
         <div class="topbar-right">
@@ -131,7 +64,7 @@
 
     <main class="main">
 
-        <div class="stat-grid reveal" style="margin-bottom:24px" id="kpiGrid">
+        <div class="stat-grid reveal" id="kpiGrid">
             <div class="stat-card" data-icon="👥">
                 <div class="stat-label">Users</div>
                 <div class="stat-value" id="k-users">—</div>
@@ -225,8 +158,36 @@
     </main>
 
     <div class="toast-container" id="toastContainer"></div>
+
     <script src="../js/style.js"></script>
     <script>
+        // ---- hamburger toggle ----
+        const hamburger = document.getElementById('hamburger');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        if (hamburger) {
+            hamburger.addEventListener('click', toggleSidebar);
+        }
+        if (overlay) {
+            overlay.addEventListener('click', toggleSidebar);
+        }
+
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 820) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+
+        // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -313,8 +274,8 @@
                         responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
-                            x: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "#8d99a8", font: { family: "Outfit" } } },
-                            y: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "#8d99a8", font: { family: "Outfit" } }, beginAtZero: true }
+                            x: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "var(--text2)", font: { family: "Outfit" } } },
+                            y: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "var(--text2)", font: { family: "Outfit" } }, beginAtZero: true }
                         }
                     }
                 });
@@ -367,7 +328,7 @@
                         options: {
                             responsive: true, maintainAspectRatio: false,
                             plugins: {
-                                legend: { position: "bottom", labels: { color: "#8d99a8", font: { family: "Outfit", size: 11 }, padding: 16, boxWidth: 10 } }
+                                legend: { position: "bottom", labels: { color: "var(--text2)", font: { family: "Outfit", size: 11 }, padding: 16, boxWidth: 10 } }
                             },
                             cutout: "68%"
                         }
@@ -383,13 +344,13 @@
                             const val = Number(d.total || d.count || 0);
                             const pct = total ? Math.round(val / total * 100) : 0;
                             return `
-                            <div class="metric-item">
-                                <div class="metric-label">${labels[i] || 'Unknown'}</div>
-                                <div class="metric-bar-wrap">
-                                    <div class="metric-bar-fill" style="width:${Math.max(pct, 2)}%;background:${PALETTE[i % PALETTE.length]}"></div>
-                                </div>
-                                <div class="metric-count">${val}</div>
-                            </div>`;
+                                <div class="metric-item">
+                                    <div class="metric-label">${labels[i] || 'Unknown'}</div>
+                                    <div class="metric-bar-wrap">
+                                        <div class="metric-bar-fill" style="width:${Math.max(pct, 2)}%;background:${PALETTE[i % PALETTE.length]}"></div>
+                                    </div>
+                                    <div class="metric-count">${val}</div>
+                                </div>`;
                         }).join("");
                     }
                 }
@@ -403,12 +364,12 @@
                             const val = Number(d.total || d.count || 0);
                             const pct = total ? (val / total * 100).toFixed(1) : 0;
                             return `
-                            <tr>
-                                <td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${PALETTE[i % PALETTE.length]};display:inline-block"></span>${labels[i] || 'Unknown'}</span></td>
-                                <td class="table-mono text-gold">${val}</td>
-                                <td class="table-muted">${pct}%</td>
-                                <td><div style="width:${Math.min(pct * 2, 100)}%;height:6px;background:${PALETTE[i % PALETTE.length]};border-radius:3px;min-width:4px"></div></td>
-                            </tr>`;
+                                <tr>
+                                    <td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${PALETTE[i % PALETTE.length]};display:inline-block"></span>${labels[i] || 'Unknown'}</span></td>
+                                    <td class="table-mono text-gold">${val}</td>
+                                    <td class="table-muted">${pct}%</td>
+                                    <td><div style="width:${Math.min(pct * 2, 100)}%;height:6px;background:${PALETTE[i % PALETTE.length]};border-radius:3px;min-width:4px"></div></td>
+                                </tr>`;
                         }).join("");
                     }
                 }

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
     <title>Reports & Resident Locations · Jose Dalman WM Admin</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -378,12 +378,70 @@
             color: var(--text2);
             font-size: 0.75rem;
         }
+
+        /* ── responsive tweaks ── */
+        @media (max-width: 820px) {
+            #reportMap {
+                height: 350px;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+
+            .map-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .map-dot-legend {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 550px) {
+            #reportMap {
+                height: 280px;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 12px 10px;
+            }
+
+            .stat-value {
+                font-size: 1.4rem;
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tab-buttons {
+                flex-direction: column;
+            }
+
+            .data-table {
+                min-width: 500px;
+                font-size: 0.7rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 6px 8px;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
             <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
@@ -400,7 +458,7 @@
             <a href="/reports" class="nav-item active"><span class="nav-icon">⚠️</span>Reports</a>
             <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="/analytics" class="nav-item "><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -410,6 +468,11 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
+            <!-- Theme Toggle in Sidebar -->
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span class="icon">🌙</span>
+                <span class="label">Dark</span>
+            </button>
             <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
         </div>
     </aside>
@@ -421,6 +484,9 @@
                 <div class="topbar-title">Reports & Resident Locations</div>
                 <div class="topbar-breadcrumb">Jose Dalman WM / Community / <span>Reports & Residents</span></div>
             </div>
+        </div>
+        <div class="topbar-right">
+            <!-- No buttons needed here -->
         </div>
     </div>
 
@@ -584,7 +650,33 @@
     <div class="toast-container" id="toastContainer"></div>
     <script src="../js/style.js"></script>
     <script>
+        // ---- hamburger toggle ----
+        const hamburger = document.getElementById('hamburger');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
 
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        if (hamburger) {
+            hamburger.addEventListener('click', toggleSidebar);
+        }
+        if (overlay) {
+            overlay.addEventListener('click', toggleSidebar);
+        }
+
+        document.querySelectorAll('.sidebar-nav .nav-item').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 820) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+
+        // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
@@ -751,16 +843,16 @@
                 : '<div style="color:var(--text3);font-size:0.7rem;">No photo</div>';
             const desc = r.description ? escHtml(r.description).substring(0, 120) + (r.description.length > 120 ? '…' : '') : 'No description';
             return `
-            <div>
-                <div class="rp-popup-type" style="color:${color};">${label}</div>
-                ${imgHtml}
-                <div class="rp-popup-desc">${desc}</div>
-                <div class="rp-popup-meta">
-                    <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
-                    <span>${fmtDate(r.created_at)}</span>
-                </div>
-                <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
-            </div>`;
+                <div>
+                    <div class="rp-popup-type" style="color:${color};">${label}</div>
+                    ${imgHtml}
+                    <div class="rp-popup-desc">${desc}</div>
+                    <div class="rp-popup-meta">
+                        <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
+                        <span>${fmtDate(r.created_at)}</span>
+                    </div>
+                    <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
+                </div>`;
         }
 
         function renderResidentPins(residents) {
@@ -1106,7 +1198,6 @@
                 }
             } catch { }
         }
-
 
         Object.assign(window, {
             viewReport, viewResident, flyToReport, flyToResident, openLightbox, closeLightbox,
