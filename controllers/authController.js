@@ -7,7 +7,6 @@ const { revokeToken } = require("../middleware/auth");
 exports.register = async (req, res) => {
     const { name, email, password, role, phone, address } = req.body;
 
-    // Input validation
     if (!name || !email || !password) {
         return res.status(400).json({ error: "Name, email, and password are required" });
     }
@@ -16,22 +15,19 @@ exports.register = async (req, res) => {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         return res.status(400).json({ error: "Invalid email format" });
     }
 
     try {
-        // Check if user exists
         const [existing] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
         if (existing.length > 0) {
             return res.status(409).json({ error: "Email already registered" });
         }
 
         const hashed = await bcrypt.hash(password, 10);
-
-        // Generate unique user ID
+        
         const userId = `USER-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
         await db.query(
@@ -40,14 +36,13 @@ exports.register = async (req, res) => {
             [userId, name, email, hashed, role || "resident", phone || null, address || null]
         );
 
-        // Log registration
         await db.query(
             `INSERT INTO audit_logs (user_id, action, ip_address) 
              VALUES (?, ?, ?)`,
             [userId, 'User registered', req.ip || req.connection.remoteAddress]
         );
 
-        res.status(201).json({
+        res.status(201).json({ 
             message: "Registered successfully",
             userId: userId
         });
@@ -65,42 +60,39 @@ exports.login = async (req, res) => {
     }
 
     try {
+        console.log('🔍 Login attempt for email:', email);
+        
         const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        console.log('📊 Query result rows:', rows.length);
 
         if (rows.length === 0) {
-            // Log failed attempt
-            await db.query(
-                `INSERT INTO audit_logs (user_id, action, ip_address) 
-                 VALUES (?, ?, ?)`,
-                ['system', `Failed login attempt for ${email}`, req.ip || req.connection.remoteAddress]
-            );
+            console.log('❌ User not found:', email);
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
         const user = rows[0];
+        console.log('👤 User found:', user.id, user.email, user.role);
+        
         const match = await bcrypt.compare(password, user.password);
+        console.log('🔐 Password match:', match);
 
         if (!match) {
-            await db.query(
-                `INSERT INTO audit_logs (user_id, action, ip_address) 
-                 VALUES (?, ?, ?)`,
-                [user.id, `Failed login attempt`, req.ip || req.connection.remoteAddress]
-            );
+            console.log('❌ Password mismatch for:', email);
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
         // Check if account is locked
         if (user.locked_at && new Date(user.locked_at) > new Date(Date.now() - 30 * 60000)) {
-            return res.status(403).json({
+            return res.status(403).json({ 
                 error: "Account locked",
-                message: "Too many failed attempts. Please try again later."
+                message: "Too many failed attempts. Please try again later." 
             });
         }
 
-        // Generate token with additional claims
+        // Generate token
         const token = jwt.sign(
-            {
-                id: user.id,
+            { 
+                id: user.id, 
                 role: user.role,
                 name: user.name,
                 email: user.email
@@ -115,15 +107,10 @@ exports.login = async (req, res) => {
             [req.ip || req.connection.remoteAddress, user.id]
         );
 
-        // Log successful login
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, ip_address) 
-             VALUES (?, ?, ?)`,
-            [user.id, 'User logged in', req.ip || req.connection.remoteAddress]
-        );
+        console.log('✅ Login successful for:', email);
 
-        res.json({
-            token,
+        res.json({ 
+            token, 
             role: user.role,
             user: {
                 id: user.id,
@@ -133,19 +120,21 @@ exports.login = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Login error:', err);
-        res.status(500).json({ error: "Login failed" });
+        console.error('❌ Login error:', err);
+        console.error('Stack trace:', err.stack);
+        res.status(500).json({ 
+            error: "Login failed",
+            message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+        });
     }
 };
 
 exports.logout = async (req, res) => {
     try {
-        // Revoke the token
         if (req.token) {
             revokeToken(req.token);
         }
 
-        // Log logout
         await db.query(
             `INSERT INTO audit_logs (user_id, action, ip_address) 
              VALUES (?, ?, ?)`,
@@ -189,15 +178,11 @@ exports.changePassword = async (req, res) => {
             [hashed, req.user.id]
         );
 
-        // Log password change
         await db.query(
             `INSERT INTO audit_logs (user_id, action, ip_address) 
              VALUES (?, ?, ?)`,
             [req.user.id, 'Password changed', req.ip || req.connection.remoteAddress]
         );
-
-        // Revoke all existing tokens for this user (optional)
-        // This forces re-authentication after password change
 
         res.json({ message: "Password changed successfully" });
     } catch (err) {

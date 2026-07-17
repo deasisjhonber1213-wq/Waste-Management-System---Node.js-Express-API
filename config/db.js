@@ -3,8 +3,8 @@ require('dotenv').config();
 
 // Determine if we're running on Railway or locally
 const isRailway = process.env.RAILWAY_ENVIRONMENT === 'production' || 
-                  process.env.MYSQLHOST === 'mysql.railway.internal' ||
-                  process.env.MYSQLHOST === 'mysql-czb0.railway.internal';
+                  process.env.MYSQLHOST === 'mysql-czb0.railway.internal' ||
+                  process.env.MYSQLHOST === 'mysql.railway.internal';
 
 let dbConfig;
 
