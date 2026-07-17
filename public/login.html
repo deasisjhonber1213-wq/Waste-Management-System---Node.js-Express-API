@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartWaste · Login</title>
-    <!-- Security: CSRF token meta tag -->
-    <meta name="csrf-token" content="">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
@@ -504,14 +502,14 @@
                     <div class="password-wrapper">
                         <input type="password" id="password" class="form-input" placeholder="••••••••"
                             autocomplete="current-password">
-                        <button type="button" class="toggle-password" onclick="togglePassword('password', this)"
+                        <button type="button" id="togglePasswordBtn" class="toggle-password"
                             aria-label="Toggle password visibility">
                             👁️
                         </button>
                     </div>
                 </div>
 
-                <button class="btn" id="loginBtn" onclick="login()">Sign In</button>
+                <button class="btn" id="loginBtn">Sign In</button>
 
                 <div class="alert" id="alertBox"></div>
 
@@ -545,100 +543,89 @@
 
     <script>
         // ============================================================
-        // SECURITY: Prevent XSS in alert messages
-        // ============================================================
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // ============================================================
-        // SECURITY: API URL configuration
+        // API URL Configuration
         // ============================================================
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
 
         // ============================================================
-        // SECURITY: Toggle password visibility
+        // DOM Elements
         // ============================================================
-        function togglePassword(inputId, btn) {
-            const input = document.getElementById(inputId);
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const alertBox = document.getElementById('alertBox');
+        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+
+        // ============================================================
+        // Toggle Password Visibility (Fixed without inline onclick)
+        // ============================================================
+        togglePasswordBtn.addEventListener('click', function() {
+            const input = passwordInput;
             if (!input) return;
             if (input.type === 'password') {
                 input.type = 'text';
-                btn.textContent = '🙈';
+                this.textContent = '🙈';
             } else {
                 input.type = 'password';
-                btn.textContent = '👁️';
+                this.textContent = '👁️';
             }
-        }
+        });
 
         // ============================================================
-        // SECURITY: Show alert with proper escaping
+        // Show Alert Function
         // ============================================================
         function showAlert(msg, type) {
-            const el = document.getElementById("alertBox");
-            el.textContent = ''; // Clear first
-            // Use textContent to prevent XSS
-            el.textContent = msg;
-            el.className = "alert " + type;
+            alertBox.textContent = '';
+            alertBox.textContent = msg;
+            alertBox.className = 'alert ' + type;
         }
 
         // ============================================================
-        // SECURITY: Login function with proper security headers
+        // Login Function (Fixed without inline onclick)
         // ============================================================
         async function login() {
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value;
-            const btn = document.getElementById("loginBtn");
-            const alert = document.getElementById("alertBox");
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
 
-            alert.className = "alert";
-            alert.textContent = "";
+            alertBox.className = 'alert';
+            alertBox.textContent = '';
 
-            // Client-side validation
             if (!email || !password) {
-                showAlert("Please enter your email and password.", "error");
+                showAlert('Please enter your email and password.', 'error');
                 return;
             }
 
             // Email format validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
-                showAlert("Please enter a valid email address.", "error");
+                showAlert('Please enter a valid email address.', 'error');
                 return;
             }
 
-            btn.disabled = true;
-            btn.textContent = "Signing in…";
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in…';
 
             try {
                 console.log('📤 Sending login request to:', API_URL + '/auth/login');
 
-                const response = await fetch(API_URL + "/auth/login", {
-                    method: "POST",
+                const response = await fetch(API_URL + '/auth/login', {
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/json",
-                        "X-Requested-With": "XMLHttpRequest",
-                        "X-Request-ID": crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    credentials: 'include', // Send cookies
+                    credentials: 'include',
                     body: JSON.stringify({ email, password })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Security: Store token securely (sessionStorage is cleared on tab close)
-                    sessionStorage.setItem("token", data.token);
-                    sessionStorage.setItem("role", data.role);
-                    sessionStorage.setItem("loginTime", Date.now().toString());
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('role', data.role);
+                    showAlert('Login successful! Redirecting…', 'success');
 
-                    showAlert("Login successful! Redirecting…", "success");
-
-                    // Security: Redirect based on role with proper path
                     setTimeout(() => {
                         const redirectMap = {
                             'admin': '/admin/dashboard',
@@ -649,28 +636,27 @@
                         window.location.href = redirectPath;
                     }, 900);
                 } else {
-                    // Security: Show generic error message (don't reveal if user exists)
-                    showAlert(data.message || "Invalid credentials. Please try again.", "error");
-                    btn.disabled = false;
-                    btn.textContent = "Sign In";
-
-                    // Security: Rate limiting - clear password field on failure
-                    document.getElementById("password").value = '';
-                    document.getElementById("password").focus();
+                    showAlert(data.message || 'Invalid credentials. Please try again.', 'error');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Sign In';
+                    passwordInput.value = '';
+                    passwordInput.focus();
                 }
 
             } catch (err) {
                 console.error('❌ Login error:', err);
-                showAlert("Connection error. Please check your internet connection and try again.", "error");
-                btn.disabled = false;
-                btn.textContent = "Sign In";
+                showAlert('Connection error. Please check your internet connection and try again.', 'error');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
             }
         }
 
         // ============================================================
-        // SECURITY: Enter key handler
+        // Event Listeners (No inline onclick or onkeydown)
         // ============================================================
-        document.addEventListener('keydown', e => {
+        loginBtn.addEventListener('click', login);
+
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 login();
@@ -678,31 +664,7 @@
         });
 
         // ============================================================
-        // SECURITY: Clear sensitive data on page unload
-        // ============================================================
-        window.addEventListener('beforeunload', () => {
-            // Don't clear token here as we need it for redirect
-            // SessionStorage will be cleared when tab closes
-        });
-
-        // ============================================================
-        // SECURITY: Prevent form submission via other methods
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', function () {
-            // Remove any autofilled password warnings
-            const passwordInput = document.getElementById('password');
-            if (passwordInput) {
-                passwordInput.addEventListener('focus', function () {
-                    this.select();
-                });
-            }
-
-            // Test API connection
-            testConnection();
-        });
-
-        // ============================================================
-        // SECURITY: Test API connection
+        // Test API Connection on page load
         // ============================================================
         async function testConnection() {
             try {
@@ -720,6 +682,8 @@
                 console.warn('⚠️ API not reachable:', error);
             }
         }
+
+        document.addEventListener('DOMContentLoaded', testConnection);
     </script>
 </body>
 
