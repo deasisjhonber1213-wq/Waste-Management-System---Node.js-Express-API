@@ -13,7 +13,6 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
-
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -35,7 +34,6 @@ app.use(helmet({
     }
 }));
 
-
 const corsOptions = {
     origin: process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : ['http://localhost:5000', 'https://smartwaste.railway.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -44,7 +42,6 @@ const corsOptions = {
     maxAge: 86400
 };
 app.use(cors(corsOptions));
-
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -60,7 +57,6 @@ const limiter = rateLimit({
     }
 });
 app.use('/api/', limiter);
-
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -449,7 +445,6 @@ cron.schedule("0 0 * * 1", async () => {
     }
 });
 
-
 app.use(express.static(path.join(__dirname, "public"), {
     maxAge: '1d',
     etag: true,
@@ -460,13 +455,8 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
-app.use("/api/resident", require("./routes/residentRoutes"));
-app.use("/driver/api", require("./routes/driverRoutes"));
-
-const htmlPages = ['login', 'register', 'dashboard', 'forgot-password'];
-htmlPages.forEach(page => {
+const authPages = ['login', 'register', 'forgot-password'];
+authPages.forEach(page => {
     app.get(`/${page}`, (req, res) => {
         const filePath = path.join(__dirname, 'public', `${page}.html`);
         if (fs.existsSync(filePath)) {
@@ -478,8 +468,19 @@ htmlPages.forEach(page => {
 });
 
 const adminPages = ['dashboard', 'users', 'trucks', 'routes', 'schedules', 'reports', 'announcements', 'analytics'];
+
 adminPages.forEach(page => {
+
     app.get(`/admin/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public', 'admin', `${page}.html`);
+        if (fs.existsSync(filePath)) {
+            res.sendFile(filePath);
+        } else {
+            res.status(404).json({ error: 'Page not found', path: req.path });
+        }
+    });
+
+    app.get(`/${page}`, (req, res) => {
         const filePath = path.join(__dirname, 'public', 'admin', `${page}.html`);
         if (fs.existsSync(filePath)) {
             res.sendFile(filePath);
@@ -489,6 +490,50 @@ adminPages.forEach(page => {
     });
 });
 
+app.get('/admin', (req, res) => {
+    res.redirect('/admin/dashboard');
+});
+
+app.get('/resident/dashboard', (req, res) => {
+    const filePath = path.join(__dirname, 'public', 'residents', 'dashboard.html');
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ error: 'Page not found' });
+    }
+});
+
+app.get('/resident', (req, res) => {
+    const residentPath = path.join(__dirname, 'public', 'residents', 'resident.html');
+    const dashboardPath = path.join(__dirname, 'public', 'residents', 'dashboard.html');
+    
+    if (fs.existsSync(residentPath)) {
+        res.sendFile(residentPath);
+    } else if (fs.existsSync(dashboardPath)) {
+        res.sendFile(dashboardPath);
+    } else {
+        res.redirect('/login');
+    }
+});
+
+app.get('/driver/dashboard', (req, res) => {
+    const filePath = path.join(__dirname, 'public', 'driver', 'dashboard.html');
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ error: 'Page not found' });
+    }
+});
+
+app.get('/driver', (req, res) => {
+    const filePath = path.join(__dirname, 'public', 'driver', 'dashboard.html');
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.redirect('/login');
+    }
+});
+
 app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
         const cleanPath = req.path.replace(/\.html$/, '');
@@ -496,6 +541,11 @@ app.use((req, res, next) => {
     }
     next();
 });
+
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/resident", require("./routes/residentRoutes"));
+app.use("/driver/api", require("./routes/driverRoutes"));
 
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/driver/api/')) {
@@ -596,7 +646,6 @@ app.get('/migrate', async (req, res) => {
             await db.query(`ALTER TABLE users ADD COLUMN locked_at DATETIME NULL`);
             migrations.push('✅ Added locked_at column');
         }
-
 
         const [tables] = await db.query(`
             SELECT TABLE_NAME 
