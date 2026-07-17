@@ -307,7 +307,7 @@
             width: var(--sidebar-w);
             background: var(--bg2);
             border-right: 1px solid var(--border);
-            z-index: 300;
+            z-index: 1500;
             display: flex;
             flex-direction: column;
             transition: transform .3s cubic-bezier(.4, 0, .2, 1);
@@ -576,7 +576,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, .6);
-            z-index: 299;
+            z-index: 1499;
             backdrop-filter: blur(2px);
         }
 
@@ -729,6 +729,53 @@
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+        }
+
+        .today-card.completed {
+            border-color: rgba(45, 212, 160, .35);
+        }
+
+        .today-card.completed::before {
+            background: linear-gradient(90deg, var(--green), transparent);
+        }
+
+        .completed-banner {
+            padding: 16px 28px;
+            background: var(--green-dim);
+            border-top: 1px solid rgba(45, 212, 160, .3);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .completed-banner .check-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--green);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 4px rgba(45, 212, 160, .18);
+        }
+
+        .completed-banner .completed-title {
+            font-weight: 800;
+            color: var(--green);
+            font-size: .85rem;
+            letter-spacing: -.01em;
+        }
+
+        .completed-banner .completed-sub {
+            font-size: .68rem;
+            color: var(--text2);
+            font-family: var(--mono);
+            margin-top: 2px;
+            font-weight: 500;
         }
 
         /* ── Map ── */
@@ -2227,6 +2274,11 @@
         let drawnCoords = [];
         let progressIndex = 0;
         let pinStops = [];
+        // Stops the driver has already reached, keyed by stop number. This lives outside
+        // showRouteFromData so re-renders (socket reconnects, periodic refreshes, tab
+        // switches) don't wipe the checkmarks or reset the progress trail back to start.
+        let reachedStopKeys = new Set();
+        let lastLoadedRouteId = null;
         let locked = false, currentMapStyle = "light";
         let lastPos = null;
         let mapView = { lat: 8.2380, lng: 123.0, zoom: 14 };
@@ -2389,6 +2441,66 @@
             }
         }
 
+        // Finds the closest point on the road polyline to a given lat/lng, expressed
+        // as an index into drawnCoords. Used to know "where along the route" a pin
+        // stop sits, so we don't mark it reached just because it's geographically
+        // close to the truck while the truck hasn't actually driven past it yet.
+        function nearestRoadIndex(lat, lng) {
+            if (!drawnCoords.length) return -1;
+            const pt = L.latLng(lat, lng);
+            let best = 0, bestDist = Infinity;
+            for (let i = 0; i < drawnCoords.length; i++) {
+                const d = pt.distanceTo(drawnCoords[i]);
+                if (d < bestDist) { bestDist = d; best = i; }
+            }
+            return best;
+        }
+
+        // Marks any pin stop reached, but only if the truck has actually progressed
+        // past that stop's position along the route (routeIdx <= idxLimit + tolerance)
+        // AND it's within range OR was already marked reached before. This is what
+        // stops a far-away-but-geographically-nearby pin from getting a false checkmark.
+        function markStopsReachedUpTo(pt, idxLimit) {
+            pinStops.forEach((p, i) => {
+                const key = p._key;
+                const alreadyDone = reachedStopKeys.has(key);
+                const withinRouteOrder = p._routeIdx == null || drawnCoords.length === 0 || p._routeIdx <= idxLimit + 2;
+                const nearEnough = pt && pt.distanceTo(L.latLng(p.lat, p.lng)) < 80;
+
+                if (!alreadyDone && !(withinRouteOrder && nearEnough)) return;
+
+                if (!alreadyDone) {
+                    reachedStopKeys.add(key);
+                    if (nearEnough) toast(`Stop ${p.num} reached! ✓`, "success");
+                }
+
+                const el = document.getElementById(`wpNum${i}`);
+                const row = document.getElementById(`wpItem${i}`);
+                const pin = document.getElementById(`mapPin${i}`);
+                if (el) { el.classList.add("done"); el.textContent = "✓"; }
+                if (pin) { pin.classList.add("done"); pin.textContent = "✓"; }
+                if (row) row.classList.add("reached");
+            });
+        }
+
+        // Recomputes the truck's position along the route from scratch (full scan,
+        // no early-break shortcut) and re-applies it to the trail/progress lines and
+        // stop checkmarks. Called after the map data is rebuilt (route reload, socket
+        // reconnect, tab switch) so progress doesn't visually snap back to the start.
+        function resyncRouteProgress(lat, lng) {
+            if (!drawnCoords.length || !progressPolyline || !trailPolyline) return;
+            const pt = L.latLng(lat, lng);
+            let nearest = 0, minDist = Infinity;
+            for (let i = 0; i < drawnCoords.length; i++) {
+                const d = pt.distanceTo(drawnCoords[i]);
+                if (d < minDist) { minDist = d; nearest = i; }
+            }
+            progressIndex = nearest;
+            trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
+            progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+            markStopsReachedUpTo(pt, progressIndex);
+        }
+
         function showRouteFromData(routeData) {
             if (!dMap) return;
 
@@ -2426,11 +2538,19 @@
                 document.getElementById("routeWpCount").textContent = "0";
             }
 
-            pinStops = pins;
-            pins.forEach((p, i) => {
+            // Tag each pin with a stable key + its position along the road, and
+            // restore its checkmark immediately if it was already reached earlier.
+            pinStops = pins.map(p => ({
+                ...p,
+                _key: `stop_${p.num}`,
+                _routeIdx: drawnCoords.length ? nearestRoadIndex(p.lat, p.lng) : null
+            }));
+
+            pinStops.forEach((p, i) => {
+                const isDone = reachedStopKeys.has(p._key);
                 const icon = L.divIcon({
                     className: "",
-                    html: `<div class="stop-pin" id="mapPin${i}">${p.num}</div>`,
+                    html: `<div class="stop-pin ${isDone ? 'done' : ''}" id="mapPin${i}">${isDone ? '✓' : p.num}</div>`,
                     iconSize: [28, 28],
                     iconAnchor: [14, 14]
                 });
@@ -2439,7 +2559,7 @@
                     .bindPopup(`<strong>Stop ${p.num}</strong><br>${p.name}`);
                 pinMarkers.push(m);
             });
-            document.getElementById("routeStops").textContent = pins.length;
+            document.getElementById("routeStops").textContent = pinStops.length;
 
             mrfs.forEach((m, i) => {
                 const icon = L.divIcon({
@@ -2456,11 +2576,14 @@
             });
 
             const items = [
-                ...pins.map((p, i) => `
-                    <div class="wp-item" id="wpItem${i}">
-                        <div class="wp-num" id="wpNum${i}">${p.num}</div>
+                ...pinStops.map((p, i) => {
+                    const isDone = reachedStopKeys.has(p._key);
+                    return `
+                    <div class="wp-item ${isDone ? 'reached' : ''}" id="wpItem${i}">
+                        <div class="wp-num ${isDone ? 'done' : ''}" id="wpNum${i}">${isDone ? '✓' : p.num}</div>
                         <span class="wp-name">${p.name || `Stop ${p.num}`}</span>
-                    </div>`),
+                    </div>`;
+                }),
                 ...mrfs.map((m, i) => `
                     <div class="wp-item">
                         <div class="wp-num mrf-stop">🏭</div>
@@ -2472,11 +2595,17 @@
 
             const allPts = [
                 ...road.map(v => [v.lat, v.lng]),
-                ...pins.map(p => [p.lat, p.lng]),
+                ...pinStops.map(p => [p.lat, p.lng]),
                 ...mrfs.map(m => [m.lat, m.lng])
             ];
             if (allPts.length) {
                 dMap.fitBounds(L.latLngBounds(allPts).pad(0.15));
+            }
+
+            // Re-apply the truck's real progress along the route instead of leaving
+            // the trail reset at the start.
+            if (lastPos) {
+                resyncRouteProgress(lastPos.lat, lastPos.lng);
             }
         }
 
@@ -2570,25 +2699,15 @@
                 if (d < minDist) { minDist = d; nearest = i; }
                 if (d > minDist + 200 && i > progressIndex + 10) break;
             }
-            if (nearest <= progressIndex) return;
-            progressIndex = nearest;
-            trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
-            progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
-
-            pinStops.forEach((p, i) => {
-                if (dPt.distanceTo(L.latLng(p.lat, p.lng)) < 80) {
-                    const el = document.getElementById(`wpNum${i}`);
-                    const row = document.getElementById(`wpItem${i}`);
-                    const pin = document.getElementById(`mapPin${i}`);
-                    if (el && !el.classList.contains("done")) {
-                        el.classList.add("done");
-                        el.textContent = "✓";
-                        if (pin) { pin.classList.add("done"); pin.textContent = "✓"; }
-                        if (row) row.classList.add("reached");
-                        toast(`Stop ${p.num} reached! ✓`, "success");
-                    }
-                }
-            });
+            if (nearest > progressIndex) {
+                progressIndex = nearest;
+                trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
+                progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+            }
+            // Gated by route order (see markStopsReachedUpTo) so a stop that's merely
+            // geographically close — but further down the route — doesn't get a false
+            // checkmark before the truck has actually driven past it.
+            markStopsReachedUpTo(dPt, progressIndex);
         }
 
         // ── Residents ──
@@ -2874,6 +2993,10 @@
         }
 
         async function loadRouteWaypoints(routeId) {
+            if (routeId !== lastLoadedRouteId) {
+                reachedStopKeys.clear();
+                lastLoadedRouteId = routeId;
+            }
             try {
                 const routeData = await api("GET", `/route-waypoints?route_id=${routeId}`);
                 const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json || routeData.waypoints);
@@ -2909,14 +3032,25 @@
                 return;
             }
 
-            const btns = data.status === "completed"
-                ? `<span style="color:var(--green);font-weight:700;">✓ COMPLETED</span>`
-                : data.status === "in_progress"
+            const isCompleted = data.status === "completed";
+
+            const footer = isCompleted
+                ? `<div class="completed-banner">
+                        <div class="check-circle">✓</div>
+                        <div>
+                            <div class="completed-title">Route Completed</div>
+                            <div class="completed-sub">Nice work — all done for today 🎉</div>
+                        </div>
+                   </div>`
+                : `<div class="today-footer">
+                        ${data.status === "in_progress"
                     ? `<button class="btn btn-success" onclick="updateStatus(${data.id},'completed')">✓ Mark Complete</button>`
-                    : `<button class="btn btn-primary" onclick="updateStatus(${data.id},'in_progress')">▶ Start Route</button>`;
+                    : `<button class="btn btn-primary" onclick="updateStatus(${data.id},'in_progress')">▶ Start Route</button>`}
+                        <span class="status-badge status-${data.status}">${(data.status || "pending").replace("_", " ").toUpperCase()}</span>
+                   </div>`;
 
             document.getElementById("assignmentCard").innerHTML = `
-                <div class="today-card">
+                <div class="today-card ${isCompleted ? 'completed' : ''}">
                     <div class="today-inner">
                         <div class="today-route">📍 ${data.zone_name || "Unknown Zone"}</div>
                         ${data.zone_description ? `<div style="font-size:.78rem;color:var(--text2);margin-top:8px;font-weight:400">${data.zone_description}</div>` : ""}
@@ -2927,10 +3061,7 @@
                             <span class="chip">${data.assigned_date ? fmtDate(data.assigned_date) : "Today"}</span>
                         </div>
                     </div>
-                    <div class="today-footer">
-                        ${btns}
-                        <span class="status-badge status-${data.status}">${(data.status || "pending").replace("_", " ").toUpperCase()}</span>
-                    </div>
+                    ${footer}
                 </div>`;
         }
 
