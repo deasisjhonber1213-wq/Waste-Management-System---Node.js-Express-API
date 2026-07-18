@@ -23,26 +23,33 @@ function updateThemeIcon(theme) {
     if (toggle) {
         const icon = toggle.querySelector('.theme-icon');
         const label = toggle.querySelector('.theme-label');
+        const knob = toggle.querySelector('.theme-knob');
+        const switchEl = toggle.querySelector('.theme-switch');
+
         if (theme === 'dark') {
             if (icon) icon.textContent = '☀️';
-            if (label) label.textContent = 'Light';
+            if (label) label.textContent = 'Light Mode';
+            toggle.classList.add('dark');
         } else {
             if (icon) icon.textContent = '🌙';
-            if (label) label.textContent = 'Dark';
+            if (label) label.textContent = 'Dark Mode';
+            toggle.classList.remove('dark');
         }
     }
 }
 
-function loadTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+// Improved theme loading - prevents flash
+(function () {
+    const theme = localStorage.getItem('theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
-    updateThemeIcon(theme);
-}
+})();
 
-// Load theme immediately to prevent flicker
-loadTheme();
+// Load theme after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    updateThemeIcon(theme);
+});
 
 // Listen for theme changes from other tabs/windows
 window.addEventListener('storage', (e) => {
@@ -145,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Theme toggle button event listener (as backup for onclick)
+    // Theme toggle button event listener
     const themeToggleBtn = document.getElementById("themeToggleBtn");
     if (themeToggleBtn) {
         themeToggleBtn.addEventListener("click", toggleTheme);

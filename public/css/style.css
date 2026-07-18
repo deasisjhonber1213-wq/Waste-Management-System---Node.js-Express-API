@@ -76,6 +76,20 @@
     --input-bg: #141920;
 }
 
+html {
+    transition: background .3s, color .3s;
+}
+
+body,
+.sidebar,
+.topbar,
+.panel,
+.stat-card,
+.theme-toggle,
+.modal {
+    transition: background-color .3s, color .3s, border-color .3s, box-shadow .3s;
+}
+
 *, *::before, *::after {
     margin: 0;
     padding: 0;
@@ -93,7 +107,6 @@ body {
     overflow-x: hidden;
     min-height: 100vh;
     display: flex;
-    transition: background var(--transition), color var(--transition);
 }
 
 /* ── SCROLLBAR ── */
@@ -310,77 +323,76 @@ body {
 .theme-toggle {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
+    justify-content: space-between;
     width: 100%;
-    padding: 10px 16px;
-    background: var(--bg3);
+    height: 46px;
+    padding: 0 14px;
+    background: var(--panel);
     border: 1px solid var(--border2);
-    border-radius: 10px;
-    color: var(--text2);
+    border-radius: 12px;
+    color: var(--text);
     cursor: pointer;
+    transition: .25s;
     font-family: var(--ui);
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: all 0.25s ease;
     position: relative;
-    overflow: hidden;
-}
-
-.theme-toggle::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, var(--gold-dim), transparent);
-    opacity: 0;
-    transition: opacity 0.25s ease;
 }
 
 .theme-toggle:hover {
     border-color: var(--gold);
-    color: var(--gold);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.theme-toggle:hover::before {
-    opacity: 1;
-}
-
-.theme-toggle .theme-icon {
-    font-size: 1.1rem;
-    transition: transform 0.3s ease;
-}
-
-.theme-toggle:hover .theme-icon {
-    transform: rotate(20deg) scale(1.1);
-}
-
-.theme-toggle .theme-label {
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-
-/* Dark mode specific styles for the toggle */
-[data-theme="dark"] .theme-toggle {
-    background: var(--panel2);
-    border-color: var(--gold-mid);
-    color: var(--text);
-}
-
-[data-theme="dark"] .theme-toggle:hover {
-    border-color: var(--gold);
-    color: var(--gold);
     background: var(--gold-dim);
-    box-shadow: var(--gold-glow);
+    transform: translateY(-2px);
 }
 
-/* ─────────────── SIDEBAR NAV THEME TOGGLE POSITION ─────────────── */
-.sidebar-nav .theme-toggle {
-    margin-top: 4px;
+.theme-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--gold-dim);
+    transition: .35s;
+    font-size: 1.1rem;
 }
 
-/* ─────────────── BADGE STYLES (Fix for dark mode) ─────────────── */
+.theme-label {
+    flex: 1;
+    text-align: left;
+    margin-left: 12px;
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+.theme-switch {
+    width: 42px;
+    height: 22px;
+    background: var(--bg2);
+    border-radius: 30px;
+    position: relative;
+    transition: .3s;
+    flex-shrink: 0;
+}
+
+.theme-knob {
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--gold);
+    transition: .3s;
+}
+
+.theme-toggle.dark .theme-knob {
+    transform: translateX(20px);
+}
+
+.theme-toggle.dark .theme-switch {
+    background: rgba(255, 193, 60, .2);
+}
+
+/* ─────────────── BADGE STYLES ─────────────── */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -502,7 +514,6 @@ body {
     justify-content: space-between;
     padding: 0 28px;
     z-index: 50;
-    transition: background var(--transition), border-color var(--transition);
 }
 
 .topbar-left {
@@ -666,7 +677,6 @@ body {
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: var(--shadow);
-    transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 
 .panel-header {
@@ -951,7 +961,7 @@ body {
     font-family: var(--ui);
     font-size: 0.85rem;
     outline: none;
-    transition: border-color 0.18s, box-shadow 0.18s, background var(--transition), color var(--transition);
+    transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .form-control:focus {
@@ -1065,7 +1075,6 @@ select.form-control {
     overflow-y: auto;
     animation: modalIn 0.25s ease;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-    transition: background var(--transition), border-color var(--transition);
 }
 
 @keyframes modalIn {
@@ -1148,7 +1157,6 @@ select.form-control {
     min-width: 240px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     animation: toastIn 0.3s ease;
-    transition: background var(--transition), border-color var(--transition), color var(--transition);
 }
 
 .toast.success {
@@ -1189,7 +1197,7 @@ select.form-control {
     font-family: var(--ui);
     font-size: 0.82rem;
     outline: none;
-    transition: border-color 0.18s, box-shadow 0.18s, background var(--transition), color var(--transition);
+    transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .search-bar input:focus {
