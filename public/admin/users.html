@@ -30,6 +30,13 @@
             <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+
+            <div class="nav-section-label"
+                style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
+            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;margin-top:4px;">
+                <span class="icon">🌙</span>
+                <span class="label">Dark</span>
+            </button>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -39,12 +46,8 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
-            <!-- Theme Toggle in Sidebar -->
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <span class="icon">🌙</span>
-                <span class="label">Dark</span>
-            </button>
-            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+            <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
+                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
         </div>
     </aside>
 

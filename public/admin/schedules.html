@@ -30,6 +30,13 @@
             <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+
+            <div class="nav-section-label"
+                style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
+            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;margin-top:4px;">
+                <span class="icon">🌙</span>
+                <span class="label">Dark</span>
+            </button>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -39,12 +46,8 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
-            <!-- Theme Toggle in Sidebar -->
-            <button class="theme-toggle" onclick="toggleTheme()">
-                <span class="icon">🌙</span>
-                <span class="label">Dark</span>
-            </button>
-            <a href="/login.html" class="sidebar-logout" style="margin-top:10px;display:flex;">⎋ &nbsp;Logout</a>
+            <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
+                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
         </div>
     </aside>
 
@@ -205,36 +208,26 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="logoutConfirmModal">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="../js/style.js"></script>
     <script>
-        // ---- hamburger toggle ----
-        const hamburger = document.getElementById('hamburger');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-
-        function toggleSidebar() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        }
-
-        if (hamburger) {
-            hamburger.addEventListener('click', toggleSidebar);
-        }
-        if (overlay) {
-            overlay.addEventListener('click', toggleSidebar);
-        }
-
-        document.querySelectorAll('.sidebar-nav .nav-item').forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth <= 820) {
-                    sidebar.classList.remove('open');
-                    overlay.classList.remove('active');
-                }
-            });
-        });
-
         // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
