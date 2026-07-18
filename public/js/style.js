@@ -21,8 +21,8 @@ window.toggleTheme = toggleTheme;
 function updateThemeIcon(theme) {
     const toggle = document.querySelector('.theme-toggle');
     if (toggle) {
-        const icon = toggle.querySelector('.icon');
-        const label = toggle.querySelector('.label');
+        const icon = toggle.querySelector('.theme-icon');
+        const label = toggle.querySelector('.theme-label');
         if (theme === 'dark') {
             if (icon) icon.textContent = '☀️';
             if (label) label.textContent = 'Light';
@@ -77,6 +77,9 @@ function showToast(msg, type = "info") {
     setTimeout(() => toast.remove(), 3500);
 }
 
+// Make showToast globally available
+window.showToast = showToast;
+
 /* ── MODAL ── */
 function openModal(id) {
     const el = document.getElementById(id);
@@ -87,6 +90,10 @@ function closeModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.remove("open");
 }
+
+// Make modal functions globally available
+window.openModal = openModal;
+window.closeModal = closeModal;
 
 /* ── SIDEBAR MOBILE + REVEAL + ACTIVE NAV ── */
 document.addEventListener("DOMContentLoaded", () => {
@@ -150,6 +157,9 @@ function confirmDelete(message, onConfirm) {
     if (confirm(message)) onConfirm();
 }
 
+// Make confirmDelete globally available
+window.confirmDelete = confirmDelete;
+
 /* ── FORMAT DATE ── */
 function fmtDate(d) {
     if (!d) return "—";
@@ -192,11 +202,7 @@ function escHtml(str) {
     );
 }
 
-// Make functions globally available for inline handlers
-window.showToast = showToast;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.confirmDelete = confirmDelete;
+// Make utility functions globally available
 window.fmtDate = fmtDate;
 window.statusBadge = statusBadge;
 window.fmtDateTime = fmtDateTime;

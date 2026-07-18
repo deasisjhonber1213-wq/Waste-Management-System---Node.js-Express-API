@@ -306,37 +306,184 @@ body {
     color: var(--red);
 }
 
-/* ─────────────── THEME TOGGLE ─────────────── */
+/* ─────────────── THEME TOGGLE BUTTON ─────────────── */
 .theme-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 16px;
     background: var(--bg3);
     border: 1px solid var(--border2);
-    border-radius: 8px;
+    border-radius: 10px;
     color: var(--text2);
     cursor: pointer;
     font-family: var(--ui);
-    font-size: 0.82rem;
-    transition: all 0.18s;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--gold-dim), transparent);
+    opacity: 0;
+    transition: opacity 0.25s ease;
 }
 
 .theme-toggle:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.theme-toggle:hover::before {
+    opacity: 1;
+}
+
+.theme-toggle .theme-icon {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .theme-icon {
+    transform: rotate(20deg) scale(1.1);
+}
+
+.theme-toggle .theme-label {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* Dark mode specific styles for the toggle */
+[data-theme="dark"] .theme-toggle {
+    background: var(--panel2);
     border-color: var(--gold-mid);
+    color: var(--text);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    border-color: var(--gold);
     color: var(--gold);
     background: var(--gold-dim);
-    transform: translateY(-1px);
+    box-shadow: var(--gold-glow);
 }
 
-.theme-toggle .icon {
-    font-size: 0.9rem;
+/* ─────────────── SIDEBAR NAV THEME TOGGLE POSITION ─────────────── */
+.sidebar-nav .theme-toggle {
+    margin-top: 4px;
 }
 
-.theme-toggle .label {
-    font-weight: 500;
+/* ─────────────── BADGE STYLES (Fix for dark mode) ─────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.badge-gold {
+    background: var(--gold-dim);
+    color: var(--gold);
+    border: 1px solid var(--gold-mid);
+}
+
+.badge-success {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.badge-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+.badge-info {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-gray {
+    background: var(--bg3);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+}
+
+/* Dark mode badge overrides */
+[data-theme="dark"] .badge-warning {
+    background: rgba(255, 193, 60, 0.2);
+    color: var(--gold);
+    border-color: var(--gold-mid);
+}
+
+[data-theme="dark"] .badge-success {
+    background: var(--green-dim);
+    color: var(--green);
+    border-color: rgba(61, 220, 132, 0.3);
+}
+
+[data-theme="dark"] .badge-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border-color: rgba(255, 92, 92, 0.3);
+}
+
+[data-theme="dark"] .badge-info {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border-color: rgba(96, 165, 250, 0.3);
+}
+
+/* ─────────────── MODAL BUTTONS ─────────────── */
+.modal-footer .btn {
+    padding: 10px 24px;
+    font-size: 0.85rem;
+}
+
+.modal-footer .btn-danger {
+    background: var(--red);
+    color: #fff;
+    border: none;
+}
+
+.modal-footer .btn-danger:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.modal-footer .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+}
+
+.modal-footer .btn-outline:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-dim);
 }
 
 /* ─────────────── TOPBAR ─────────────── */

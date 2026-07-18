@@ -36,8 +36,8 @@
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
             <button class="theme-toggle" id="themeToggleBtn" style="width:100%;margin-top:4px;">
-                <span class="icon">🌙</span>
-                <span class="label">Dark</span>
+                <span class="theme-icon">🌙</span>
+                <span class="theme-label">Dark</span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -236,6 +236,22 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
+
+        // ---- LOGOUT FUNCTION ----
+        function doLogout() {
+            localStorage.removeItem('token');
+            // Close modal
+            closeModal('logoutConfirmModal');
+            // Show toast message
+            showToast('Logged out successfully', 'success');
+            // Redirect to login page after short delay
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
+        }
+
+        // Make doLogout globally available
+        window.doLogout = doLogout;
 
         async function loadStats() {
             try {
