@@ -15,6 +15,9 @@ function toggleTheme() {
     window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
 }
 
+// Make toggleTheme globally available for inline onclick handlers
+window.toggleTheme = toggleTheme;
+
 function updateThemeIcon(theme) {
     const toggle = document.querySelector('.theme-toggle');
     if (toggle) {
@@ -38,6 +41,9 @@ function loadTheme() {
     updateThemeIcon(theme);
 }
 
+// Load theme immediately to prevent flicker
+loadTheme();
+
 // Listen for theme changes from other tabs/windows
 window.addEventListener('storage', (e) => {
     if (e.key === 'theme') {
@@ -53,9 +59,6 @@ window.addEventListener('themeChanged', (e) => {
     document.documentElement.setAttribute('data-theme', theme);
     updateThemeIcon(theme);
 });
-
-// Load theme immediately to prevent flicker
-loadTheme();
 
 /* ── TOAST ── */
 function showToast(msg, type = "info") {
@@ -134,6 +137,12 @@ document.addEventListener("DOMContentLoaded", () => {
             a.classList.add("active");
         }
     });
+
+    // Theme toggle button event listener (as backup for onclick)
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", toggleTheme);
+    }
 });
 
 /* ── CONFIRM DELETE ── */
@@ -182,3 +191,13 @@ function escHtml(str) {
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
     );
 }
+
+// Make functions globally available for inline handlers
+window.showToast = showToast;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.confirmDelete = confirmDelete;
+window.fmtDate = fmtDate;
+window.statusBadge = statusBadge;
+window.fmtDateTime = fmtDateTime;
+window.escHtml = escHtml;
