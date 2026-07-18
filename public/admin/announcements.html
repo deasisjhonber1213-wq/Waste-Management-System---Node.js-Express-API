@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
     <title>Announcements · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="../js/style.js"></script>
 </head>
 
 <body>
@@ -33,9 +34,12 @@
 
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
-            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;margin-top:4px;">
-                <span class="icon">🌙</span>
-                <span class="label">Dark</span>
+            <button class="theme-toggle" id="themeToggleBtn">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-label">Dark Mode</span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -123,7 +127,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="../js/style.js"></script>
     <script>
         // ---- API ----
         const API_URL = window.location.origin + '/api';
@@ -180,6 +183,17 @@
         }
         checkAuth();
 
+        // ---- LOGOUT FUNCTION ----
+        function doLogout() {
+            localStorage.removeItem('token');
+            closeModal('logoutConfirmModal');
+            showToast('Logged out successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
+        }
+        window.doLogout = doLogout;
+
         function escHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c =>
                 ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -198,15 +212,18 @@
                 }
                 grid.innerHTML = data.map(a => `
                     <div class="ann-card">
-                        ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div style="height:8px;background:linear-gradient(90deg,var(--gold),transparent)"></div>`}
+                        ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder">📢</div>`}
                         <div class="ann-card-body">
-                            <div class="ann-card-date">${fmtDate(a.created_at)} · ${escHtml(a.admin_name || "Admin")}</div>
+                            <div class="ann-card-meta">
+                                <span class="ann-card-date">${fmtDate(a.created_at)}</span>
+                                <span class="ann-card-author">· ${escHtml(a.admin_name || "Admin")}</span>
+                            </div>
                             <div class="ann-card-title">${escHtml(a.title)}</div>
                             <div class="ann-card-msg">${escHtml(a.message)}</div>
-                            ${a.pickup_date ? `<div style="margin-top:10px;font-size:0.74rem;color:var(--gold);font-family:var(--mono)">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
+                            ${a.pickup_date ? `<div class="ann-card-pickup">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
                         </div>
                         <div class="ann-card-footer">
-                            <span class="badge badge-gold" style="font-size:0.62rem">Published</span>
+                            <span class="badge badge-gold">Published</span>
                             <button class="btn btn-danger btn-sm" onclick="deleteAnn(${a.id})">🗑 Delete</button>
                         </div>
                     </div>`).join("");
@@ -254,6 +271,183 @@
         loadAdminProfile();
         loadAnnouncements();
     </script>
+
+    <!-- Additional CSS for enhanced announcement cards -->
+    <style>
+        /* Enhanced announcement grid and card styles */
+        .ann-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        .ann-card {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+        }
+
+        .ann-card:hover {
+            border-color: var(--gold-mid);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .ann-card-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+            background: var(--bg2);
+        }
+
+        .ann-card-img-placeholder {
+            width: 100%;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            background: var(--gold-dim);
+            color: var(--gold);
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .ann-card-body {
+            padding: 16px 18px;
+            flex: 1;
+        }
+
+        .ann-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-size: 0.7rem;
+            color: var(--text2);
+        }
+
+        .ann-card-date {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+        }
+
+        .ann-card-author {
+            font-weight: 500;
+            color: var(--text2);
+        }
+
+        .ann-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .ann-card-msg {
+            font-size: 0.85rem;
+            color: var(--text2);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .ann-card-pickup {
+            margin-top: 10px;
+            font-size: 0.74rem;
+            color: var(--gold);
+            font-family: var(--mono);
+            background: var(--gold-dim);
+            padding: 4px 12px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .ann-card-footer {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg3);
+            transition: background 0.3s ease;
+        }
+
+        .ann-card:hover .ann-card-footer {
+            background: var(--bg2);
+        }
+
+        .ann-card-footer .btn-danger {
+            padding: 4px 12px;
+            font-size: 0.72rem;
+        }
+
+        /* Dark mode adjustments */
+        [data-theme="dark"] .ann-card {
+            background: var(--panel);
+        }
+
+        [data-theme="dark"] .ann-card:hover {
+            border-color: var(--gold-mid);
+            background: var(--panel2);
+        }
+
+        [data-theme="dark"] .ann-card-footer {
+            background: var(--bg2);
+        }
+
+        [data-theme="dark"] .ann-card:hover .ann-card-footer {
+            background: var(--panel);
+        }
+
+        [data-theme="dark"] .ann-card-img-placeholder {
+            background: var(--gold-dim);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .ann-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .ann-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .ann-card-img {
+                height: 140px;
+            }
+
+            .ann-card-body {
+                padding: 14px;
+            }
+
+            .ann-card-title {
+                font-size: 0.95rem;
+            }
+
+            .ann-card-msg {
+                font-size: 0.8rem;
+            }
+
+            .ann-card-footer {
+                padding: 10px 14px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+        }
+    </style>
 </body>
 
 </html>

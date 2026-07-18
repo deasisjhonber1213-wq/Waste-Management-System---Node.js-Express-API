@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -7,6 +7,7 @@
     <title>Analytics · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/style.js"></script>
 </head>
 
 <body>
@@ -34,9 +35,12 @@
 
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
-            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;margin-top:4px;">
-                <span class="icon">🌙</span>
-                <span class="label">Dark</span>
+            <button class="theme-toggle" id="themeToggleBtn">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-label">Dark Mode</span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -114,7 +118,7 @@
                     </div>
                 </div>
                 <div class="panel-body">
-                    <div class="metric-row" id="metricRows"></div>
+                    <div class="metric-grid" id="metricRows"></div>
                 </div>
             </div>
 
@@ -178,7 +182,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="../js/style.js"></script>
     <script>
         // ---- API ----
         const API_URL = window.location.origin + '/api';
@@ -224,6 +227,17 @@
             }
         }
         checkAuth();
+
+        // ---- LOGOUT FUNCTION ----
+        function doLogout() {
+            localStorage.removeItem('token');
+            closeModal('logoutConfirmModal');
+            showToast('Logged out successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
+        }
+        window.doLogout = doLogout;
 
         async function loadDashStats() {
             try {
@@ -328,6 +342,7 @@
                     });
                 }
 
+                // Enhanced Report Breakdown with better design
                 const metricRows = document.getElementById("metricRows");
                 if (metricRows) {
                     if (!reportData.length) {
@@ -336,13 +351,21 @@
                         metricRows.innerHTML = reportData.map((d, i) => {
                             const val = Number(d.total || d.count || 0);
                             const pct = total ? Math.round(val / total * 100) : 0;
+                            const color = PALETTE[i % PALETTE.length];
                             return `
-                                <div class="metric-item">
-                                    <div class="metric-label">${labels[i] || 'Unknown'}</div>
-                                    <div class="metric-bar-wrap">
-                                        <div class="metric-bar-fill" style="width:${Math.max(pct, 2)}%;background:${PALETTE[i % PALETTE.length]}"></div>
+                                <div class="metric-card">
+                                    <div class="metric-card-header">
+                                        <span class="metric-dot" style="background:${color}"></span>
+                                        <span class="metric-card-label">${labels[i] || 'Unknown'}</span>
+                                        <span class="metric-card-value">${val}</span>
                                     </div>
-                                    <div class="metric-count">${val}</div>
+                                    <div class="metric-bar-track">
+                                        <div class="metric-bar-fill" style="width:${Math.max(pct, 2)}%;background:${color}"></div>
+                                    </div>
+                                    <div class="metric-card-footer">
+                                        <span class="metric-percent">${pct}% of total</span>
+                                        <span class="metric-count">${val} reports</span>
+                                    </div>
                                 </div>`;
                         }).join("");
                     }
@@ -356,12 +379,13 @@
                         tableBody.innerHTML = reportData.map((d, i) => {
                             const val = Number(d.total || d.count || 0);
                             const pct = total ? (val / total * 100).toFixed(1) : 0;
+                            const color = PALETTE[i % PALETTE.length];
                             return `
                                 <tr>
-                                    <td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${PALETTE[i % PALETTE.length]};display:inline-block"></span>${labels[i] || 'Unknown'}</span></td>
+                                    <td><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block"></span>${labels[i] || 'Unknown'}</span></td>
                                     <td class="table-mono text-gold">${val}</td>
                                     <td class="table-muted">${pct}%</td>
-                                    <td><div style="width:${Math.min(pct * 2, 100)}%;height:6px;background:${PALETTE[i % PALETTE.length]};border-radius:3px;min-width:4px"></div></td>
+                                    <td><div style="width:${Math.min(pct * 2, 100)}%;height:6px;background:${color};border-radius:3px;min-width:4px;transition:width 0.6s ease"></div></td>
                                 </tr>`;
                         }).join("");
                     }
@@ -411,6 +435,150 @@
         loadAnalytics();
         loadScheduleStats();
     </script>
+
+    <!-- Additional CSS for enhanced report breakdown -->
+    <style>
+        /* Enhanced metric grid styles */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .metric-card {
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gold);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: var(--gold-mid);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .metric-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover .metric-dot {
+            transform: scale(1.2);
+        }
+
+        .metric-card-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text);
+            flex: 1;
+        }
+
+        .metric-card-value {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--gold);
+            background: var(--gold-dim);
+            padding: 2px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+
+        .metric-bar-track {
+            width: 100%;
+            height: 6px;
+            background: var(--bg2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 6px 0;
+        }
+
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .metric-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .metric-percent {
+            font-size: 0.68rem;
+            color: var(--text2);
+            font-weight: 500;
+        }
+
+        .metric-count {
+            font-size: 0.68rem;
+            color: var(--text3);
+        }
+
+        /* Dark mode adjustments */
+        [data-theme="dark"] .metric-card {
+            background: var(--panel2);
+        }
+
+        [data-theme="dark"] .metric-card:hover {
+            border-color: var(--gold-mid);
+            background: var(--panel);
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .metric-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .metric-card-header {
+                flex-wrap: wrap;
+            }
+
+            .metric-card-value {
+                font-size: 0.75rem;
+                padding: 1px 8px;
+            }
+
+            .metric-card-label {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
 </body>
 
 </html>

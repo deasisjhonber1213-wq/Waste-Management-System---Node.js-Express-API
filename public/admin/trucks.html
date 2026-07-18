@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="../js/style.js"></script>
     <style>
         /* ---- consistent with Routes page ---- */
         .trucks-layout {
@@ -166,6 +167,18 @@
             color: var(--text);
         }
 
+        .detail-stat .num.fresh {
+            color: #4ade80;
+        }
+
+        .detail-stat .num.stale {
+            color: #fbb034;
+        }
+
+        .detail-stat .num.old {
+            color: #f87171;
+        }
+
         /* ---- Map ---- */
         .route-map-wrap {
             border-radius: 12px;
@@ -176,9 +189,8 @@
             background: var(--bg2);
         }
 
-        #fleetMap,
-        #truckDetailMap {
-            height: 280px;
+        #fleetMap {
+            height: 420px;
             width: 100%;
             background: var(--bg2);
         }
@@ -234,9 +246,8 @@
                 gap: 16px;
             }
 
-            #fleetMap,
-            #truckDetailMap {
-                height: 280px;
+            #fleetMap {
+                height: 320px;
             }
 
             .modal-lg {
@@ -261,9 +272,8 @@
                 font-size: 1.1rem;
             }
 
-            #fleetMap,
-            #truckDetailMap {
-                height: 200px;
+            #fleetMap {
+                height: 260px;
             }
 
             .map-toolbar {
@@ -387,70 +397,6 @@
             }
         }
 
-        .waypoints-list {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .waypoints-list::-webkit-scrollbar {
-            width: 3px;
-        }
-
-        .waypoints-list::-webkit-scrollbar-track {
-            background: var(--bg2);
-        }
-
-        .waypoints-list::-webkit-scrollbar-thumb {
-            background: var(--gold-mid);
-            border-radius: 3px;
-        }
-
-        .waypoint-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 10px;
-            background: var(--bg3);
-            border-radius: 6px;
-            font-size: 0.73rem;
-            transition: 0.15s;
-        }
-
-        .waypoint-item:hover {
-            background: var(--gold-dim);
-        }
-
-        .waypoint-num {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            font-size: 0.65rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .waypoint-num.road-num {
-            background: #60a5fa;
-            color: #fff;
-        }
-
-        .waypoint-num.pin-num {
-            background: var(--gold);
-            color: #fff;
-        }
-
-        .waypoint-num.mrf-num {
-            background: #fbbf24;
-            color: #1a1a1a;
-        }
-
         .text-mono {
             font-family: var(--mono);
         }
@@ -465,6 +411,14 @@
 
         .text-mono.text-muted {
             font-size: 0.65rem;
+        }
+
+        /* Detail map container */
+        #truckDetailMap {
+            height: 240px;
+            width: 100%;
+            background: var(--bg2);
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -494,9 +448,12 @@
 
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
-            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;margin-top:4px;">
-                <span class="icon">🌙</span>
-                <span class="label">Dark</span>
+            <button class="theme-toggle" id="themeToggleBtn">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-label">Dark Mode</span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -748,7 +705,6 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="../js/style.js"></script>
     <script>
         // ---- API ----
         const API_URL = window.location.origin + '/api';
@@ -809,40 +765,48 @@
         }
         checkAuth();
 
+        // ---- LOGOUT FUNCTION ----
+        function doLogout() {
+            localStorage.removeItem('token');
+            closeModal('logoutConfirmModal');
+            showToast('Logged out successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
+        }
+        window.doLogout = doLogout;
+
         let allTrucks = [];
         let selectedTruck = null;
         let fleetMap = null;
         let mapMarkers = [];
         let isFleetMapSatellite = false;
+        let detailMapInstance = null;
 
         // ---- tile layers ----
-        const darkTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-            attribution: "&copy; OSM & CARTO",
-            subdomains: "abcd",
-            maxZoom: 20
-        });
-        const satelliteTileLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-            attribution: "Esri",
-            maxZoom: 19
-        });
+        function makeTiles() {
+            return {
+                dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                    { attribution: '&copy; OSM & CARTO', subdomains: 'abcd', maxZoom: 20 }),
+                sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                    { attribution: '&copy; Esri', maxZoom: 19 }),
+                label: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+                    { subdomains: 'abcd', maxZoom: 20, opacity: 0.85, pane: 'overlayPane' })
+            };
+        }
 
-        function addTileLayerToMap(map, isSatellite) {
-            map.eachLayer(layer => {
-                if (layer._url && (layer._url.includes('basemaps.cartocdn.com') || layer._url.includes('arcgisonline.com'))) {
-                    map.removeLayer(layer);
-                }
-            });
-            if (isSatellite) {
-                satelliteTileLayer.addTo(map);
-            } else {
-                darkTileLayer.addTo(map);
-            }
+        let fleetTiles = null;
+
+        function applyTile(map, tiles, isSat) {
+            Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
+            if (isSat) { tiles.sat.addTo(map); tiles.label.addTo(map); }
+            else { tiles.dark.addTo(map); }
         }
 
         function toggleFleetMapSatellite() {
-            if (!fleetMap) return;
+            if (!fleetMap || !fleetTiles) return;
             isFleetMapSatellite = !isFleetMapSatellite;
-            addTileLayerToMap(fleetMap, isFleetMapSatellite);
+            applyTile(fleetMap, fleetTiles, isFleetMapSatellite);
             const btn = document.getElementById("fleetSatBtn");
             btn.innerHTML = isFleetMapSatellite ? "🌍 Map" : "🛰️ Satellite";
             btn.classList.toggle("active", isFleetMapSatellite);
@@ -926,7 +890,7 @@
                 document.getElementById("mapTruckCount").textContent =
                     `📍 ${allTrucks.filter(t => t.latitude != null && t.longitude != null).length} trucks on map`;
                 renderTruckList(allTrucks);
-                renderMap(allTrucks);
+                renderFleetMap(allTrucks);
                 if (selectedTruck) {
                     const fresh = allTrucks.find(t => t.id === selectedTruck.id);
                     if (fresh) selectedTruck = fresh;
@@ -982,6 +946,10 @@
             if (!selectedTruck) return;
             renderTruckList(allTrucks);
             renderDetail(selectedTruck);
+            // Center map on selected truck
+            if (fleetMap && selectedTruck.latitude != null && selectedTruck.longitude != null) {
+                fleetMap.setView([selectedTruck.latitude, selectedTruck.longitude], 15);
+            }
         }
 
         function renderDetail(truck) {
@@ -991,6 +959,17 @@
                 <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${truck.id},'${escHtml(truck.plate_number)}')">🗑️ Delete</button>
             `;
 
+            const freshness = freshnessClass(truck.location_updated_at);
+            const detailMapHtml = (truck.latitude != null && truck.longitude != null) ? `
+                <div style="margin-top:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span class="text-muted text-mono" style="font-size:0.65rem;">📍 TRUCK LOCATION</span>
+                        <button class="btn btn-outline btn-sm" onclick="centerTruckOnMap(${truck.id})" style="padding:3px 10px;font-size:0.65rem;">🎯 Center on Map</button>
+                    </div>
+                    <div id="truckDetailMap"></div>
+                </div>
+            ` : `<div style="margin-top:12px;color:var(--text2);font-size:0.8rem;padding:12px;background:var(--bg3);border-radius:8px;text-align:center;">📍 No location data for this truck</div>`;
+
             document.getElementById('truckDetailBody').innerHTML = `
                 <div>
                     <div class="detail-zone-name">🚛 ${escHtml(truck.plate_number)}</div>
@@ -998,28 +977,34 @@
                     <div class="detail-stats">
                         <div class="detail-stat">📍 <span class="num">${truck.latitude != null ? Number(truck.latitude).toFixed(6) : "—"}</span></div>
                         <div class="detail-stat">📍 <span class="num">${truck.longitude != null ? Number(truck.longitude).toFixed(6) : "—"}</span></div>
-                        <div class="detail-stat">🕒 <span class="num ${freshnessClass(truck.location_updated_at)}">${fmtDateTime(truck.location_updated_at)}</span></div>
+                        <div class="detail-stat">🕒 <span class="num ${freshness}">${fmtDateTime(truck.location_updated_at)}</span></div>
                         <div class="detail-stat">📅 <span class="num">${fmtDate(truck.created_at)}</span></div>
                     </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span class="text-muted text-mono" style="font-size:0.65rem;">TRUCK LOCATION</span>
-                        <button class="map-tool-btn" onclick="centerTruckOnMap(${truck.id})" style="padding:3px 10px;font-size:0.65rem;">🎯 Center</button>
-                    </div>
-                    <div class="route-map-wrap"><div id="truckDetailMap"></div></div>
+                    ${detailMapHtml}
                 </div>
             `;
-            setTimeout(() => initTruckDetailMap(truck), 100);
+
+            if (truck.latitude != null && truck.longitude != null) {
+                setTimeout(() => initTruckDetailMap(truck), 100);
+            }
         }
 
         function initTruckDetailMap(truck) {
             const container = document.getElementById('truckDetailMap');
             if (!container) return;
-            const map = L.map(container).setView(
-                (truck.latitude != null && truck.longitude != null) ?
-                    [truck.latitude, truck.longitude] :
-                    [14.5995, 120.9842], 13
+
+            if (detailMapInstance) {
+                detailMapInstance.remove();
+                detailMapInstance = null;
+            }
+
+            detailMapInstance = L.map(container, { zoomControl: true }).setView(
+                [truck.latitude, truck.longitude], 14
             );
-            addTileLayerToMap(map, false);
+
+            const tiles = makeTiles();
+            applyTile(detailMapInstance, tiles, false);
+            detailMapInstance.invalidateSize();
 
             if (truck.latitude != null && truck.longitude != null) {
                 const color = dotColor(truck.location_updated_at);
@@ -1030,15 +1015,16 @@
                     iconAnchor: [15, 15]
                 });
                 L.marker([truck.latitude, truck.longitude], { icon })
-                    .addTo(map)
+                    .addTo(detailMapInstance)
                     .bindPopup(`
                         <strong style="font-family:monospace">${escHtml(truck.plate_number)}</strong><br>
                         ${escHtml(truck.model || "")}<br>
                         <span style="font-size:11px;color:#888">
                             Last update: ${fmtDateTime(truck.location_updated_at)}
-                        </span>`);
+                        </span>
+                    `);
             }
-            setTimeout(() => map.invalidateSize(), 200);
+            setTimeout(() => detailMapInstance.invalidateSize(), 200);
         }
 
         function centerTruckOnMap(id) {
@@ -1054,12 +1040,19 @@
         }
 
         // ---- render fleet map ----
-        function renderMap(data) {
+        function renderFleetMap(data) {
             if (!fleetMap) {
-                fleetMap = L.map("fleetMap").setView([14.5995, 120.9842], 12);
-                addTileLayerToMap(fleetMap, false);
+                fleetMap = L.map("fleetMap", { zoomControl: true }).setView([14.5995, 120.9842], 12);
+                fleetTiles = makeTiles();
+                applyTile(fleetMap, fleetTiles, false);
+                // Fix for leaflet container sizing
+                setTimeout(() => fleetMap.invalidateSize(), 100);
             }
-            mapMarkers.forEach(m => fleetMap.removeLayer(m));
+
+            // Clear existing markers
+            mapMarkers.forEach(m => {
+                if (fleetMap.hasLayer(m)) fleetMap.removeLayer(m);
+            });
             mapMarkers = [];
 
             const positioned = data.filter(t => t.latitude != null && t.longitude != null);
@@ -1079,14 +1072,19 @@
                         <span style="font-size:11px;color:#888">
                             Last update: ${fmtDateTime(t.location_updated_at)}
                         </span><br>
-                        <button class="btn btn-sm btn-outline" onclick="selectTruck(${t.id})">View Details</button>
+                        <button class="btn btn-outline btn-sm" onclick="selectTruck(${t.id})" style="margin-top:6px;">View Details</button>
                     `);
                 mapMarkers.push(m);
             });
 
-            if (positioned.length === 0) {
-                fleetMap.setView([14.5995, 120.9842], 12);
+            if (positioned.length > 0 && positioned.length <= 3) {
+                const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
+                fleetMap.fitBounds(bounds.pad(0.3));
+            } else if (positioned.length > 3) {
+                const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
+                fleetMap.fitBounds(bounds.pad(0.15));
             }
+
             setTimeout(() => fleetMap.invalidateSize(), 200);
         }
 
@@ -1206,10 +1204,17 @@
         window.selectTruck = selectTruck;
         window.filterTrucks = filterTrucks;
         window.centerTruckOnMap = centerTruckOnMap;
+        window.doLogout = doLogout;
 
         // ---- init ----
         loadAdminProfile();
         loadTrucks();
+
+        // Fix map size on window resize
+        window.addEventListener('resize', () => {
+            if (fleetMap) setTimeout(() => fleetMap.invalidateSize(), 100);
+            if (detailMapInstance) setTimeout(() => detailMapInstance.invalidateSize(), 100);
+        });
     </script>
 </body>
 

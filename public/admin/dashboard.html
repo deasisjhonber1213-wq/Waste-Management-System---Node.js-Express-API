@@ -275,20 +275,58 @@
                 const res = await API.get("/admin/analytics");
                 if (!res.ok) throw new Error();
                 const data = await res.json();
+
+                // Extract report data from the response
+                let reportData = [];
+                if (data.type_breakdown && Array.isArray(data.type_breakdown)) {
+                    reportData = data.type_breakdown;
+                } else if (Array.isArray(data)) {
+                    reportData = data;
+                }
+
+                // Filter out the 'ALL' type if it exists
+                reportData = reportData.filter(d => d.type !== 'ALL');
+
+                if (reportData.length === 0) {
+                    // Show empty state on chart
+                    document.getElementById('reportChart').parentElement.innerHTML =
+                        '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">No report data available</div></div>';
+                    return;
+                }
+
                 new Chart(document.getElementById("reportChart"), {
                     type: "doughnut",
                     data: {
-                        labels: data.map(d => d.type.replace("_", " ").toUpperCase()),
-                        datasets: [{ data: data.map(d => d.total), backgroundColor: ["#ffc13c", "#3ddc84", "#ff5c5c", "#60a5fa"], borderWidth: 0, hoverOffset: 8 }]
+                        labels: reportData.map(d => d.type.replace("_", " ").toUpperCase()),
+                        datasets: [{
+                            data: reportData.map(d => d.total),
+                            backgroundColor: ["#ffc13c", "#3ddc84", "#ff5c5c", "#60a5fa", "#a78bfa", "#fb923c"],
+                            borderWidth: 0,
+                            hoverOffset: 8
+                        }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { position: "bottom", labels: { color: "var(--text2)", font: { family: "Outfit", size: 11 }, padding: 16, boxWidth: 10 } } },
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+                                labels: {
+                                    color: "var(--text2)",
+                                    font: { family: "Outfit", size: 11 },
+                                    padding: 16,
+                                    boxWidth: 10
+                                }
+                            }
+                        },
                         cutout: "65%"
                     }
                 });
-            } catch { /* ignore */ }
+            } catch (err) {
+                console.error('Chart error:', err);
+                document.getElementById('reportChart').parentElement.innerHTML =
+                    '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">Failed to load chart data</div></div>';
+            }
         }
 
         async function loadRecentReports() {
@@ -297,17 +335,34 @@
                 if (!res.ok) throw new Error();
                 const data = await res.json();
                 const el = document.getElementById("recentReports");
-                if (!data.length) { el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">No reports yet</div></div>'; return; }
-                el.innerHTML = data.slice(0, 5).map(r => `
+
+                // Handle both array and paginated responses
+                let reports = [];
+                if (Array.isArray(data)) {
+                    reports = data;
+                } else if (data.data && Array.isArray(data.data)) {
+                    reports = data.data;
+                }
+
+                if (!reports.length) {
+                    el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">No reports yet</div></div>';
+                    return;
+                }
+
+                el.innerHTML = reports.slice(0, 5).map(r => `
                     <div class="activity-item">
                         <div class="activity-dot" style="background:${r.type === 'missed_pickup' ? 'var(--gold)' : r.type === 'overflowing_bin' ? 'var(--green)' : 'var(--red)'}"></div>
                         <div>
-                            <div class="activity-text">${r.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</div>
+                            <div class="activity-text">${(r.type || '').replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown'}</div>
                             <div class="activity-time">${r.description?.slice(0, 60) || "No description"}</div>
                             <div class="activity-time">${fmtDate(r.created_at || new Date())}</div>
                         </div>
                     </div>`).join("");
-            } catch { /* ignore */ }
+            } catch (err) {
+                console.error('Recent reports error:', err);
+                document.getElementById("recentReports").innerHTML =
+                    '<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Failed to load reports</div></div>';
+            }
         }
 
         async function loadPickups() {
@@ -325,7 +380,9 @@
                         <td>${p.zone_name || "—"}</td>
                         <td>${statusBadge(p.status)}</td>
                     </tr>`).join("");
-            } catch { /* ignore */ }
+            } catch (err) {
+                console.error('Pickups error:', err);
+            }
         }
 
         async function loadProfile() {
@@ -342,6 +399,7 @@
         }
         checkAuth();
 
+        // Load all data
         loadStats();
         loadChart();
         loadRecentReports();

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="../js/style.js"></script>
     <style>
         /* ── layout - Map on LEFT, Reports on RIGHT ── */
         .reports-layout {
@@ -346,6 +347,12 @@
             color: var(--text2);
             cursor: pointer;
             font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--gold-mid);
+            color: var(--text);
         }
 
         .tab-btn.active {
@@ -380,6 +387,12 @@
         }
 
         /* ── responsive tweaks ── */
+        @media (max-width: 1100px) {
+            .reports-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 820px) {
             #reportMap {
                 height: 350px;
@@ -396,6 +409,25 @@
 
             .map-dot-legend {
                 justify-content: center;
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tab-buttons {
+                flex-direction: column;
+            }
+
+            .data-table {
+                font-size: 0.7rem;
+                min-width: 600px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 6px 8px;
             }
         }
 
@@ -417,24 +449,125 @@
                 font-size: 1.4rem;
             }
 
-            .filter-row {
-                flex-direction: column;
-                align-items: stretch;
+            .date-pills {
+                gap: 4px;
             }
 
-            .tab-buttons {
-                flex-direction: column;
+            .date-pill {
+                font-size: 0.65rem;
+                padding: 4px 10px;
+            }
+
+            .map-dot-legend {
+                font-size: 0.6rem;
+                gap: 6px;
+            }
+
+            .map-tool-btn {
+                font-size: 0.65rem;
+                padding: 4px 10px;
             }
 
             .data-table {
-                min-width: 500px;
-                font-size: 0.7rem;
+                min-width: 480px;
+                font-size: 0.65rem;
             }
 
             .data-table th,
             .data-table td {
-                padding: 6px 8px;
+                padding: 4px 6px;
             }
+
+            .resident-card {
+                padding: 8px 10px;
+                gap: 8px;
+            }
+
+            .resident-name {
+                font-size: 0.75rem;
+            }
+
+            .resident-avatar {
+                width: 30px;
+                height: 30px;
+                font-size: 0.85rem;
+            }
+
+            .panel-body {
+                padding: 12px !important;
+            }
+
+            .panel-header {
+                padding: 12px 14px !important;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .stat-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 6px;
+            }
+
+            .stat-card {
+                padding: 8px 6px;
+            }
+
+            .stat-value {
+                font-size: 1.1rem;
+            }
+
+            .stat-label {
+                font-size: 0.55rem;
+            }
+
+            #reportMap {
+                height: 220px;
+            }
+
+            .data-table {
+                min-width: 360px;
+                font-size: 0.6rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 3px 4px;
+            }
+
+            .report-img-thumb {
+                width: 28px;
+                height: 28px;
+            }
+
+            .map-toolbar {
+                padding: 6px 10px;
+            }
+
+            .map-dot-legend {
+                font-size: 0.55rem;
+            }
+
+            .date-pill {
+                font-size: 0.55rem;
+                padding: 3px 8px;
+            }
+        }
+
+        /* Panel body padding fix for reports tab */
+        #reports-tab .panel-body-flush {
+            padding: 0;
+        }
+
+        /* Ensure proper spacing in panels */
+        .panel-body-flush {
+            padding: 0;
+        }
+
+        .panel-body {
+            padding: 20px;
         }
     </style>
 </head>
@@ -462,9 +595,12 @@
 
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
-            <button class="theme-toggle" onclick="toggleTheme()" style="width:100%;margin-top:4px;">
-                <span class="icon">🌙</span>
-                <span class="label">Dark</span>
+            <button class="theme-toggle" id="themeToggleBtn">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-label">Dark Mode</span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -572,7 +708,7 @@
                 </div>
 
                 <div id="reports-tab" class="tab-content active">
-                    <div class="panel-header">
+                    <div class="panel-header" style="border-bottom: none; padding: 0 0 12px 0;">
                         <div class="panel-title">
                             <div class="panel-title-icon">⚠️</div>Resident Reports
                         </div>
@@ -603,7 +739,7 @@
                 </div>
 
                 <div id="residents-tab" class="tab-content">
-                    <div class="panel-header">
+                    <div class="panel-header" style="border-bottom: none; padding: 0 0 12px 0;">
                         <div class="panel-title">
                             <div class="panel-title-icon">📍</div>Active Residents (Last 2 Hours)
                         </div>
@@ -667,7 +803,6 @@
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
-    <script src="../js/style.js"></script>
     <script>
         // ---- API ----
         const API_URL = window.location.origin + '/api';
@@ -701,6 +836,17 @@
             }
         }
         checkAuth();
+
+        // ---- LOGOUT FUNCTION ----
+        function doLogout() {
+            localStorage.removeItem('token');
+            closeModal('logoutConfirmModal');
+            showToast('Logged out successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
+        }
+        window.doLogout = doLogout;
 
         let allReports = [];
         let allResidents = [];
