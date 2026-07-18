@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -11,6 +11,15 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
+    <script>
+        // Apply saved theme before first paint to avoid a flash of the wrong theme.
+        (function () {
+            var saved = localStorage.getItem('resident_theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+    </script>
     <style>
         :root {
             --bg: #050d07;
@@ -37,6 +46,40 @@
             --ff-mono: 'Space Mono', monospace;
             --nav-h: 60px;
             --shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] {
+            --bg: #f3f8f4;
+            --bg-1: #ffffff;
+            --bg-2: #eef6f0;
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-2: rgba(236, 246, 239, 0.85);
+            --border: rgba(21, 128, 61, 0.14);
+            --border-hi: rgba(21, 128, 61, 0.32);
+            --green: #16a34a;
+            --green-2: #15803d;
+            --green-dim: rgba(22, 163, 74, 0.08);
+            --green-mid: rgba(22, 163, 74, 0.18);
+            --text: #10241a;
+            --text-2: #4c6b56;
+            --text-3: #8aa392;
+            --red: #dc2626;
+            --amber: #b45309;
+            --blue: #2563eb;
+            --shadow: 0 4px 24px rgba(16, 36, 26, 0.08);
+        }
+
+        [data-theme="light"] body::before {
+            background: radial-gradient(ellipse 80% 60% at 10% 20%, rgba(22, 163, 74, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 90% 80%, rgba(22, 163, 74, 0.04) 0%, transparent 60%);
+        }
+
+        [data-theme="light"] .site-nav {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        [data-theme="light"] .mobile-drawer {
+            background: #ffffff;
         }
 
         *,
@@ -135,6 +178,69 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+        }
+
+        .theme-btn {
+            width: 38px;
+            height: 38px;
+            background: var(--green-dim);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--green);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+
+        .theme-btn:hover {
+            background: var(--green-mid);
+            border-color: var(--border-hi);
+        }
+
+        .nav-user-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--green-dim);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 0.3rem 0.9rem 0.3rem 0.3rem;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: 0.2s;
+            max-width: 160px;
+            font-family: var(--ff-display);
+        }
+
+        .nav-user-chip:hover {
+            border-color: var(--border-hi);
+            background: var(--green-mid);
+        }
+
+        .user-chip-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--green);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .user-chip-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .nav-logout {
@@ -321,6 +427,11 @@
             transition: 0.2s;
             font-size: 0.95rem;
             font-weight: 500;
+            background: none;
+            width: 100%;
+            font-family: var(--ff-display);
+            cursor: pointer;
+            text-align: left;
         }
 
         .drawer-link:active,
@@ -398,6 +509,48 @@
             padding: 10px 14px;
             font-size: 0.75rem;
             color: var(--green);
+        }
+
+        .drawer-theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            cursor: pointer;
+            font-family: var(--ff-display);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 4px 0;
+        }
+
+        .dtt-switch {
+            width: 38px;
+            height: 20px;
+            background: var(--bg-2);
+            border-radius: 30px;
+            position: relative;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+
+        .dtt-knob {
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--green);
+            transition: 0.2s;
+        }
+
+        .drawer-theme-toggle.on .dtt-knob {
+            transform: translateX(18px);
         }
 
         section {
@@ -1224,6 +1377,10 @@
             -webkit-appearance: none;
         }
 
+        [data-theme="light"] .form-control {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
         .form-control:focus {
             border-color: var(--green);
         }
@@ -1242,6 +1399,10 @@
             transition: 0.2s;
             position: relative;
             background: rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="light"] .photo-drop {
+            background: rgba(0, 0, 0, 0.02);
         }
 
         .photo-drop:hover,
@@ -1321,6 +1482,10 @@
             padding: 0.6rem 0.8rem;
             font-size: 0.75rem;
             color: var(--text-2);
+        }
+
+        [data-theme="light"] .loc-row {
+            background: rgba(0, 0, 0, 0.02);
         }
 
         .loc-row .loc-dot {
@@ -1430,6 +1595,10 @@
             color: var(--text-3);
             text-decoration: none;
             font-size: 0.75rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: var(--ff-display);
         }
 
         .footer-links a:hover {
@@ -1552,6 +1721,83 @@
             color: var(--bg);
         }
 
+        .modal-lg {
+            position: relative;
+            max-width: 480px;
+            max-height: 85vh;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .modal-close-x {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 32px;
+            height: 32px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-2);
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .modal-close-x:hover {
+            color: var(--red);
+        }
+
+        .tab-btns {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.9rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-2);
+            font-family: var(--ff-display);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--green-dim);
+            color: var(--green);
+            border: 1px solid var(--border-hi);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .terms-body {
+            font-size: 0.82rem;
+            color: var(--text-2);
+            line-height: 1.65;
+        }
+
+        .terms-body h4 {
+            color: var(--text);
+            font-size: 0.9rem;
+            margin: 1rem 0 0.4rem;
+        }
+
+        .terms-body h4:first-child {
+            margin-top: 0;
+        }
+
         @keyframes blink {
 
             0%,
@@ -1599,6 +1845,11 @@
             }
 
             .nav-logout {
+                display: none !important;
+            }
+
+            .nav-user-chip,
+            .theme-btn {
                 display: none !important;
             }
 
@@ -1908,6 +2159,12 @@
             <li><a href="#report">Report</a></li>
         </ul>
         <div class="nav-right">
+            <button class="theme-btn" id="themeBtnDesktop" onclick="toggleTheme()"
+                title="Toggle light/dark mode">🌙</button>
+            <button class="nav-user-chip" id="navUserChip" onclick="openModal('profileModal')" title="My Profile">
+                <span class="user-chip-avatar" id="userInitial">?</span>
+                <span class="user-chip-name" id="navUserName">…</span>
+            </button>
             <a href="/login.html" class="nav-logout" id="desktopLogout">Logout</a>
             <button class="nav-burger" id="burgerBtn" aria-label="Open menu" aria-expanded="false"
                 aria-controls="mobileDrawer">
@@ -1920,6 +2177,11 @@
 
     <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation menu">
         <div class="drawer-handle"></div>
+
+        <div class="drawer-status">
+            <span>👤</span>
+            <span id="drawerUserName">Loading…</span>
+        </div>
 
         <nav class="drawer-nav" aria-label="Mobile navigation">
             <a href="#home" class="drawer-link">
@@ -1993,6 +2255,34 @@
                 <span>Report Issue</span>
                 <span class="drawer-link-arrow">›</span>
             </a>
+            <button type="button" class="drawer-link" onclick="closeDrawer(); openModal('profileModal');">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4"></circle>
+                        <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"></path>
+                    </svg>
+                </div>
+                <span>My Profile</span>
+                <span class="drawer-link-arrow">›</span>
+            </button>
+            <button type="button" class="drawer-link" onclick="closeDrawer(); openModal('termsModal');">
+                <div class="drawer-link-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="8" y1="13" x2="16" y2="13"></line>
+                        <line x1="8" y1="17" x2="16" y2="17"></line>
+                    </svg>
+                </div>
+                <span>Terms &amp; Privacy</span>
+                <span class="drawer-link-arrow">›</span>
+            </button>
+            <button type="button" class="drawer-theme-toggle" id="drawerThemeToggle" onclick="toggleTheme()">
+                <span class="dtt-label">Dark Mode</span>
+                <span class="dtt-switch"><span class="dtt-knob"></span></span>
+            </button>
             <a href="/login.html" class="drawer-link"
                 style="margin-top:12px;border-top:1px solid var(--border);border-radius:14px;padding-top:14px;">
                 <div class="drawer-link-icon">
@@ -2090,7 +2380,7 @@
                         <div>
                             <div class="feat-title">Real-Time GPS Tracking</div>
                             <div class="feat-desc">Monitor the garbage truck's exact location — updated every 10
-                                seconds.</div>
+                                seconds once the driver starts the route.</div>
                         </div>
                     </div>
                     <div class="feat">
@@ -2249,7 +2539,7 @@
                                     onchange="handlePhotoChange(event)">
                                 <div class="photo-drop-icon">📷</div>
                                 <div class="photo-drop-label">Tap to take a photo or choose from gallery</div>
-                                <div class="photo-drop-sub">JPG, PNG, WEBP · max 2 MB</div>
+                                <div class="photo-drop-sub">JPG, PNG, WEBP · any size, we'll optimize it</div>
                             </div>
                             <div class="photo-preview-wrap" id="photoPreviewWrap">
                                 <img id="photoPreviewImg" src="" alt="Preview">
@@ -2281,6 +2571,7 @@
             <a href="#about">About</a>
             <a href="#pickup">Schedule</a>
             <a href="#report">Report</a>
+            <a href="javascript:void(0)" onclick="openModal('termsModal')">Terms &amp; Privacy</a>
         </div>
     </footer>
 
@@ -2300,6 +2591,105 @@
         </div>
     </div>
 
+    <div class="modal-bg" id="profileModal">
+        <div class="modal modal-lg">
+            <button type="button" class="modal-close-x" onclick="closeModal('profileModal')">✕</button>
+            <div class="modal-icon">👤</div>
+            <div class="modal-title">My Profile</div>
+
+            <div class="tab-btns">
+                <button type="button" class="tab-btn active" onclick="switchProfileTab('info', this)">Profile
+                    Info</button>
+                <button type="button" class="tab-btn" onclick="switchProfileTab('password', this)">Change
+                    Password</button>
+            </div>
+
+            <div class="tab-panel active" id="tabInfo">
+                <form onsubmit="handleProfileSave(event)">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="profileName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="profileEmail" class="form-control" disabled style="opacity:.6;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" id="profilePhone" class="form-control" placeholder="09XX XXX XXXX">
+                    </div>
+                    <button type="submit" class="btn-submit">Save Changes</button>
+                </form>
+            </div>
+
+            <div class="tab-panel" id="tabPassword">
+                <form onsubmit="handlePasswordChange(event)">
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-control" required
+                            autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="newPassword" class="form-control" required minlength="8"
+                            autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" class="form-control" required minlength="8"
+                            autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn-submit">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-bg" id="termsModal">
+        <div class="modal modal-lg">
+            <button type="button" class="modal-close-x" onclick="closeModal('termsModal')">✕</button>
+            <div class="modal-icon">📄</div>
+            <div class="modal-title">Terms &amp; Privacy</div>
+
+            <div class="tab-btns">
+                <button type="button" class="tab-btn active" onclick="switchTermsTab('tos', this)">Terms of
+                    Service</button>
+                <button type="button" class="tab-btn" onclick="switchTermsTab('privacy', this)">Privacy
+                    Policy</button>
+            </div>
+
+            <div class="tab-panel active terms-body" id="tabTos">
+                <h4>1. Using This App</h4>
+                <p>This portal is provided by the Jose Dalman Waste Management office so residents can view truck
+                    locations, check pickup schedules, and report waste-collection issues in their community.</p>
+                <h4>2. Reports You Submit</h4>
+                <p>Reports (with photos and location) that you submit are shared with barangay/city waste management
+                    staff for the purpose of resolving the issue you reported.</p>
+                <h4>3. Fair Use</h4>
+                <p>Please avoid submitting false reports or misusing the location-sharing feature. Accounts found
+                    abusing the system may be suspended.</p>
+                <h4>4. Changes</h4>
+                <p>These terms may be updated from time to time. Continued use of the app after changes means you
+                    accept the updated terms.</p>
+            </div>
+
+            <div class="tab-panel terms-body" id="tabPrivacy">
+                <h4>What We Collect</h4>
+                <p>Your name, contact details, and — only when you choose to enable it — your live location while
+                    "Share" is turned on, plus the location and photo attached to any report you submit.</p>
+                <h4>How It's Used</h4>
+                <p>Location data is used only to show nearby collection trucks and to help drivers/staff locate
+                    reported issues. It is not sold or shared with advertisers.</p>
+                <h4>Your Control</h4>
+                <p>Location sharing can be turned off anytime with the Share button on the map. You can update your
+                    profile details at any time from My Profile.</p>
+                <h4>Retention</h4>
+                <p>Report history and location logs are kept only as long as needed for waste-management operations
+                    and record-keeping.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/login.html';
@@ -2314,6 +2704,51 @@
                 throw new Error(`${res.status} ${res.statusText} on ${url}${bodyText ? ' — ' + bodyText : ''}`);
             }
             return res.json();
+        }
+
+        /* ── THEME (light/dark) ── */
+        function toggleTheme() {
+            const html = document.documentElement;
+            const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('resident_theme', next);
+            syncThemeButtons(next);
+        }
+
+        function syncThemeButtons(theme) {
+            const icon = theme === 'light' ? '🌙' : '☀️';
+            document.querySelectorAll('.theme-btn').forEach(b => b.textContent = icon);
+            const dtt = document.getElementById('drawerThemeToggle');
+            if (dtt) {
+                dtt.classList.toggle('on', theme === 'light');
+                const label = dtt.querySelector('.dtt-label');
+                if (label) label.textContent = theme === 'light' ? 'Light Mode' : 'Dark Mode';
+            }
+        }
+
+        /* ── MODALS ── */
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+        }
+
+        function switchProfileTab(tab, btn) {
+            document.querySelectorAll('#profileModal .tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#profileModal .tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(tab === 'info' ? 'tabInfo' : 'tabPassword').classList.add('active');
+        }
+
+        function switchTermsTab(tab, btn) {
+            document.querySelectorAll('#termsModal .tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#termsModal .tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(tab === 'tos' ? 'tabTos' : 'tabPrivacy').classList.add('active');
         }
 
         const burgerBtn = document.getElementById('burgerBtn');
@@ -2366,6 +2801,10 @@
             if (delta > 60) closeDrawer();
         }, { passive: true });
 
+        document.addEventListener('DOMContentLoaded', () => {
+            syncThemeButtons(document.documentElement.getAttribute('data-theme') || 'dark');
+        });
+
         const io = new IntersectionObserver(
             entries => entries.forEach(e => e.isIntersecting && e.target.classList.add('in')),
             { threshold: 0.1 }
@@ -2388,6 +2827,12 @@
         let lastKnownLocation = null;
         let locationWatchId = null;
 
+        // Whether today's driver has actually pressed "Start Route" and whether
+        // we have a fresh GPS ping for them — gates truck marker + trail progress
+        // so a truck can't appear "live" before the driver really is.
+        let routeStarted = false;
+        let hasLiveTruckLocation = false;
+
         let animFrame = null;
         let animating = false;
         let animStart = null;
@@ -2401,7 +2846,7 @@
         let drawnCoords = [];
         let progressIndex = 0;
         let pinStops = [];
-        const MRF_FALLBACK = { name: "Jose Dalman MRF", latitude: 8.2317, longitude: 123.4018 };
+        const DEFAULT_CENTER = { lat: 8.2317, lng: 123.4018 };
 
         tileStreet = L.tileLayer(
             'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM &amp; CARTO', subdomains: 'abcd', maxZoom: 20 }
@@ -2413,7 +2858,7 @@
             'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, opacity: 0.8, pane: 'overlayPane' }
         );
 
-        function initMap(lat = 8.2317, lng = 123.4018) {
+        function initMap(lat = DEFAULT_CENTER.lat, lng = DEFAULT_CENTER.lng) {
             if (map) return;
             map = L.map('map', {
                 zoomControl: false,
@@ -2431,22 +2876,23 @@
         }
 
         async function loadFallbackMRF() {
-            let mrf = MRF_FALLBACK;
             try {
-                const data = await apiFetch('/api/resident/mrf-location');
-                if (data && data.latitude && data.longitude) mrf = data;
+                const mrf = await apiFetch('/api/resident/mrf-location');
+                // No hardcoded fallback anymore — if the office hasn't configured
+                // an MRF location, we simply don't show a marker for it.
+                if (!mrf || !mrf.latitude || !mrf.longitude) return;
+                const icon = L.divIcon({
+                    className: "",
+                    html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
+                });
+                fallbackMRF = L.marker([mrf.latitude, mrf.longitude], { icon, zIndexOffset: 400, opacity: 0.55 })
+                    .addTo(map)
+                    .bindPopup(`<b style="color:#2dd4a0">🏭 ${mrf.name || 'MRF'}</b>`);
             } catch (e) {
-                console.warn('MRF lookup failed, using fallback coordinates:', e);
+                console.warn('MRF lookup failed:', e);
             }
-            const icon = L.divIcon({
-                className: "",
-                html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
-                iconSize: [36, 36],
-                iconAnchor: [18, 18]
-            });
-            fallbackMRF = L.marker([mrf.latitude, mrf.longitude], { icon, zIndexOffset: 400, opacity: 0.55 })
-                .addTo(map)
-                .bindPopup(`<b style="color:#2dd4a0">🏭 ${mrf.name}</b><br><span style="color:#8fb89a">MRF collection point</span>`);
         }
 
         function setTile(mode) {
@@ -2570,7 +3016,8 @@
 
         // Splits the road line at the truck's current position: everything behind becomes
         // the green "driven" trail, everything ahead stays amber — so the amber line
-        // visibly erases as the truck moves along the route.
+        // visibly erases as the truck moves along the route. Only ever called once a
+        // truck marker has actually been placed from a live GPS ping.
         function updateRouteProgress(lat, lng) {
             if (!drawnCoords.length || !progressPolyline || !trailPolyline) return;
             const current = L.latLng(lat, lng);
@@ -2699,52 +3146,73 @@
         }
 
         async function loadTodayTruck() {
+            const statusEl = document.getElementById('todayTruck');
             try {
                 const data = await apiFetch('/api/resident/today-truck');
                 if (!data) {
-                    document.getElementById('todayTruck').textContent = 'No truck assigned today.';
+                    statusEl.textContent = 'No truck assigned today.';
                     initMap();
                     startUserTracking();
                     return;
                 }
                 currentTruckId = data.truck_id;
-                document.getElementById('todayTruck').innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
+                routeStarted = !!data.route_started;
+                hasLiveTruckLocation = !!data.has_live_location;
+
+                if (!routeStarted) {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--amber)">· Not on route yet</span>`;
+                } else if (!hasLiveTruckLocation) {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--amber)">· Waiting for GPS…</span>`;
+                } else {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
+                }
 
                 if (data.route_id) {
                     try {
                         const routeData = await apiFetch(`/api/resident/route-waypoints?route_id=${data.route_id}`);
                         const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
                         if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
-                            initMap(parsed.road[0]?.lat || data.latitude || 8.2317, parsed.road[0]?.lng || data.longitude || 123.4018);
+                            initMap(parsed.road[0]?.lat || DEFAULT_CENTER.lat, parsed.road[0]?.lng || DEFAULT_CENTER.lng);
                             showRouteWithTrail(parsed);
                         } else {
-                            initMap(data.latitude || 8.2317, data.longitude || 123.4018);
+                            initMap();
                         }
                     } catch (e) {
                         console.warn('route-waypoints failed', e);
-                        initMap(data.latitude || 8.2317, data.longitude || 123.4018);
+                        initMap();
                     }
                 } else {
-                    initMap(data.latitude || 8.2317, data.longitude || 123.4018);
+                    initMap();
                 }
 
-                if (data.latitude && data.longitude) placeTruckMarker(data.latitude, data.longitude, false);
+                // Only place the truck marker (and start the road "erasing" trail)
+                // once the driver has actually pressed Start Route AND we have a
+                // fresh GPS ping — otherwise this was showing a static depot
+                // position as if it were a live truck.
+                if (routeStarted && hasLiveTruckLocation && data.latitude && data.longitude) {
+                    placeTruckMarker(data.latitude, data.longitude, false);
+                }
+
                 startUserTracking();
-                pollTruckLocation();
-                setInterval(pollTruckLocation, 10000);
+
+                if (routeStarted) {
+                    pollTruckLocation();
+                    setInterval(pollTruckLocation, 10000);
+                }
             } catch (err) {
                 console.error('loadTodayTruck failed:', err);
-                document.getElementById('todayTruck').textContent = 'Failed to load truck.';
+                statusEl.textContent = 'Failed to load truck.';
                 initMap();
                 startUserTracking();
             }
         }
 
         async function pollTruckLocation() {
-            if (!currentTruckId) return;
+            if (!currentTruckId || !routeStarted) return;
             try {
                 const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
                 if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) {
+                    hasLiveTruckLocation = true;
                     placeTruckMarker(logs[0].latitude, logs[0].longitude, true);
                 }
             } catch (e) { console.warn('Truck poll failed', e); }
@@ -2770,8 +3238,8 @@
 
         function centerOnUser() {
             if (!map) { showToast('Map not ready', 'error'); return; }
-            const lat = userLat || lastKnownLocation?.lat || 8.2317;
-            const lng = userLng || lastKnownLocation?.lng || 123.4018;
+            const lat = userLat || lastKnownLocation?.lat || DEFAULT_CENTER.lat;
+            const lng = userLng || lastKnownLocation?.lng || DEFAULT_CENTER.lng;
             map.setView([lat, lng], 16, { animate: true });
             showToast('Centered on your location');
         }
@@ -2834,11 +3302,7 @@
             locationWatchId = navigator.geolocation?.watchPosition(
                 pos => {
                     const { latitude, longitude, accuracy } = pos.coords;
-                    if (accuracy < 100) {
-                        placeUserMarker(latitude, longitude, accuracy);
-                    } else {
-                        placeUserMarker(latitude, longitude, accuracy);
-                    }
+                    placeUserMarker(latitude, longitude, accuracy);
                 },
                 (err) => { console.warn('Watch position error:', err); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
             );
@@ -2865,12 +3329,8 @@
                     navigator.geolocation?.getCurrentPosition(
                         pos => {
                             const { latitude, longitude, accuracy } = pos.coords;
-                            if (accuracy < 100) {
-                                placeUserMarker(latitude, longitude, accuracy);
-                                pushMyLocation(latitude, longitude);
-                            } else {
-                                pushMyLocation(latitude, longitude);
-                            }
+                            placeUserMarker(latitude, longitude, accuracy);
+                            pushMyLocation(latitude, longitude);
                         },
                         () => {
                             showToast('Could not get location. Using last known.', 'error');
@@ -2884,10 +3344,8 @@
                     navigator.geolocation?.getCurrentPosition(
                         pos => {
                             const { latitude, longitude, accuracy } = pos.coords;
-                            if (accuracy < 100) {
-                                placeUserMarker(latitude, longitude, accuracy);
-                                pushMyLocation(latitude, longitude);
-                            }
+                            placeUserMarker(latitude, longitude, accuracy);
+                            pushMyLocation(latitude, longitude);
                         },
                         () => {
                             if (lastKnownLocation) {
@@ -3032,6 +3490,79 @@
             renderAnnouncements();
         }
 
+        /* ── PROFILE ── */
+        async function loadProfile() {
+            try {
+                const p = await apiFetch('/api/resident/profile');
+                window._profile = p;
+                const nameEl = document.getElementById('navUserName');
+                const initialEl = document.getElementById('userInitial');
+                const drawerName = document.getElementById('drawerUserName');
+                const displayName = p.name || 'Resident';
+                if (nameEl) nameEl.textContent = displayName;
+                if (initialEl) initialEl.textContent = displayName.trim().charAt(0).toUpperCase() || 'R';
+                if (drawerName) drawerName.textContent = displayName;
+
+                const pName = document.getElementById('profileName');
+                const pEmail = document.getElementById('profileEmail');
+                const pPhone = document.getElementById('profilePhone');
+                if (pName) pName.value = p.name || '';
+                if (pEmail) pEmail.value = p.email || '';
+                if (pPhone) pPhone.value = p.phone || '';
+            } catch (e) {
+                console.warn('loadProfile failed', e);
+                const nameEl = document.getElementById('navUserName');
+                const drawerName = document.getElementById('drawerUserName');
+                if (nameEl) nameEl.textContent = 'Resident';
+                if (drawerName) drawerName.textContent = 'Resident';
+            }
+        }
+
+        async function handleProfileSave(e) {
+            e.preventDefault();
+            const name = document.getElementById('profileName')?.value.trim();
+            const phone = document.getElementById('profilePhone')?.value.trim();
+            if (!name) { showToast('Name is required', 'error'); return; }
+            try {
+                await apiFetch('/api/resident/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, phone })
+                });
+                showToast('Profile updated');
+                loadProfile();
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to update profile', 'error');
+            }
+        }
+
+        async function handlePasswordChange(e) {
+            e.preventDefault();
+            const current = document.getElementById('currentPassword')?.value;
+            const next = document.getElementById('newPassword')?.value;
+            const confirmVal = document.getElementById('confirmPassword')?.value;
+            if (!current || !next) { showToast('Fill in all password fields', 'error'); return; }
+            if (next.length < 8) { showToast('New password must be at least 8 characters', 'error'); return; }
+            if (next !== confirmVal) { showToast('Passwords do not match', 'error'); return; }
+            try {
+                await apiFetch('/api/resident/change-password', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_password: current, new_password: next })
+                });
+                showToast('Password changed successfully');
+                ['currentPassword', 'newPassword', 'confirmPassword'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to change password. Check your current password.', 'error');
+            }
+        }
+
+        /* ── REPORT FORM ── */
         let reportPhotoBase64 = null,
             reportLat = null,
             reportLng = null;
@@ -3042,25 +3573,58 @@
             if (countEl) countEl.textContent = `${len} / 500`;
         }
 
+        // Resizes/compresses the photo client-side instead of hard-rejecting large
+        // phone camera photos. This removes the old 2MB block while still keeping
+        // the upload a reasonable size.
+        function compressImage(file, maxDim = 1600, quality = 0.75) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(reader.error || new Error('Could not read file'));
+                reader.onload = ev => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('Invalid image file'));
+                    img.onload = () => {
+                        let { width, height } = img;
+                        if (width > maxDim || height > maxDim) {
+                            const scale = maxDim / Math.max(width, height);
+                            width = Math.round(width * scale);
+                            height = Math.round(height * scale);
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         function handlePhotoChange(e) {
             const file = e.target.files[0];
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('Photo must be under 2 MB', 'error');
-                e.target.value = '';
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = ev => {
-                reportPhotoBase64 = ev.target.result;
+
+            const dropZone = document.getElementById('photoDrop');
+            const originalLabel = dropZone?.querySelector('.photo-drop-label')?.textContent;
+            const labelEl = dropZone?.querySelector('.photo-drop-label');
+            if (labelEl) labelEl.textContent = 'Processing photo…';
+
+            compressImage(file).then(dataUrl => {
+                reportPhotoBase64 = dataUrl;
                 const previewImg = document.getElementById('photoPreviewImg');
                 const previewWrap = document.getElementById('photoPreviewWrap');
-                const dropZone = document.getElementById('photoDrop');
                 if (previewImg) previewImg.src = reportPhotoBase64;
                 if (previewWrap) previewWrap.style.display = 'block';
                 if (dropZone) dropZone.style.display = 'none';
-            };
-            reader.readAsDataURL(file);
+            }).catch(err => {
+                console.error('Photo processing failed:', err);
+                showToast('Could not process that photo. Try another.', 'error');
+                if (labelEl && originalLabel) labelEl.textContent = originalLabel;
+                e.target.value = '';
+            });
         }
 
         function removePhoto() {
@@ -3068,9 +3632,11 @@
             const photoInput = document.getElementById('photoInput');
             const previewWrap = document.getElementById('photoPreviewWrap');
             const dropZone = document.getElementById('photoDrop');
+            const labelEl = dropZone?.querySelector('.photo-drop-label');
             if (photoInput) photoInput.value = '';
             if (previewWrap) previewWrap.style.display = 'none';
             if (dropZone) dropZone.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Tap to take a photo or choose from gallery';
         }
 
         function captureLocation() {
@@ -3210,12 +3776,21 @@
             toggleScheduleAll,
             toggleAnnAll,
             expandAnn,
-            toggleDrawer
+            toggleDrawer,
+            closeDrawer,
+            toggleTheme,
+            openModal,
+            closeModal,
+            switchProfileTab,
+            switchTermsTab,
+            handleProfileSave,
+            handlePasswordChange
         });
 
         loadTodayTruck();
         loadSchedule();
         loadAnnouncements();
+        loadProfile();
     </script>
 </body>
 

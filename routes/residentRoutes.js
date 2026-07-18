@@ -24,4 +24,9 @@ router.post('/share-location', auth.protect, residentController.shareMyLocation)
 router.get('/resident-locations', auth.protect, residentController.getResidentLocations);
 router.get('/mrf-location', auth.protect, residentController.getMRFLocation);
 
+// Profile / account management
+router.get('/profile', auth.protect, residentController.getProfile);
+router.put('/profile', auth.protect, residentController.updateProfile);
+router.put('/change-password', auth.protect, residentController.changePassword);
+
 module.exports = router;

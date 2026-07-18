@@ -1,4 +1,7 @@
 const db = require("../config/db");
+// NOTE: adjust this import if your login/auth code hashes passwords with a
+// different library — this file assumes the same `bcryptjs` used elsewhere.
+const bcrypt = require("bcryptjs");
 
 
 function parseWaypoints(raw) {
@@ -39,11 +42,16 @@ function parseWaypoints(raw) {
     }
 }
 
+// A truck is only "really" trackable once the driver has pressed Start Route
+// (route_assignments.status === 'in_progress') AND has a GPS ping within the
+// last few minutes. Otherwise we were previously showing the truck's static
+// depot coordinates as if it were live, which is the bug being fixed here.
+const LIVE_LOCATION_FRESHNESS_MS = 3 * 60 * 1000;
 
 exports.getTodayTruck = async (req, res) => {
     try {
         const [assignment] = await db.query(`
-            SELECT ra.*, t.plate_number, t.model, t.latitude, t.longitude,
+            SELECT ra.*, t.plate_number, t.model,
                    r.id as route_id, r.zone_name, r.waypoints_json
             FROM route_assignments ra
             JOIN trucks t ON ra.truck_id = t.id
@@ -52,17 +60,44 @@ exports.getTodayTruck = async (req, res) => {
             LIMIT 1
         `);
 
-        if (assignment[0] && assignment[0].waypoints_json) {
-            const route = assignment[0];
-            route.parsed_waypoints = parseWaypoints(route.waypoints_json);
+        if (!assignment[0]) {
+            return res.json(null);
         }
-        res.json(assignment[0] || null);
+
+        const route = assignment[0];
+        route.parsed_waypoints = route.waypoints_json
+            ? parseWaypoints(route.waypoints_json)
+            : { road: [], pins: [], mrfs: [] };
+
+        route.route_started = route.status === "in_progress";
+        route.has_live_location = false;
+        route.latitude = null;
+        route.longitude = null;
+
+        if (route.route_started) {
+            const [logs] = await db.query(
+                `SELECT latitude, longitude, recorded_at FROM gps_logs
+                 WHERE truck_id = ? ORDER BY recorded_at DESC LIMIT 1`,
+                [route.truck_id]
+            ).catch(() => [[]]);
+
+            const latest = logs && logs[0];
+            const isFresh = latest &&
+                (Date.now() - new Date(latest.recorded_at).getTime()) < LIVE_LOCATION_FRESHNESS_MS;
+
+            if (isFresh) {
+                route.has_live_location = true;
+                route.latitude = latest.latitude;
+                route.longitude = latest.longitude;
+            }
+        }
+
+        res.json(route);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.getRouteWaypoints = async (req, res) => {
     try {
@@ -106,7 +141,6 @@ exports.getRouteWaypoints = async (req, res) => {
     }
 };
 
-
 exports.getPickupSchedule = async (req, res) => {
     try {
         const [schedule] = await db.query(`
@@ -124,9 +158,21 @@ exports.getPickupSchedule = async (req, res) => {
     }
 };
 
-
 exports.getTruckLocation = async (req, res) => {
     try {
+        const truckId = req.params.truckId;
+
+        // Don't return any location data (fresh or stale) unless today's
+        // assignment for this truck has actually been started by the driver.
+        const [assignment] = await db.query(
+            `SELECT status FROM route_assignments
+             WHERE truck_id = ? AND assigned_date = CURDATE() LIMIT 1`,
+            [truckId]
+        );
+        if (!assignment[0] || assignment[0].status !== "in_progress") {
+            return res.json([]);
+        }
+
         const [tables] = await db.query(
             "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'gps_logs'"
         );
@@ -140,15 +186,20 @@ exports.getTruckLocation = async (req, res) => {
             FROM gps_logs
             WHERE truck_id = ?
             ORDER BY recorded_at DESC LIMIT 50
-        `, [req.params.truckId]);
+        `, [truckId]);
 
-        res.json(logs);
+        // Only trust pings from the last few minutes — an old parked/last-known
+        // ping shouldn't make the truck look live on the resident's map.
+        const fresh = logs.filter(l =>
+            (Date.now() - new Date(l.recorded_at).getTime()) < LIVE_LOCATION_FRESHNESS_MS
+        );
+
+        res.json(fresh);
     } catch (err) {
         console.error(err);
         res.json([]);
     }
 };
-
 
 exports.createReport = async (req, res) => {
     try {
@@ -163,9 +214,13 @@ exports.createReport = async (req, res) => {
             return res.status(400).json({ error: "Image required" });
         }
 
-        if (image_url && image_url.length > 5 * 1024 * 1024) {
-            return res.status(400).json({ error: "Image too large" });
-        }
+        // The old 5MB base64 cap here (and the 2MB cap on the frontend) was
+        // rejecting normal phone camera photos. The frontend now downsizes /
+        // compresses images before upload instead of hard-blocking them, so
+        // this size check has been removed.
+        // If uploads still fail, raise the JSON body limit on the Express app
+        // itself, e.g. in your server entrypoint:
+        //   app.use(express.json({ limit: '15mb' }));
 
         await db.query(`
             INSERT INTO reports (resident_id, type, description, latitude, longitude, image_url)
@@ -179,7 +234,6 @@ exports.createReport = async (req, res) => {
     }
 };
 
-
 exports.getReports = async (req, res) => {
     try {
         const [reports] = await db.query(`
@@ -190,7 +244,6 @@ exports.getReports = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.getNotifications = async (req, res) => {
     try {
@@ -203,7 +256,6 @@ exports.getNotifications = async (req, res) => {
     }
 };
 
-
 exports.getAnnouncements = async (req, res) => {
     try {
         const [data] = await db.query(`
@@ -214,7 +266,6 @@ exports.getAnnouncements = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.shareMyLocation = async (req, res) => {
     try {
@@ -255,19 +306,90 @@ exports.getResidentLocations = async (req, res) => {
 
 exports.getMRFLocation = async (req, res) => {
     try {
-        const [[mrf]] = await db.query(
-            `SELECT value FROM app_settings WHERE key = 'mrf_location' LIMIT 1`
-        ).catch(() => [[null]]);
+        const [rows] = await db.query(
+            `SELECT value FROM app_settings WHERE \`key\` = 'mrf_location' LIMIT 1`
+        ).catch(() => [[]]);
+
+        const mrf = rows && rows[0];
 
         if (mrf) {
             return res.json(JSON.parse(mrf.value));
         }
 
-        res.json({
-            name: "Jose Dalman MRF",
-            latitude: 8.2317,
-            longitude: 123.4018
-        });
+        // No hardcoded fallback anymore — if the MRF hasn't been configured
+        // in app_settings, tell the frontend there simply isn't one to show.
+        res.json(null);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ---------------------------------------------------------------------
+// Profile / account management
+// ---------------------------------------------------------------------
+
+exports.getProfile = async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT id, name, email, phone, role FROM users WHERE id = ?`,
+            [req.user.id]
+        );
+        const user = rows && rows[0];
+        if (!user) return res.status(404).json({ error: "User not found" });
+        res.json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const { name, phone } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: "Name is required" });
+        }
+
+        await db.query(
+            `UPDATE users SET name = ?, phone = ? WHERE id = ?`,
+            [name.trim(), phone ? phone.trim() : null, req.user.id]
+        );
+
+        res.json({ message: "Profile updated" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.changePassword = async (req, res) => {
+    try {
+        const { current_password, new_password } = req.body;
+
+        if (!current_password || !new_password) {
+            return res.status(400).json({ error: "current_password and new_password are required" });
+        }
+        if (new_password.length < 8) {
+            return res.status(400).json({ error: "New password must be at least 8 characters" });
+        }
+
+        const [rows] = await db.query(
+            `SELECT password FROM users WHERE id = ?`,
+            [req.user.id]
+        );
+        const user = rows && rows[0];
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const matches = await bcrypt.compare(current_password, user.password);
+        if (!matches) {
+            return res.status(401).json({ error: "Current password is incorrect" });
+        }
+
+        const hashed = await bcrypt.hash(new_password, 10);
+        await db.query(`UPDATE users SET password = ? WHERE id = ?`, [hashed, req.user.id]);
+
+        res.json({ message: "Password changed successfully" });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
