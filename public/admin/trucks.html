@@ -8,8 +8,49 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="../js/style.js"></script>
     <style>
+        /* ---- Fix z-index layering ----
+           Leaflet map uses high z-index values by default.
+           We need to ensure sidebar and overlay are above it.
+        */
+
+        /* Force sidebar to be above map */
+        .sidebar {
+            z-index: 1000 !important;
+        }
+
+        .sidebar-overlay {
+            z-index: 999 !important;
+        }
+
+        /* Ensure modals are above everything */
+        .modal-overlay {
+            z-index: 2000 !important;
+        }
+
+        /* Toast notifications above modals */
+        .toast-container {
+            z-index: 9000 !important;
+        }
+
+        /* Topbar above map but below sidebar */
+        .topbar {
+            z-index: 500 !important;
+        }
+
+        /* Override Leaflet's default z-index */
+        .leaflet-control-container,
+        .leaflet-pane,
+        .leaflet-top,
+        .leaflet-bottom,
+        .leaflet-control {
+            z-index: 400 !important;
+        }
+
+        .leaflet-map-pane {
+            z-index: 100 !important;
+        }
+
         /* ---- consistent with Routes page ---- */
         .trucks-layout {
             display: grid;
@@ -193,6 +234,8 @@
             height: 420px;
             width: 100%;
             background: var(--bg2);
+            position: relative;
+            z-index: 1;
         }
 
         .map-toolbar {
@@ -256,6 +299,20 @@
 
             .detail-stats {
                 flex-wrap: wrap;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1000 !important;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
             }
         }
 
@@ -419,6 +476,20 @@
             width: 100%;
             background: var(--bg2);
             border-radius: 8px;
+        }
+
+        /* Sidebar overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999 !important;
+            transition: background 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
         }
     </style>
 </head>
@@ -706,6 +777,148 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        // ---- SIDEBAR TOGGLE - FIXED (no external dependencies) ----
+        (function () {
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initSidebar);
+            } else {
+                initSidebar();
+            }
+
+            function initSidebar() {
+                console.log('🔄 Initializing sidebar...');
+
+                var hamburger = document.getElementById('hamburger');
+                var sidebar = document.getElementById('sidebar');
+                var overlay = document.getElementById('sidebarOverlay');
+
+                if (!hamburger) {
+                    console.warn('⚠️ Hamburger button not found');
+                    return;
+                }
+                if (!sidebar) {
+                    console.warn('⚠️ Sidebar not found');
+                    return;
+                }
+
+                console.log('✅ Sidebar elements found, attaching events...');
+
+                function toggleSidebar(e) {
+                    if (e) e.stopPropagation();
+                    console.log('🔄 Toggling sidebar');
+                    sidebar.classList.toggle('open');
+                    if (overlay) {
+                        overlay.classList.toggle('active');
+                    }
+                }
+
+                // Remove any existing listeners to avoid duplicates
+                var newHamburger = hamburger.cloneNode(true);
+                hamburger.parentNode.replaceChild(newHamburger, hamburger);
+                newHamburger.addEventListener('click', toggleSidebar);
+
+                // Store reference for other uses
+                window.__hamburger = newHamburger;
+
+                if (overlay) {
+                    var newOverlay = overlay.cloneNode(true);
+                    overlay.parentNode.replaceChild(newOverlay, overlay);
+                    newOverlay.addEventListener('click', toggleSidebar);
+                    window.__overlay = newOverlay;
+                }
+
+                // Close sidebar on nav item click (mobile)
+                document.querySelectorAll('.sidebar-nav .nav-item').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        if (window.innerWidth <= 820) {
+                            if (sidebar) sidebar.classList.remove('open');
+                            if (overlay) overlay.classList.remove('active');
+                        }
+                    });
+                });
+
+                console.log('✅ Sidebar initialization complete');
+            }
+        })();
+
+        // ---- THEME TOGGLE ----
+        (function () {
+            function toggleTheme() {
+                var html = document.documentElement;
+                var currentTheme = html.getAttribute('data-theme');
+                var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeUI(newTheme);
+            }
+
+            function updateThemeUI(theme) {
+                var toggle = document.getElementById('themeToggleBtn');
+                if (!toggle) return;
+                var icon = toggle.querySelector('.theme-icon');
+                var label = toggle.querySelector('.theme-label');
+                if (theme === 'dark') {
+                    if (icon) icon.textContent = '☀️';
+                    if (label) label.textContent = 'Light Mode';
+                    toggle.classList.add('dark');
+                } else {
+                    if (icon) icon.textContent = '🌙';
+                    if (label) label.textContent = 'Dark Mode';
+                    toggle.classList.remove('dark');
+                }
+            }
+
+            // Load saved theme
+            var savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+
+            // Wait for DOM
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function () {
+                    var themeToggle = document.getElementById('themeToggleBtn');
+                    if (themeToggle) {
+                        themeToggle.addEventListener('click', toggleTheme);
+                        updateThemeUI(document.documentElement.getAttribute('data-theme') || 'light');
+                    }
+                });
+            } else {
+                var themeToggle = document.getElementById('themeToggleBtn');
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', toggleTheme);
+                    updateThemeUI(document.documentElement.getAttribute('data-theme') || 'light');
+                }
+            }
+
+            // Make toggleTheme globally available
+            window.toggleTheme = toggleTheme;
+        })();
+
+        // ---- REVEAL ANIMATIONS ----
+        (function () {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initReveal);
+            } else {
+                initReveal();
+            }
+
+            function initReveal() {
+                var observer = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                        }
+                    });
+                }, { threshold: 0.1 });
+
+                document.querySelectorAll('.reveal').forEach(function (el) {
+                    observer.observe(el);
+                });
+            }
+        })();
+
         // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
