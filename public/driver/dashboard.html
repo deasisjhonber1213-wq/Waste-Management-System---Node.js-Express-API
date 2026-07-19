@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SmartWaste · Driver Portal (Real-time)</title>
+
+    <!-- Theme preload (prevents flash of wrong theme on load) -->
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") ||
+                (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -26,16 +35,38 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: #0d0f12;
-            color: #e8ecf2;
-            min-height: 100vh;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
+        :root {
+            /* Light mode (default) */
+            --bg: #f5f7fb;
+            --bg2: #eef1f5;
+            --bg3: #f8fafc;
+            --panel: #ffffff;
+            --border: rgba(201, 146, 30, .15);
+            --border2: #e9edf2;
+            --amber: #c9921e;
+            --amber2: #e0a934;
+            --amber-dim: rgba(201, 146, 30, .08);
+            --amber-mid: rgba(201, 146, 30, .25);
+            --green: #2ecc71;
+            --green-dim: rgba(46, 204, 113, .12);
+            --red: #e74c3c;
+            --red-dim: rgba(231, 76, 60, .12);
+            --blue: #3b82f6;
+            --blue-dim: rgba(59, 130, 246, .12);
+            --gray: #94a3b8;
+            --gray-dim: rgba(148, 163, 184, .15);
+            --text: #1e293b;
+            --text2: #475569;
+            --text3: #94a3b8;
+            --modal-overlay: rgba(0, 0, 0, .4);
+            --shadow-hover: 0 8px 28px rgba(0, 0, 0, .08);
+            --sidebar-w: 280px;
+            --topbar-h: 60px;
+            --font: 'Inter', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
         }
 
-        :root {
+        [data-theme="dark"] {
             --bg: #0d0f12;
             --bg2: #131720;
             --bg3: #1a1f2e;
@@ -49,15 +80,52 @@
             --green: #2dd4a0;
             --green-dim: rgba(45, 212, 160, .1);
             --red: #ff5e5e;
+            --red-dim: rgba(255, 94, 94, .1);
             --blue: #5b9cf6;
             --blue-dim: rgba(91, 156, 246, .1);
+            --gray: #3d4558;
+            --gray-dim: rgba(61, 69, 88, .35);
             --text: #e8ecf2;
             --text2: #7a8499;
             --text3: #3d4558;
-            --sidebar-w: 280px;
-            --topbar-h: 60px;
-            --font: 'Inter', sans-serif;
-            --mono: 'JetBrains Mono', monospace;
+            --modal-overlay: rgba(0, 0, 0, .7);
+            --shadow-hover: 0 8px 28px rgba(0, 0, 0, .4);
+        }
+
+        html {
+            transition: background .3s, color .3s;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color .3s, color .3s;
+        }
+
+        body,
+        .sidebar,
+        .topbar,
+        .panel,
+        .stat-card,
+        .theme-toggle,
+        .modal,
+        .today-card,
+        .map-card,
+        .form-card,
+        .ann-card,
+        .profile-header-card,
+        .route-info-box,
+        .sched-card,
+        .trip-card,
+        .report-card,
+        .wp-item,
+        .gps-toggle,
+        .driver-card {
+            transition: background-color .25s, color .25s, border-color .25s, box-shadow .25s;
         }
 
         ::-webkit-scrollbar {
@@ -177,6 +245,12 @@
             color: var(--green);
         }
 
+        .status-cancelled {
+            background: var(--gray-dim);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+        }
+
         .badge {
             display: inline-flex;
             align-items: center;
@@ -207,6 +281,12 @@
             color: var(--blue);
         }
 
+        .badge-gray {
+            background: var(--gray-dim);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+        }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -225,6 +305,10 @@
 
         .btn-primary {
             background: var(--amber);
+            color: #fff;
+        }
+
+        [data-theme="dark"] .btn-primary {
             color: var(--bg);
         }
 
@@ -242,7 +326,7 @@
 
         .btn-success:hover {
             background: var(--green);
-            color: var(--bg);
+            color: #fff;
         }
 
         .btn-ghost {
@@ -256,6 +340,17 @@
             border-color: var(--amber-mid);
             color: var(--amber);
             background: var(--amber-dim);
+        }
+
+        .btn-danger {
+            background: var(--red-dim);
+            border: 1px solid rgba(231, 76, 60, .3);
+            color: var(--red);
+        }
+
+        .btn-danger:hover {
+            background: var(--red);
+            color: #fff;
         }
 
         /* ── Connection Status ── */
@@ -305,18 +400,18 @@
             top: 0;
             bottom: 0;
             width: var(--sidebar-w);
-            background: var(--bg2);
-            border-right: 1px solid var(--border);
+            background: var(--panel);
+            border-right: 1px solid var(--border2);
             z-index: 1500;
             display: flex;
             flex-direction: column;
-            transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+            transition: transform .3s cubic-bezier(.4, 0, .2, 1), background-color .25s, border-color .25s;
             overflow: hidden;
         }
 
         .sidebar-logo {
             padding: 28px 20px 24px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border2);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -332,7 +427,7 @@
             align-items: center;
             justify-content: center;
             font-size: 22px;
-            color: var(--bg);
+            color: #fff;
             font-weight: 800;
             flex-shrink: 0;
             box-shadow: 0 4px 12px rgba(245, 166, 35, .2);
@@ -348,55 +443,8 @@
             font-weight: 500;
         }
 
-        .driver-card {
-            margin: 16px 16px 0;
-            padding: 14px;
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-shrink: 0;
-        }
-
-        .driver-avatar {
-            width: 42px;
-            height: 42px;
-            background: var(--amber-dim);
-            border: 2px solid var(--amber-mid);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: var(--amber);
-            flex-shrink: 0;
-        }
-
-        .driver-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .driver-name {
-            font-size: .85rem;
-            font-weight: 700;
-            letter-spacing: -0.01em;
-        }
-
-        .driver-role {
-            font-size: .6rem;
-            color: var(--amber);
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            font-family: var(--mono);
-            font-weight: 600;
-        }
-
         .gps-toggle {
-            margin: 12px 16px;
+            margin: 16px 16px 0;
             padding: 10px 14px;
             border-radius: 10px;
             border: 1px solid var(--border2);
@@ -497,7 +545,7 @@
         }
 
         .nav-item:hover {
-            background: var(--bg3);
+            background: var(--bg2);
             color: var(--text);
         }
 
@@ -530,7 +578,7 @@
             min-width: 20px;
             height: 20px;
             background: var(--amber);
-            color: var(--bg);
+            color: #fff;
             border-radius: 10px;
             font-size: .6rem;
             font-weight: 700;
@@ -540,10 +588,131 @@
             padding: 0 6px;
         }
 
+        /* ── Theme Toggle (nav) ── */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            height: 46px;
+            padding: 0 14px;
+            margin: 4px 0 8px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+            transition: .2s;
+            font-family: var(--font);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--amber-mid);
+            background: var(--amber-dim);
+        }
+
+        .theme-icon {
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--amber-dim);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .theme-label {
+            flex: 1;
+            text-align: left;
+            margin-left: 10px;
+            font-size: .78rem;
+            font-weight: 600;
+        }
+
+        .theme-switch {
+            width: 38px;
+            height: 20px;
+            background: var(--bg2);
+            border-radius: 30px;
+            position: relative;
+            transition: .3s;
+            flex-shrink: 0;
+        }
+
+        .theme-knob {
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--amber);
+            transition: .3s;
+        }
+
+        .theme-toggle.dark .theme-knob {
+            transform: translateX(18px);
+        }
+
+        .theme-toggle.dark .theme-switch {
+            background: rgba(245, 166, 35, .2);
+        }
+
         .sidebar-footer {
             padding: 16px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border2);
             flex-shrink: 0;
+        }
+
+        .driver-card {
+            padding: 12px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .driver-avatar {
+            width: 38px;
+            height: 38px;
+            background: var(--amber-dim);
+            border: 2px solid var(--amber-mid);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--amber);
+            flex-shrink: 0;
+        }
+
+        .driver-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .driver-name {
+            font-size: .82rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .driver-role {
+            font-size: .58rem;
+            color: var(--amber);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            font-family: var(--mono);
+            font-weight: 600;
         }
 
         .btn-logout {
@@ -552,8 +721,8 @@
             gap: 8px;
             width: 100%;
             padding: 10px 14px;
-            background: var(--bg3);
-            border: 1px solid var(--border);
+            background: transparent;
+            border: 1px solid var(--border2);
             border-radius: 10px;
             font-family: var(--font);
             font-size: .75rem;
@@ -563,6 +732,7 @@
             cursor: pointer;
             transition: all .2s;
             text-decoration: none;
+            justify-content: center;
         }
 
         .btn-logout:hover {
@@ -575,7 +745,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, .6);
+            background: var(--modal-overlay);
             z-index: 1499;
             backdrop-filter: blur(2px);
         }
@@ -594,9 +764,9 @@
 
         .topbar {
             height: var(--topbar-h);
-            background: rgba(13, 15, 18, .95);
+            background: var(--panel);
             backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border2);
             display: flex;
             align-items: center;
             padding: 0 28px;
@@ -679,7 +849,7 @@
 
         .stat-card {
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 16px;
             padding: 20px;
             transition: transform .2s, border-color .2s;
@@ -687,7 +857,7 @@
 
         .stat-card:hover {
             transform: translateY(-2px);
-            border-color: var(--border2);
+            border-color: var(--amber-mid);
         }
 
         /* ── Today Card ── */
@@ -724,7 +894,7 @@
         .today-footer {
             padding: 16px 28px;
             background: var(--bg3);
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border2);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -737,6 +907,15 @@
 
         .today-card.completed::before {
             background: linear-gradient(90deg, var(--green), transparent);
+        }
+
+        .today-card.cancelled {
+            border-color: var(--border2);
+            opacity: .85;
+        }
+
+        .today-card.cancelled::before {
+            background: linear-gradient(90deg, var(--text3), transparent);
         }
 
         .completed-banner {
@@ -753,7 +932,7 @@
             height: 38px;
             border-radius: 50%;
             background: var(--green);
-            color: var(--bg);
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -763,11 +942,25 @@
             box-shadow: 0 0 0 4px rgba(45, 212, 160, .18);
         }
 
+        .completed-banner.cancelled {
+            background: var(--gray-dim);
+            border-top-color: var(--border2);
+        }
+
+        .completed-banner.cancelled .check-circle {
+            background: var(--text3);
+            box-shadow: 0 0 0 4px var(--gray-dim);
+        }
+
         .completed-banner .completed-title {
             font-weight: 800;
             color: var(--green);
             font-size: .85rem;
             letter-spacing: -.01em;
+        }
+
+        .completed-banner.cancelled .completed-title {
+            color: var(--text2);
         }
 
         .completed-banner .completed-sub {
@@ -781,7 +974,7 @@
         /* ── Map ── */
         .map-card {
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 18px;
             overflow: hidden;
             margin-bottom: 24px;
@@ -790,7 +983,7 @@
         .map-toolbar {
             padding: 12px 20px;
             background: var(--bg3);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border2);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -816,7 +1009,7 @@
             font-size: .65rem;
             font-weight: 600;
             letter-spacing: .04em;
-            background: var(--bg);
+            background: var(--panel);
             border: 1px solid var(--border2);
             color: var(--text2);
             cursor: pointer;
@@ -867,7 +1060,7 @@
             align-items: center;
             padding: 8px 16px;
             background: var(--bg3);
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border2);
             flex-wrap: wrap;
             font-family: var(--mono);
             font-size: .6rem;
@@ -937,7 +1130,7 @@
             align-items: center;
             gap: 16px;
             padding: 10px 20px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border2);
             background: var(--bg3);
             font-family: var(--mono);
             font-size: .7rem;
@@ -958,7 +1151,7 @@
         /* ── Route Panel ── */
         .route-info-box {
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 16px;
             padding: 20px;
             margin-top: 20px;
@@ -1013,7 +1206,7 @@
             gap: 12px;
             padding: 10px 14px;
             background: var(--bg3);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 10px;
             font-size: .8rem;
             transition: border-color .2s;
@@ -1048,7 +1241,7 @@
         .wp-num.done {
             background: var(--green);
             border-color: var(--green);
-            color: var(--bg);
+            color: #fff;
         }
 
         .wp-name {
@@ -1073,7 +1266,7 @@
             gap: 16px;
             padding: 16px 20px;
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 14px;
         }
 
@@ -1116,7 +1309,7 @@
             gap: 16px;
             padding: 14px 20px;
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 14px;
         }
 
@@ -1136,7 +1329,7 @@
         /* ── Forms ── */
         .form-card {
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 18px;
             padding: 28px;
             margin-bottom: 28px;
@@ -1193,7 +1386,7 @@
             align-items: flex-start;
             padding: 18px 20px;
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 14px;
             flex-wrap: wrap;
         }
@@ -1246,7 +1439,7 @@
         /* ── Announcements ── */
         .ann-card {
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 16px;
             overflow: hidden;
             margin-bottom: 16px;
@@ -1284,7 +1477,7 @@
         /* ── Profile ── */
         .profile-header-card {
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border2);
             border-radius: 18px;
             overflow: hidden;
             margin-bottom: 24px;
@@ -1309,7 +1502,7 @@
             justify-content: center;
             font-size: 1.8rem;
             font-weight: 800;
-            color: var(--bg);
+            color: #fff;
             border: 4px solid var(--panel);
         }
 
@@ -1343,7 +1536,7 @@
 
         .divider {
             height: 1px;
-            background: var(--border);
+            background: var(--border2);
             margin: 28px 0;
         }
 
@@ -1388,6 +1581,102 @@
             100% {
                 background-position: -200% 0;
             }
+        }
+
+        /* ── Modal (Logout Confirm etc.) ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--modal-overlay);
+            backdrop-filter: blur(4px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalIn .25s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: .95rem;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text2);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: color .15s;
+        }
+
+        .modal-close:hover {
+            color: var(--red);
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+        }
+
+        .modal-body p {
+            color: var(--text2);
+            font-size: .85rem;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border2);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .modal-footer .btn {
+            padding: 10px 20px;
         }
 
         /* ── Map Markers ── */
@@ -1557,7 +1846,7 @@
 
         #toast.success {
             background: var(--green);
-            color: var(--bg);
+            color: #fff;
         }
 
         #toast.error {
@@ -1567,7 +1856,7 @@
 
         #toast.info {
             background: var(--amber);
-            color: var(--bg);
+            color: #fff;
         }
 
         /* ── Leaflet Overrides ── */
@@ -1667,13 +1956,6 @@
                 <div class="logo-sub">Driver Portal</div>
             </div>
         </div>
-        <div class="driver-card">
-            <div class="driver-avatar" id="sidebarAvatar">?</div>
-            <div class="driver-info">
-                <div class="driver-name" id="sidebarName">Loading…</div>
-                <div class="driver-role">Collector · Driver</div>
-            </div>
-        </div>
         <div class="gps-toggle" id="gpsToggle" onclick="toggleGPS()">
             <div class="gps-dot"></div>
             <span id="gpsLabel">GPS OFF</span>
@@ -1707,9 +1989,23 @@
             <button class="nav-item" data-tab="profile" onclick="switchTab('profile',this)">
                 <span class="nav-icon">👤</span> My Profile
             </button>
+            <div class="nav-label">Preferences</div>
+            <button class="theme-toggle" id="themeToggleBtn">
+                <span class="theme-icon" id="themeIcon">🌙</span>
+                <span class="theme-label" id="themeLabel">Dark Mode</span>
+                <span class="theme-switch"><span class="theme-knob"></span></span>
+            </button>
         </nav>
         <div class="sidebar-footer">
-            <a href="/login.html" class="btn-logout">⎋ &nbsp;Sign Out</a>
+            <div class="driver-card">
+                <div class="driver-avatar" id="sidebarAvatar">?</div>
+                <div class="driver-info">
+                    <div class="driver-name" id="sidebarName">Loading…</div>
+                    <div class="driver-role">Collector · Driver</div>
+                </div>
+            </div>
+            <button type="button" class="btn-logout" onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Sign
+                Out</button>
         </div>
     </aside>
 
@@ -1936,6 +2232,23 @@
         </div>
     </div>
 
+    <!-- Logout Confirmation Modal -->
+    <div class="modal-overlay" id="logoutConfirmModal">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to sign out of the driver portal? Your GPS tracking will stop.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('logoutConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="doLogout()">Yes, Sign Out</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div id="toast"></div>
 
@@ -1994,6 +2307,64 @@
             clearTimeout(el._t);
             el._t = setTimeout(() => el.className = "", 3200);
         }
+
+        // ── Theme Toggle ──
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateThemeIcon(next);
+        }
+        window.toggleTheme = toggleTheme;
+
+        function updateThemeIcon(theme) {
+            const btn = document.getElementById('themeToggleBtn');
+            const icon = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+            if (!btn) return;
+            if (theme === 'dark') {
+                icon.textContent = '☀️';
+                label.textContent = 'Light Mode';
+                btn.classList.add('dark');
+            } else {
+                icon.textContent = '🌙';
+                label.textContent = 'Dark Mode';
+                btn.classList.remove('dark');
+            }
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'theme') {
+                const theme = e.newValue || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                updateThemeIcon(theme);
+            }
+        });
+
+        // ── Modal Helpers ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+        }
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
+        // ── Logout ──
+        function doLogout() {
+            closeModal('logoutConfirmModal');
+            stopGPS();
+            if (socket && socket.connected) socket.disconnect();
+            localStorage.removeItem("token");
+            toast("Signed out", "success");
+            setTimeout(() => { window.location.href = "/login.html"; }, 400);
+        }
+        window.doLogout = doLogout;
 
         // ── Date Helpers ──
         const fmtDate = d => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -3033,24 +3404,36 @@
             }
 
             const isCompleted = data.status === "completed";
+            const isCancelled = data.status === "cancelled";
 
-            const footer = isCompleted
-                ? `<div class="completed-banner">
+            let footer;
+            if (isCompleted) {
+                footer = `<div class="completed-banner">
                         <div class="check-circle">✓</div>
                         <div>
                             <div class="completed-title">Route Completed</div>
                             <div class="completed-sub">Nice work — all done for today 🎉</div>
                         </div>
-                   </div>`
-                : `<div class="today-footer">
+                   </div>`;
+            } else if (isCancelled) {
+                footer = `<div class="completed-banner cancelled">
+                        <div class="check-circle">✕</div>
+                        <div>
+                            <div class="completed-title">Route Cancelled</div>
+                            <div class="completed-sub">This assignment was marked as cancelled</div>
+                        </div>
+                   </div>`;
+            } else {
+                footer = `<div class="today-footer">
                         ${data.status === "in_progress"
-                    ? `<button class="btn btn-success" onclick="updateStatus(${data.id},'completed')">✓ Mark Complete</button>`
-                    : `<button class="btn btn-primary" onclick="updateStatus(${data.id},'in_progress')">▶ Start Route</button>`}
+                        ? `<button class="btn btn-success" onclick="updateStatus(${data.id},'completed')">✓ Mark Complete</button>`
+                        : `<button class="btn btn-primary" onclick="updateStatus(${data.id},'in_progress')">▶ Start Route</button>`}
                         <span class="status-badge status-${data.status}">${(data.status || "pending").replace("_", " ").toUpperCase()}</span>
                    </div>`;
+            }
 
             document.getElementById("assignmentCard").innerHTML = `
-                <div class="today-card ${isCompleted ? 'completed' : ''}">
+                <div class="today-card ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''}">
                     <div class="today-inner">
                         <div class="today-route">📍 ${data.zone_name || "Unknown Zone"}</div>
                         ${data.zone_description ? `<div style="font-size:.78rem;color:var(--text2);margin-top:8px;font-weight:400">${data.zone_description}</div>` : ""}
@@ -3078,6 +3461,13 @@
             } catch (e) { console.warn("loadStats failed:", e); }
         }
 
+        function scheduleBadgeClass(status) {
+            if (status === 'pending') return 'badge-amber';
+            if (status === 'completed') return 'badge-green';
+            if (status === 'cancelled') return 'badge-gray';
+            return 'badge-blue';
+        }
+
         async function loadSchedule() {
             loadFlags.schedule = true;
             const today = new Date().toISOString().slice(0, 10);
@@ -3099,7 +3489,7 @@
                             <div class="sched-zone">📍 ${s.zone_name}</div>
                             <div class="sched-meta">🚛 ${s.plate_number} · ${(s.pickup_type || "REGULAR").replace(/_/g, " ")}</div>
                         </div>
-                        <span class="badge ${s.status === 'pending' ? 'badge-amber' : s.status === 'completed' ? 'badge-green' : 'badge-blue'}">${s.status === 'in_progress' ? 'IN PROGRESS' : s.status.toUpperCase()}</span>
+                        <span class="badge ${scheduleBadgeClass(s.status)}">${s.status === 'in_progress' ? 'IN PROGRESS' : s.status.toUpperCase()}</span>
                     </div>`;
                 }).join("");
             } catch (e) { console.error("loadSchedule failed:", e); }
@@ -3187,7 +3577,7 @@
                             <div class="sched-zone">📍 ${t.zone_name}</div>
                             <div class="sched-meta">🚛 ${t.plate_number}</div>
                         </div>
-                        <span class="badge badge-green">DONE</span>
+                        <span class="badge ${t.status === 'cancelled' ? 'badge-gray' : 'badge-green'}">${t.status === 'cancelled' ? 'CANCELLED' : 'DONE'}</span>
                     </div>`).join("");
             } catch (e) { console.error("loadTrips failed:", e); }
         }
@@ -3197,7 +3587,7 @@
             try {
                 const data = await api("GET", "/profile");
                 const initial = (data.name || "D").charAt(0).toUpperCase();
-                document.getElementById("sidebarName").textContent = data.name?.split(" ")[0] || "Driver";
+                document.getElementById("sidebarName").textContent = data.name || "Driver";
                 document.getElementById("sidebarAvatar").textContent = initial;
                 document.getElementById("profAvatarLarge").textContent = initial;
                 document.getElementById("profNameDisplay").textContent = data.name || "—";
@@ -3226,6 +3616,9 @@
         // ═══════════════════════════════════════
         // INITIALIZATION
         // ═══════════════════════════════════════
+
+        updateThemeIcon(document.documentElement.getAttribute('data-theme') || 'light');
+        document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
 
         connectWebSocket();
         loadToday();

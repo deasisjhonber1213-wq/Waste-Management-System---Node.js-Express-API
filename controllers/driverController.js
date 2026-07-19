@@ -1,5 +1,34 @@
 const db = require("../config/db");
 
+// ─────────────────────────────────────────────────────────
+// AUTO-CANCEL MISSED ASSIGNMENTS
+// Any assignment whose scheduled date has already passed and
+// which never got started (still 'pending') or was left hanging
+// mid-route ('in_progress') is flipped to 'cancelled'. This runs
+// on the main read endpoints the driver portal hits on load, so
+// admins never have to manually clean up stale pending rows and
+// they don't linger forever on the dashboard/reports.
+// ─────────────────────────────────────────────────────────
+async function autoCancelMissedAssignments() {
+    try {
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const [result] = await db.query(
+            `UPDATE route_assignments
+             SET status = 'cancelled'
+             WHERE assigned_date < ?
+               AND status IN ('pending', 'in_progress')`,
+            [today]
+        );
+        if (result && result.affectedRows) {
+            console.log(`🕑 Auto-cancelled ${result.affectedRows} missed/never-started assignment(s) before ${today}`);
+        }
+    } catch (err) {
+        // Never let this block the actual request — just log it.
+        console.error("autoCancelMissedAssignments error:", err);
+    }
+}
+exports.autoCancelMissedAssignments = autoCancelMissedAssignments;
+
 exports.getTodayAssignment = async (req, res) => {
     try {
         console.log("=== getTodayAssignment Debug ===");
@@ -9,6 +38,8 @@ exports.getTodayAssignment = async (req, res) => {
             console.error("No user ID in request");
             return res.status(401).json({ error: "User not authenticated" });
         }
+
+        await autoCancelMissedAssignments();
 
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
         console.log("Today's date (Philippines):", today);
@@ -48,7 +79,7 @@ exports.getTodayAssignment = async (req, res) => {
 exports.updateAssignmentStatus = async (req, res) => {
     try {
         const { status } = req.body;
-        const allowed = ["pending", "in_progress", "completed"];
+        const allowed = ["pending", "in_progress", "completed", "cancelled"];
         if (!allowed.includes(status)) {
             return res.status(400).json({ error: "Invalid status value" });
         }
@@ -91,6 +122,8 @@ exports.updateAssignmentStatus = async (req, res) => {
 
 exports.getMySchedule = async (req, res) => {
     try {
+        await autoCancelMissedAssignments();
+
         const [rows] = await db.query(
             `SELECT
                 ra.id,
@@ -378,12 +411,13 @@ exports.getStats = async (req, res) => {
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
             FROM route_assignments
             WHERE driver_id = ?`,
             [req.user.id]
         );
-        res.json(stats[0] || { total: 0, completed: 0, pending: 0, in_progress: 0 });
+        res.json(stats[0] || { total: 0, completed: 0, pending: 0, in_progress: 0, cancelled: 0 });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
@@ -392,6 +426,8 @@ exports.getStats = async (req, res) => {
 
 exports.getTodayRouteDetails = async (req, res) => {
     try {
+        await autoCancelMissedAssignments();
+
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 
         const [assignments] = await db.query(
@@ -642,6 +678,7 @@ exports.getPerformanceStats = async (req, res) => {
                 COUNT(*) as total_assigned,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
                 ROUND(
                     (SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*)) * 100, 1
                 ) as completion_rate
@@ -662,7 +699,7 @@ exports.getPerformanceStats = async (req, res) => {
         );
 
         res.json({
-            weekly: weekly[0] || { total_assigned: 0, completed: 0, pending: 0, completion_rate: 0 },
+            weekly: weekly[0] || { total_assigned: 0, completed: 0, pending: 0, cancelled: 0, completion_rate: 0 },
             today: todayStats[0] || { total: 0, completed: 0 },
             connected_vehicles: 0
         });

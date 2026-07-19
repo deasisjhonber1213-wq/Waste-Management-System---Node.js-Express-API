@@ -427,6 +427,150 @@ exports.assignRoute = async (req, res) => {
     }
 };
 
+// ─────────────────────────────────────────────────────────
+// MRF FACILITY LOCATIONS
+// A standalone, admin-managed table of real-world MRF facility
+// coordinates. The admin physically visits a site, drops a pin on
+// its exact position, and saves it here. These are then rendered
+// as a read-only reference layer on the route-drawing map and the
+// route-detail map, so a route's own 🏭 MRF stop can be placed
+// precisely on top of a real facility instead of eyeballed — and
+// the admin can add or delete facilities at any time.
+// ─────────────────────────────────────────────────────────
+async function ensureMRFTable() {
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS mrf_locations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(150) NOT NULL,
+            address VARCHAR(255) NULL,
+            latitude DECIMAL(10,7) NOT NULL,
+            longitude DECIMAL(10,7) NOT NULL,
+            created_by INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `);
+}
+
+exports.getMRFLocations = async (req, res) => {
+    try {
+        await ensureMRFTable();
+        const [rows] = await db.query(
+            "SELECT * FROM mrf_locations ORDER BY created_at DESC"
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error("getMRFLocations error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getMRFLocationById = async (req, res) => {
+    try {
+        await ensureMRFTable();
+        const [[row]] = await db.query(
+            "SELECT * FROM mrf_locations WHERE id = ?",
+            [req.params.id]
+        );
+        if (!row) return res.status(404).json({ error: "MRF location not found" });
+        res.json(row);
+    } catch (err) {
+        console.error("getMRFLocationById error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.addMRFLocation = async (req, res) => {
+    try {
+        await ensureMRFTable();
+        const { name, address, latitude, longitude } = req.body;
+
+        if (!name || !String(name).trim()) {
+            return res.status(400).json({ error: "Facility name is required" });
+        }
+        if (latitude === undefined || longitude === undefined || latitude === null || longitude === null) {
+            return res.status(400).json({ error: "Latitude and longitude are required" });
+        }
+
+        const [result] = await db.query(
+            `INSERT INTO mrf_locations (name, address, latitude, longitude, created_by)
+             VALUES (?, ?, ?, ?, ?)`,
+            [String(name).trim(), address ? String(address).trim() : null, latitude, longitude, req.user?.id || null]
+        );
+
+        res.json({ message: "MRF location marked successfully", id: result.insertId });
+    } catch (err) {
+        console.error("addMRFLocation error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.updateMRFLocation = async (req, res) => {
+    try {
+        await ensureMRFTable();
+        const { name, address, latitude, longitude } = req.body;
+
+        const [[existing]] = await db.query(
+            "SELECT id FROM mrf_locations WHERE id = ?",
+            [req.params.id]
+        );
+        if (!existing) return res.status(404).json({ error: "MRF location not found" });
+
+        const updates = [];
+        const values = [];
+
+        if (name !== undefined) {
+            if (!String(name).trim()) return res.status(400).json({ error: "Facility name cannot be empty" });
+            updates.push("name = ?");
+            values.push(String(name).trim());
+        }
+        if (address !== undefined) {
+            updates.push("address = ?");
+            values.push(address ? String(address).trim() : null);
+        }
+        if (latitude !== undefined) {
+            updates.push("latitude = ?");
+            values.push(latitude);
+        }
+        if (longitude !== undefined) {
+            updates.push("longitude = ?");
+            values.push(longitude);
+        }
+
+        if (!updates.length) {
+            return res.status(400).json({ error: "Nothing to update" });
+        }
+
+        values.push(req.params.id);
+        await db.query(
+            `UPDATE mrf_locations SET ${updates.join(", ")} WHERE id = ?`,
+            values
+        );
+
+        res.json({ message: "MRF location updated successfully" });
+    } catch (err) {
+        console.error("updateMRFLocation error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.deleteMRFLocation = async (req, res) => {
+    try {
+        await ensureMRFTable();
+        const [[existing]] = await db.query(
+            "SELECT id FROM mrf_locations WHERE id = ?",
+            [req.params.id]
+        );
+        if (!existing) return res.status(404).json({ error: "MRF location not found" });
+
+        await db.query("DELETE FROM mrf_locations WHERE id = ?", [req.params.id]);
+        res.json({ message: "MRF location deleted successfully" });
+    } catch (err) {
+        console.error("deleteMRFLocation error:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 exports.getReports = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
