@@ -435,6 +435,10 @@
             .sidebar-overlay.active {
                 display: block;
             }
+
+            #detailActions {
+                flex-wrap: wrap;
+            }
         }
 
         @media (max-width: 550px) {
@@ -470,6 +474,21 @@
             .form-grid-2 {
                 grid-template-columns: 1fr;
             }
+
+            #detailActions {
+                width: 100%;
+            }
+
+            #detailActions .btn {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            .panel-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
         }
 
         @media (max-width: 400px) {
@@ -484,6 +503,11 @@
 
             .truck-meta .badge {
                 font-size: 0.55rem;
+            }
+
+            #detailActions .btn {
+                font-size: 0.68rem;
+                padding: 6px 10px;
             }
         }
     </style>
@@ -771,7 +795,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ---- SIDEBAR TOGGLE (same as routes page) ----
+        // ---- SIDEBAR TOGGLE ----
         (function () {
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', initSidebar);
@@ -786,29 +810,42 @@
 
                 if (!hamburger || !sidebar) return;
 
-                function toggleSidebar(e) {
-                    if (e) e.stopPropagation();
-                    sidebar.classList.toggle('open');
-                    if (overlay) overlay.classList.toggle('active');
+                function openSidebar() {
+                    sidebar.classList.add('open');
+                    if (overlay) overlay.classList.add('active');
                 }
 
-                var newHamburger = hamburger.cloneNode(true);
-                hamburger.parentNode.replaceChild(newHamburger, hamburger);
-                newHamburger.addEventListener('click', toggleSidebar);
+                function closeSidebar() {
+                    sidebar.classList.remove('open');
+                    if (overlay) overlay.classList.remove('active');
+                }
+
+                hamburger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (sidebar.classList.contains('open')) {
+                        closeSidebar();
+                    } else {
+                        openSidebar();
+                    }
+                });
 
                 if (overlay) {
-                    var newOverlay = overlay.cloneNode(true);
-                    overlay.parentNode.replaceChild(newOverlay, overlay);
-                    newOverlay.addEventListener('click', toggleSidebar);
+                    overlay.addEventListener('click', closeSidebar);
                 }
 
                 document.querySelectorAll('.sidebar-nav .nav-item').forEach(function (link) {
                     link.addEventListener('click', function () {
                         if (window.innerWidth <= 820) {
-                            sidebar.classList.remove('open');
-                            if (overlay) overlay.classList.remove('active');
+                            closeSidebar();
                         }
                     });
+                });
+
+                // Close with Escape key too
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                        closeSidebar();
+                    }
                 });
             }
         })();
