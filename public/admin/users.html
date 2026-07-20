@@ -7,6 +7,23 @@
     <title>Users · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
     <style>
+        /* Prevent the data table's min-width from stretching the whole page
+           sideways. .main is a flex item (body is display:flex), and flex
+           items refuse to shrink below their content's width unless told to.
+           Without min-width:0 here, the table drags the entire layout wider
+           than the phone screen and the WHOLE PAGE becomes scrollable
+           left-right instead of just the table. */
+        html {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        .main {
+            min-width: 0;
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+
         /* Additional responsive styles for Users page */
         .confirm-delete-input {
             width: 100%;
@@ -190,12 +207,18 @@
 
             .data-table {
                 font-size: 0.65rem;
-                min-width: 550px;
+                min-width: 480px;
             }
 
             .data-table th,
             .data-table td {
                 padding: 4px 6px;
+            }
+
+            /* Hide Address column on phones — least essential at a glance */
+            .data-table th:nth-child(6),
+            .data-table td:nth-child(6) {
+                display: none;
             }
 
             .btn-sm {
@@ -286,12 +309,18 @@
 
             .data-table {
                 font-size: 0.6rem;
-                min-width: 420px;
+                min-width: 340px;
             }
 
             .data-table th,
             .data-table td {
                 padding: 3px 4px;
+            }
+
+            /* Also hide Phone column on very small phones — Name/Email/Role/Actions is enough */
+            .data-table th:nth-child(5),
+            .data-table td:nth-child(5) {
+                display: none;
             }
 
             .panel-header {
