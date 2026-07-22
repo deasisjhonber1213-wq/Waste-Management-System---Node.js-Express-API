@@ -2911,7 +2911,7 @@
         document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
         let map, markerLayer, tileStreet, tileSat, tileRoadOverlay;
-        let currentTruckId, truckMarker, userMarker, userCircle;
+        let currentTruckId, truckMarker, userMarker;
         let mrfMarkers = [];
         let fallbackMRF = null;
         let pinMarkers = [];
@@ -2965,6 +2965,86 @@
             'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, opacity: 0.8, pane: 'overlayPane' }
         );
 
+        // ── PROGRESS PERSISTENCE (MRF checkmarks, green trail, stop pins) ──
+        function saveProgressState() {
+            if (!currentAssignmentId) return;
+            const state = {
+                assignmentId: currentAssignmentId,
+                progressIndex: progressIndex,
+                mrfPassed: mrfStops.map(m => m._passed || false),
+                stopDone: pinStops.map((_, i) => {
+                    const el = document.getElementById(`resStop${i}`);
+                    return el ? el.classList.contains('done') : false;
+                }),
+                truckLat: truckLat,
+                truckLng: truckLng,
+                lastUpdated: Date.now()
+            };
+            try {
+                localStorage.setItem(`resident_progress_${currentAssignmentId}`, JSON.stringify(state));
+            } catch (e) { }
+        }
+
+        function loadProgressState() {
+            if (!currentAssignmentId) return null;
+            try {
+                const raw = localStorage.getItem(`resident_progress_${currentAssignmentId}`);
+                if (!raw) return null;
+                const state = JSON.parse(raw);
+                // Only use if less than 2 hours old (so we don't show old progress)
+                if (Date.now() - state.lastUpdated > 2 * 60 * 60 * 1000) {
+                    localStorage.removeItem(`resident_progress_${currentAssignmentId}`);
+                    return null;
+                }
+                return state;
+            } catch (e) { return null; }
+        }
+
+        function restoreProgressState() {
+            const state = loadProgressState();
+            if (!state) return false;
+
+            // Restore progress index
+            if (state.progressIndex > 0 && progressPolyline && trailPolyline && drawnCoords.length) {
+                progressIndex = Math.min(state.progressIndex, drawnCoords.length - 1);
+                trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
+                progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+                markMRFPassed(progressIndex);
+            }
+
+            // Restore MRF passed state
+            state.mrfPassed.forEach((passed, i) => {
+                if (passed && mrfStops[i]) {
+                    mrfStops[i]._passed = true;
+                    const wrap = document.getElementById(`mrfWrap${i}`);
+                    const pin = document.getElementById(`mrfPin${i}`);
+                    if (wrap) wrap.classList.add('passed');
+                    if (pin) { pin.classList.add('passed'); pin.innerHTML = '<span style="font-size:14px">✓</span>'; }
+                }
+            });
+
+            // Restore stop pins
+            state.stopDone.forEach((done, i) => {
+                if (done) {
+                    const pin = document.getElementById(`resStop${i}`);
+                    if (pin && !pin.classList.contains('done')) {
+                        pin.classList.add('done');
+                        pin.textContent = '✓';
+                    }
+                }
+            });
+
+            // Restore truck position if available
+            if (state.truckLat && state.truckLng && truckMarker) {
+                truckMarker.setLatLng([state.truckLat, state.truckLng]);
+                truckLat = state.truckLat;
+                truckLng = state.truckLng;
+                updateRouteProgress(state.truckLat, state.truckLng);
+            }
+
+            return true;
+        }
+
         function initMap(lat = DEFAULT_CENTER.lat, lng = DEFAULT_CENTER.lng) {
             if (map) return;
             map = L.map('map', {
@@ -2985,8 +3065,6 @@
         async function loadFallbackMRF() {
             try {
                 const mrf = await apiFetch('/api/resident/mrf-location');
-                // No hardcoded fallback anymore — if the office hasn't configured
-                // an MRF location, we simply don't show a marker for it.
                 if (!mrf || !mrf.latitude || !mrf.longitude) return;
                 const icon = L.divIcon({
                     className: "",
@@ -3038,10 +3116,6 @@
             } catch (e) { console.error("parseWaypointsJson error:", e); return { road: [], pins: [], mrfs: [] }; }
         }
 
-        // Finds the closest point on the road polyline to a given lat/lng, expressed
-        // as an index into drawnCoords. Used to know "where along the route" a pin
-        // or MRF stop sits, so we only flag it as passed once the truck's progress
-        // has actually advanced beyond that point (not just because it's nearby).
         function nearestRoadIndex(lat, lng) {
             if (!drawnCoords.length) return -1;
             const pt = L.latLng(lat, lng);
@@ -3072,7 +3146,6 @@
             if (road.length >= 2) {
                 drawnCoords = road.map(v => L.latLng(v.lat, v.lng));
 
-                // Amber = remaining road ahead. This line visibly "erases" as the truck advances.
                 progressPolyline = L.polyline(drawnCoords, {
                     color: "#f5a623",
                     weight: 5,
@@ -3080,7 +3153,6 @@
                     dashArray: "10 6"
                 }).addTo(map);
 
-                // Green = road already driven, grows behind the truck as it moves.
                 trailPolyline = L.polyline([], {
                     color: "#4ade80",
                     weight: 5,
@@ -3112,8 +3184,6 @@
                 );
             });
 
-            // Tag each MRF stop with its position along the road so we know when the
-            // truck has driven past it, and give it its own marker index for styling.
             mrfStops = mrfs.map(m => ({
                 ...m,
                 _routeIdx: drawnCoords.length ? nearestRoadIndex(m.lat, m.lng) : null,
@@ -3144,16 +3214,17 @@
                 map.fitBounds(L.latLngBounds(allPoints).pad(0.12));
             }
 
-            // If we already have a live truck position (e.g. re-rendering the route
-            // after a socket reconnect), re-apply progress immediately instead of
-            // leaving the trail reset at the start.
+            // Restore saved progress after drawing the route
+            if (currentAssignmentId) {
+                restoreProgressState();
+            }
+
+            // If we already have a live truck position, update progress
             if (truckLat !== null && truckLng !== null) {
                 updateRouteProgress(truckLat, truckLng);
             }
         }
 
-        // Marks any MRF stop as "passed" (greyed out, pulse ring hidden) once the
-        // truck's progress along the route has advanced beyond that stop's position.
         function markMRFPassed(idxLimit) {
             mrfStops.forEach((m, i) => {
                 if (m._passed) return;
@@ -3168,10 +3239,6 @@
             });
         }
 
-        // Splits the road line at the truck's current position: everything behind becomes
-        // the green "driven" trail, everything ahead stays amber — so the amber line
-        // visibly erases as the truck moves along the route. Only ever called once a
-        // truck marker has actually been placed from a live GPS ping.
         function updateRouteProgress(lat, lng) {
             if (!drawnCoords.length || !progressPolyline || !trailPolyline) return;
             const current = L.latLng(lat, lng);
@@ -3194,16 +3261,20 @@
                     if (pin && !pin.classList.contains('done')) {
                         pin.classList.add('done');
                         pin.textContent = '✓';
+                        saveProgressState();
                     }
                 }
             });
 
             markMRFPassed(progressIndex);
+
+            // Save progress after updating
+            if (currentAssignmentId) {
+                saveProgressState();
+            }
         }
 
         function animateTruck(from, to, duration = 3000) {
-            // Duration is tuned close to the poll/push interval so the marker glides
-            // continuously instead of jump-then-pause.
             if (animating && animFrame) {
                 cancelAnimationFrame(animFrame);
                 animFrame = null;
@@ -3269,6 +3340,11 @@
                 updateRouteProgress(lat, lng);
             }
             updateDistanceHUD();
+
+            // Save progress after placing truck
+            if (currentAssignmentId) {
+                saveProgressState();
+            }
         }
 
         async function loadResidentLocations() {
@@ -3348,12 +3424,7 @@
                     .addTo(map);
             }
 
-            if (userCircle) {
-                userCircle.setLatLng([lat, lng]).setRadius(accuracy || 30);
-            } else {
-                userCircle = L.circle([lat, lng], { radius: accuracy || 30, color: '#3b82f6', weight: 1, fillOpacity: 0.08 })
-                    .addTo(map);
-            }
+            // REMOVED: userCircle (the big blue circle) - removed as requested
 
             const locInfo = document.getElementById('locationInfo');
             if (locInfo) {
@@ -3664,10 +3735,7 @@
                     initMap();
                 }
 
-                // Only place the truck marker (and start the road "erasing" trail)
-                // once the driver has actually pressed Start Route AND we have a
-                // fresh GPS ping — otherwise this was showing a static depot
-                // position as if it were a live truck.
+                // Only place the truck marker if we have a live location
                 if (routeStarted && hasLiveTruckLocation && data.latitude && data.longitude) {
                     placeTruckMarker(data.latitude, data.longitude, false);
                 }
@@ -3696,7 +3764,6 @@
                     placeTruckMarker(logs[0].latitude, logs[0].longitude, true);
                     const statusEl = document.getElementById('todayTruck');
                     if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
-                        // Force a full refresh
                         loadTodayTruck();
                     }
                 }
@@ -3735,7 +3802,6 @@
 
             residentSocket.on('connect_error', (err) => {
                 console.warn('Resident socket connection error:', err.message);
-                // Don't show toast for socket errors - they're expected if socket isn't available
             });
 
             residentSocket.on('truck-location', (data) => {
@@ -3748,7 +3814,6 @@
 
                 const statusEl = document.getElementById('todayTruck');
                 if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
-                    // Refresh the truck info to update the status text
                     loadTodayTruck();
                 }
             });
@@ -3763,9 +3828,7 @@
                 if (data.status === 'in_progress' && prevStatus !== 'in_progress') {
                     routeStarted = true;
                     showToast('🚛 Your collection truck is on the way!');
-                    // Immediately refresh to get the truck's location
                     loadTodayTruck();
-                    // Also start polling as backup
                     pollTruckLocation();
                 } else if (data.status === 'completed') {
                     showToast('✅ Today\'s pickup is complete!');
@@ -3774,6 +3837,7 @@
                 }
             });
         }
+
         /* ── PROFILE ── */
         async function loadProfile() {
             try {
@@ -3857,9 +3921,6 @@
             if (countEl) countEl.textContent = `${len} / 500`;
         }
 
-        // Resizes/compresses the photo client-side instead of hard-rejecting large
-        // phone camera photos. This removes the old 2MB block while still keeping
-        // the upload a reasonable size.
         function compressImage(file, maxDim = 1600, quality = 0.75) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
