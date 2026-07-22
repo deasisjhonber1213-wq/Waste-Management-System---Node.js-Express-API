@@ -1,8 +1,17 @@
 /* ============================================================
+   Z-INDEX STACK
+   ============================================================ */
+.sidebar          { z-index: 1000; }   /* was 100 */
+.sidebar-overlay  { z-index: 999;  }   /* was 99 */
+.topbar           { z-index: 100;  }   /* was 50 */
+.modal-overlay    { z-index: 99999; }  /* was 500 */
+.toast-container  { z-index: 999999; } /* was 9000 */
+
+/* ============================================================
    SMARTWASTE ADMIN — SHARED DESIGN SYSTEM
    Theme: Light/Dark Mode Toggle
    Fonts: Space Mono (data) + Outfit (UI)
-============================================================ */
+   ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 

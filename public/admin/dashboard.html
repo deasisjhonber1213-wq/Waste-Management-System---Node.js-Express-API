@@ -4,12 +4,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Dashboard · SmartWaste Admin</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>SmartWaste · Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/js/style.js"></script>
     <style>
-        /* ── Modal fixes ── */
+        /* ── Core reset & theme variables (light/dark) ── */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.2s, color 0.2s;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f6f7fa;
+            --bg2: #eef0f4;
+            --bg3: #e4e7ee;
+            --panel: #ffffff;
+            --border: #d8dce6;
+            --border2: #c5cad6;
+            --text: #121826;
+            --text2: #2d3548;
+            --text3: #5a647a;
+            --gold: #c9951e;
+            --gold-dim: #f5ebd2;
+            --gold-mid: #d9a62c;
+            --red: #dc3c3c;
+            --red-dim: #fce8e8;
+            --green: #2b8c5e;
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.08);
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --ui: 'Inter', system-ui, sans-serif;
+        }
+
+        [data-theme="dark"] {
+            --bg: #11141c;
+            --bg2: #1a1f2a;
+            --bg3: #222a38;
+            --panel: #1a1f2a;
+            --border: #2d3548;
+            --border2: #3a435a;
+            --text: #eceef5;
+            --text2: #bcc3d4;
+            --text3: #7a849c;
+            --gold: #e8b84a;
+            --gold-dim: #2f2a1a;
+            --gold-mid: #d9a62c;
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .section-gap {
+            margin-top: 24px;
+        }
+
+        /* ── Modal fixes (unified from trucks) ── */
         .modal-overlay {
             position: fixed !important;
             inset: 0 !important;
@@ -36,6 +117,10 @@
             animation: modalSlideIn 0.25s ease !important;
             position: relative !important;
             z-index: 999999 !important;
+        }
+
+        .modal-lg {
+            max-width: 920px !important;
         }
 
         @keyframes modalSlideIn {
@@ -135,28 +220,921 @@
             box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
         }
 
-        .sidebar {
-            z-index: 1000 !important;
+        .btn-gold {
+            background: var(--gold) !important;
+            color: #fff !important;
         }
 
-        .sidebar-overlay {
-            z-index: 999 !important;
+        .btn-gold:hover {
+            background: var(--gold-mid) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(201, 149, 30, 0.3) !important;
+        }
+
+        .btn-sm {
+            padding: 5px 14px !important;
+            font-size: 0.7rem !important;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            background: var(--bg3);
+            color: var(--text2);
+        }
+
+        .badge-gold {
+            background: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .badge-success {
+            background: #e0f2e9;
+            color: #1e7a4a;
+        }
+
+        .badge-warning {
+            background: #fdf0d5;
+            color: #b07a1a;
+        }
+
+        .badge-danger {
+            background: #fce4e4;
+            color: #b33a3a;
+        }
+
+        .badge-info {
+            background: #d9e8f7;
+            color: #1f5f8f;
+        }
+
+        /* ── Sidebar & topbar (unified) ── */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 260px;
+            background: var(--panel);
+            border-right: 1px solid var(--border2);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            z-index: 1000 !important;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .sidebar-logo-icon {
+            font-size: 1.6rem;
+        }
+
+        .sidebar-logo-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--gold);
+        }
+
+        .sidebar-logo-text span {
+            display: block;
+            font-weight: 400;
+            font-size: 0.6rem;
+            color: var(--text2);
+            letter-spacing: 0.04em;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px 0;
+        }
+
+        .nav-section-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text3);
+            padding: 12px 12px 6px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            color: var(--text2);
+            font-size: 0.82rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-bottom: 2px;
+        }
+
+        .nav-item:hover {
+            background: var(--bg3);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            background: var(--gold-dim);
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .sidebar-footer {
+            padding: 16px 20px 0;
+            border-top: 1px solid var(--border2);
+            margin-top: 8px;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--bg3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .sidebar-user-name {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+
+        .sidebar-user-role {
+            font-size: 0.62rem;
+            color: var(--text3);
+        }
+
+        .sidebar-logout {
+            background: none;
+            border: none;
+            color: var(--text2);
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            justify-content: center;
+            background: var(--bg3);
+        }
+
+        .sidebar-logout:hover {
+            background: var(--red-dim);
+            color: var(--red);
         }
 
         .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
             z-index: 100 !important;
         }
 
+        .topbar-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .topbar-breadcrumb {
+            font-size: 0.65rem;
+            color: var(--text3);
+        }
+
+        .topbar-breadcrumb span {
+            color: var(--text2);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .topbar-btn {
+            background: var(--gold);
+            color: #fff;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .topbar-btn:hover {
+            background: var(--gold-mid);
+            transform: translateY(-1px);
+        }
+
+        .topbar-hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .topbar-hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--text);
+            border-radius: 2px;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 999 !important;
+            display: none;
+        }
+
+        .sidebar-overlay.visible {
+            display: block;
+        }
+
+        .main {
+            margin-left: 260px;
+            margin-top: 60px;
+            padding: 24px 28px;
+        }
+
         .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
             z-index: 9999999 !important;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 360px;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 12px 18px;
+            border-radius: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            font-size: 0.82rem;
+            color: var(--text);
+            animation: toastIn 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--green);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--red);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--gold);
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Page-specific: dashboard / analytics / announcements / trucks ── */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            padding: 18px 16px;
+            transition: 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--gold-mid);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            font-family: var(--mono);
+            margin: 6px 0 2px;
+            color: var(--text);
+        }
+
+        .stat-sub {
+            font-size: 0.65rem;
+            color: var(--text2);
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .panel-title-icon {
+            font-size: 1.1rem;
+        }
+
+        .panel-body {
+            padding: 18px 20px;
+        }
+
+        .panel-body-flush {
+            padding: 0;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background: var(--bg2);
+            color: var(--text2);
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .data-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border2);
+            color: var(--text);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table .table-mono {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+        }
+
+        .data-table .table-muted {
+            color: var(--text3);
+        }
+
+        .chart-wrap {
+            height: 200px;
+            position: relative;
+        }
+
+        .quick-actions-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: var(--bg3);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .quick-action:hover {
+            border-color: var(--gold);
+            background: var(--gold-dim);
+        }
+
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .dash-grid-wide {
+            grid-column: 1 / -1;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px 20px;
+            color: var(--text2);
+            gap: 6px;
+        }
+
+        .empty-state-icon {
+            font-size: 2.4rem;
+            opacity: 0.6;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .activity-text {
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+
+        .activity-time {
+            font-size: 0.7rem;
+            color: var(--text3);
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .form-grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .form-grid-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text2);
+            letter-spacing: 0.02em;
+        }
+
+        .form-control {
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: var(--text);
+            transition: 0.2s;
+            font-family: var(--ui);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--gold-dim);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            color: var(--text);
+        }
+
+        /* trucks specifics */
+        .trucks-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .truck-card {
+            padding: 14px 16px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .truck-card:hover {
+            border-color: var(--gold-mid);
+            background: var(--panel);
+            transform: translateX(4px);
+        }
+
+        .truck-card.active {
+            border-color: var(--gold);
+            background: var(--panel);
+            position: relative;
+            box-shadow: 0 2px 12px rgba(201, 146, 30, 0.08);
+        }
+
+        .truck-card.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 4px;
+            bottom: 4px;
+            width: 3px;
+            background: var(--gold);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .truck-plate {
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: var(--gold);
+            font-family: var(--mono);
+            letter-spacing: 0.06em;
+        }
+
+        .truck-model {
+            font-size: 0.75rem;
+            color: var(--text2);
+            margin-top: 4px;
+        }
+
+        .truck-coords {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--text2);
+            margin-top: 10px;
+            background: var(--bg3);
+            padding: 8px 10px;
+            border-radius: 6px;
+        }
+
+        .truck-coords-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .location-time {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.65rem;
+            color: var(--text2);
+            padding-top: 4px;
+            border-top: 1px solid var(--border);
+            margin-top: 4px;
+        }
+
+        .location-time.fresh {
+            color: #4ade80;
+        }
+
+        .location-time.stale {
+            color: #fbb034;
+        }
+
+        .location-time.old {
+            color: #f87171;
+        }
+
+        .location-time-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: currentColor;
+        }
+
+        .detail-zone-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gold);
+            font-family: var(--mono);
+        }
+
+        .detail-stats {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+            padding: 12px 0;
+            border-top: 1px solid var(--border2);
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .detail-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text2);
+        }
+
+        .detail-stat .num {
+            font-weight: 700;
+            font-family: var(--mono);
+            color: var(--text);
+        }
+
+        #fleetMap {
+            height: 420px;
+            width: 100%;
+            background: var(--bg2);
+            border-radius: 8px;
+        }
+
+        .truck-marker {
+            width: 30px;
+            height: 30px;
+            background: #f5a623;
+            border-radius: 50%;
+            border: 2.5px solid #fff;
+            box-shadow: 0 0 0 3px rgba(245, 166, 35, .35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pulse-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(1.3)
+            }
+        }
+
+        .ann-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .ann-card {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .ann-card:hover {
+            border-color: var(--gold-mid);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .ann-card-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: var(--bg2);
+        }
+
+        .ann-card-img-placeholder {
+            width: 100%;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            background: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .ann-card-body {
+            padding: 14px 16px;
+        }
+
+        .ann-card-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .ann-card-msg {
+            font-size: 0.8rem;
+            color: var(--text2);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .ann-card-footer {
+            padding: 10px 16px;
+            border-top: 1px solid var(--border2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg3);
+        }
+
+        @media (max-width: 1024px) {
+            .trucks-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .dash-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 820px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.visible {
+                display: block;
+            }
+
+            .topbar-hamburger {
+                display: flex;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 16px;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .form-grid-2,
+            .form-grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                max-width: 100% !important;
+                margin: 10px !important;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                padding: 0 12px;
+            }
+
+            .topbar-title {
+                font-size: 0.95rem;
+            }
+
+            .modal-body,
+            .modal-header,
+            .modal-footer {
+                padding: 14px !important;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 
 <body>
 
+    <!-- ─── SIDEBAR (unified) ─── -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
@@ -164,25 +1142,23 @@
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="/dashboard" class="nav-item active"><span class="nav-icon">⬡</span>Dashboard</a>
+            <a href="#" class="nav-item" data-page="dashboard"><span class="nav-icon">⬡</span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
-            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <a href="#" class="nav-item" data-page="trucks"><span class="nav-icon">🚛</span>Trucks</a>
             <div class="nav-section-label">Community</div>
-            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
-            <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
+            <a href="#" class="nav-item" data-page="announcements"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
-
+            <a href="#" class="nav-item" data-page="analytics"><span class="nav-icon">📊</span>Analytics</a>
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
-            <button class="theme-toggle" id="themeToggleBtn">
+            <button class="theme-toggle" id="themeToggleBtn"
+                style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:8px 14px;width:100%;border-radius:8px;cursor:pointer;color:var(--text2);font-size:0.8rem;">
                 <span class="theme-icon">🌙</span>
                 <span class="theme-label">Dark Mode</span>
-                <span class="theme-switch">
-                    <span class="theme-knob"></span>
+                <span class="theme-switch"
+                    style="margin-left:auto;width:36px;height:20px;background:var(--bg3);border-radius:10px;position:relative;transition:0.2s;">
+                    <span class="theme-knob"
+                        style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--gold);border-radius:50%;transition:0.2s;"></span>
                 </span>
             </button>
         </nav>
@@ -194,373 +1170,243 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
-            <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
-                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
+            <button type="button" class="sidebar-logout" onclick="openModal('logoutConfirmModal')">⎋
+                &nbsp;Logout</button>
         </div>
     </aside>
 
+    <!-- ─── TOPBAR ─── -->
     <div class="topbar">
         <div style="display:flex;align-items:center;gap:14px;">
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
             <div class="topbar-left">
-                <div class="topbar-title">Dashboard</div>
-                <div class="topbar-breadcrumb">Jose Dalman WM / <span>Overview</span></div>
+                <div class="topbar-title" id="pageTitle">Dashboard</div>
+                <div class="topbar-breadcrumb">Jose Dalman WM / <span id="breadcrumbSpan">Overview</span></div>
             </div>
         </div>
         <div class="topbar-right">
-            <div style="font-size:0.72rem;color:var(--text2);font-family:var(--mono)" id="clock"></div>
-            <a href="announcements.html" class="topbar-btn">+ New Announcement</a>
+            <span style="font-size:0.7rem;color:var(--text2);font-family:var(--mono)" id="clock"></span>
+            <button class="topbar-btn" id="actionBtn" style="display:none;">+ Add</button>
         </div>
     </div>
 
-    <main class="main">
-
-        <div class="stat-grid reveal" id="statGrid">
-            <div class="stat-card" data-icon="👥">
-                <div class="stat-label">Total Users</div>
-                <div class="stat-value" id="s-users">—</div>
-                <div class="stat-sub">All registered</div>
-            </div>
-            <div class="stat-card" data-icon="🧑‍✈️">
-                <div class="stat-label">Drivers</div>
-                <div class="stat-value" id="s-drivers">—</div>
-                <div class="stat-sub">Active accounts</div>
-            </div>
-            <div class="stat-card" data-icon="🚛">
-                <div class="stat-label">Trucks</div>
-                <div class="stat-value" id="s-trucks">—</div>
-                <div class="stat-sub">Fleet vehicles</div>
-            </div>
-            <div class="stat-card" data-icon="🗺️">
-                <div class="stat-label">Routes</div>
-                <div class="stat-value" id="s-routes">—</div>
-                <div class="stat-sub">Active zones</div>
-            </div>
-            <div class="stat-card" data-icon="⚠️">
-                <div class="stat-label">Reports</div>
-                <div class="stat-value" id="s-reports">—</div>
-                <div class="stat-sub">Resident reports</div>
-            </div>
-            <div class="stat-card" data-icon="⛽">
-                <div class="stat-label">Fuel Used</div>
-                <div class="stat-value" id="s-fuel">—</div>
-                <div class="stat-sub">Liters logged</div>
-            </div>
-        </div>
-
-        <div class="panel section-gap reveal">
-            <div class="panel-header">
-                <div class="panel-title"><span class="panel-title-icon">⚡</span>Quick Actions</div>
-            </div>
-            <div class="panel-body">
-                <div class="quick-actions-grid">
-                    <a href="users.html" class="quick-action"><span class="quick-action-icon">👤</span>Add User</a>
-                    <a href="trucks.html" class="quick-action"><span class="quick-action-icon">🚛</span>Add Truck</a>
-                    <a href="routes.html" class="quick-action"><span class="quick-action-icon">🗺️</span>Add Route</a>
-                    <a href="schedules.html" class="quick-action"><span class="quick-action-icon">📅</span>Assign
-                        Route</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="dash-grid">
-            <div class="panel reveal">
-                <div class="panel-header">
-                    <div class="panel-title"><span class="panel-title-icon">📊</span>Report Types</div>
-                </div>
-                <div class="panel-body">
-                    <div class="chart-wrap"><canvas id="reportChart"></canvas></div>
-                </div>
-            </div>
-
-            <div class="panel reveal">
-                <div class="panel-header">
-                    <div class="panel-title"><span class="panel-title-icon">📋</span>Recent Reports</div>
-                    <a href="reports.html" class="btn btn-outline btn-sm">View All</a>
-                </div>
-                <div class="panel-body" id="recentReports">
-                    <div class="empty-state"><span class="empty-state-icon">📭</span>
-                        <div class="empty-state-text">Loading...</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel reveal dash-grid-wide">
-                <div class="panel-header">
-                    <div class="panel-title"><span class="panel-title-icon">📅</span>Upcoming Pickups</div>
-                    <a href="schedules.html" class="btn btn-outline btn-sm">View All</a>
-                </div>
-                <div class="panel-body-flush">
-                    <table class="data-table" id="pickupTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Driver</th>
-                                <th>Truck</th>
-                                <th>Zone</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pickupBody">
-                            <tr>
-                                <td colspan="5" class="empty-state-text"
-                                    style="text-align:center;padding:24px;color:var(--text2)">Loading…</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
+    <!-- ─── MAIN CONTENT (dynamic) ─── -->
+    <main class="main" id="mainContent">
+        <div id="pageContent"></div>
     </main>
 
-    <!-- Logout Confirmation Modal -->
+    <!-- ─── SHARED MODALS ─── -->
+    <!-- Logout -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
-                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div><button class="modal-close"
+                    onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to log out of the admin panel?</p>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
-                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('logoutConfirmModal')">Cancel</button><button class="btn btn-danger"
+                    onclick="doLogout()">Yes, Logout</button></div>
+        </div>
+    </div>
+
+    <!-- Delete confirmation (reusable) -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" style="color:var(--red);">🗑️ Confirm Delete</div><button class="modal-close"
+                    onclick="closeModal('deleteConfirmModal')">✕</button>
             </div>
+            <div class="modal-body">
+                <p id="deleteModalMessage">Are you sure you want to delete this item? This cannot be undone.</p>
+            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('deleteConfirmModal')">Cancel</button><button class="btn btn-danger"
+                    id="deleteConfirmBtn">Yes, Delete</button></div>
+        </div>
+    </div>
+
+    <!-- Add/Edit modal (shared) -->
+    <div class="modal-overlay" id="addItemModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="addModalTitle">➕ Add</div><button class="modal-close"
+                    onclick="closeModal('addItemModal')">✕</button>
+            </div>
+            <div class="modal-body" id="addModalBody"></div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('addItemModal')">Cancel</button><button class="btn btn-gold"
+                    id="addModalSaveBtn">Save</button></div>
         </div>
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ── Modal helpers ──
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        // ---- API and dashboard logic ----
-        const API_URL = window.location.origin + '/api';
-        console.log('📡 API URL:', API_URL);
-
+        // ── UTILITY ──
+        function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('open'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); document.body.style.overflow = ''; }
+        function showToast(msg, type = 'info') { const c = document.getElementById('toastContainer'); const t = document.createElement('div'); t.className = `toast ${type}`; t.innerHTML = `<span>${msg}</span>`; c.appendChild(t); setTimeout(() => t.remove(), 3500); }
         function getToken() { return localStorage.getItem('token'); }
+        function checkAuth() { if (!getToken()) window.location.href = '/login.html'; }
+        function doLogout() { localStorage.removeItem('token'); closeModal('logoutConfirmModal'); showToast('Logged out', 'success'); setTimeout(() => window.location.href = '/login.html', 500); }
+        function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+        function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }); }
+        function statusBadge(s) { const map = { 'pending': 'badge-warning', 'in_progress': 'badge-info', 'completed': 'badge-success', 'cancelled': 'badge-danger' }; return `<span class="badge ${map[s] || 'badge-gray'}">${s.replace('_', ' ')}</span>`; }
 
+        const API_URL = window.location.origin + '/api';
         const API = {
-            get: async (endpoint) => fetch(API_URL + endpoint, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
-            post: async (endpoint, data) => fetch(API_URL + endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-                body: JSON.stringify(data)
-            }),
-            put: async (endpoint, data) => fetch(API_URL + endpoint, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-                body: JSON.stringify(data)
-            }),
-            del: async (endpoint) => fetch(API_URL + endpoint, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
+            get: async (e) => fetch(API_URL + e, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
+            post: async (e, d) => fetch(API_URL + e, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(d) }),
+            put: async (e, d) => fetch(API_URL + e, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(d) }),
+            del: async (e) => fetch(API_URL + e, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
         };
 
-        function fmtDate(date) {
-            if (!date) return '—';
-            const d = new Date(date);
-            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+        // ── ROUTER ──
+        const pageConfig = {
+            dashboard: { title: 'Dashboard', bread: 'Overview', action: null, render: renderDashboard },
+            trucks: { title: 'Trucks', bread: 'Management / Trucks', action: '+ Add Truck', render: renderTrucks },
+            analytics: { title: 'Analytics', bread: 'Analytics', action: '⬇ Export Excel', render: renderAnalytics },
+            announcements: { title: 'Announcements', bread: 'Community / Announcements', action: '+ New', render: renderAnnouncements },
+        };
+
+        function navigate(page) {
+            if (!page) page = 'dashboard';
+            const cfg = pageConfig[page] || pageConfig.dashboard;
+            document.getElementById('pageTitle').textContent = cfg.title;
+            document.getElementById('breadcrumbSpan').textContent = cfg.bread;
+            const actionBtn = document.getElementById('actionBtn');
+            if (cfg.action) { actionBtn.style.display = 'inline-block'; actionBtn.textContent = cfg.action; actionBtn.onclick = cfg.actionHandler || (() => { }); } else { actionBtn.style.display = 'none'; }
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const navMap = { dashboard: 'dashboard', trucks: 'trucks', analytics: 'analytics', announcements: 'announcements' };
+            const navEl = document.querySelector(`.nav-item[data-page="${navMap[page]}"]`);
+            if (navEl) navEl.classList.add('active');
+            cfg.render();
         }
 
-        function statusBadge(status) {
-            const map = { 'pending': 'badge-warning', 'in_progress': 'badge-info', 'completed': 'badge-success', 'cancelled': 'badge-danger' };
-            return `<span class="badge ${map[status] || 'badge-gray'}">${status.replace('_', ' ')}</span>`;
+        // ── DASHBOARD ──
+        async function renderDashboard() {
+            const html = `
+      <div class="stat-grid reveal" id="statGrid">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value" id="s-users">—</div></div>
+        <div class="stat-card"><div class="stat-label">Drivers</div><div class="stat-value" id="s-drivers">—</div></div>
+        <div class="stat-card"><div class="stat-label">Trucks</div><div class="stat-value" id="s-trucks">—</div></div>
+        <div class="stat-card"><div class="stat-label">Routes</div><div class="stat-value" id="s-routes">—</div></div>
+        <div class="stat-card"><div class="stat-label">Reports</div><div class="stat-value" id="s-reports">—</div></div>
+        <div class="stat-card"><div class="stat-label">Fuel Used</div><div class="stat-value" id="s-fuel">—</div></div>
+      </div>
+      <div class="panel section-gap"><div class="panel-header"><div class="panel-title">⚡ Quick Actions</div></div><div class="panel-body"><div class="quick-actions-grid"><a href="#" onclick="navigate('trucks')" class="quick-action">🚛 Add Truck</a><a href="#" onclick="navigate('announcements')" class="quick-action">📢 New Announcement</a></div></div></div>
+      <div class="dash-grid">
+        <div class="panel"><div class="panel-header"><div class="panel-title">📊 Report Types</div></div><div class="panel-body"><div class="chart-wrap"><canvas id="reportChart"></canvas></div></div></div>
+        <div class="panel"><div class="panel-header"><div class="panel-title">📋 Recent Reports</div></div><div class="panel-body" id="recentReports"><div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">Loading...</div></div></div></div>
+        <div class="panel dash-grid-wide"><div class="panel-header"><div class="panel-title">📅 Upcoming Pickups</div></div><div class="panel-body-flush"><table class="data-table"><thead><tr><th>Date</th><th>Driver</th><th>Truck</th><th>Zone</th><th>Status</th></tr></thead><tbody id="pickupBody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">Loading…</td></tr></tbody></table></div></div>
+      </div>
+    `;
+            document.getElementById('pageContent').innerHTML = html;
+            loadDashStats();
+            loadDashChart();
+            loadRecentReports();
+            loadPickups();
         }
 
-        function showToast(msg, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-            const toast = document.createElement('div');
-            toast.className = `toast ${type === 'error' ? 'error' : ''}`;
-            toast.textContent = msg;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+        async function loadDashStats() {
+            try { const res = await API.get('/admin/dashboard'); if (!res.ok) throw new Error(); const d = await res.json(); document.getElementById('s-users').textContent = d.totalUsers ?? '—'; document.getElementById('s-drivers').textContent = d.totalDrivers ?? '—'; document.getElementById('s-trucks').textContent = d.totalTrucks ?? '—'; document.getElementById('s-routes').textContent = d.totalRoutes ?? '—'; document.getElementById('s-reports').textContent = d.totalReports ?? '—'; document.getElementById('s-fuel').textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) + 'L' : '0L'; } catch (e) { }
         }
-
-        function updateClock() {
-            const now = new Date();
-            const el = document.getElementById("clock");
-            if (el) el.textContent = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        async function loadDashChart() {
+            try { const res = await API.get('/admin/analytics'); if (!res.ok) throw new Error(); const data = await res.json(); let rd = Array.isArray(data.type_breakdown) ? data.type_breakdown : (Array.isArray(data) ? data : []); rd = rd.filter(d => d.type !== 'ALL'); if (!rd.length) { document.querySelector('#reportChart')?.parentElement?.replaceWith('<div class="empty-state"><span class="empty-state-icon">📊</span><div class="empty-state-text">No data</div></div>'); return; } new Chart(document.getElementById('reportChart'), { type: 'doughnut', data: { labels: rd.map(d => d.type.replace('_', ' ').toUpperCase()), datasets: [{ data: rd.map(d => d.total), backgroundColor: ['#ffc13c', '#3ddc84', '#ff5c5c', '#60a5fa', '#a78bfa', '#fb923c'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'var(--text2)', font: { size: 10 } } } }, cutout: '65%' } }); } catch (e) { }
         }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        function doLogout() {
-            localStorage.removeItem('token');
-            closeModal('logoutConfirmModal');
-            showToast('Logged out successfully', 'success');
-            setTimeout(() => {
-                window.location.href = '/login.html';
-            }, 500);
-        }
-        window.doLogout = doLogout;
-
-        async function loadStats() {
-            try {
-                const res = await API.get("/admin/dashboard");
-                if (!res.ok) throw new Error();
-                const d = await res.json();
-                document.getElementById("s-users").textContent = d.totalUsers ?? "—";
-                document.getElementById("s-drivers").textContent = d.totalDrivers ?? "—";
-                document.getElementById("s-trucks").textContent = d.totalTrucks ?? "—";
-                document.getElementById("s-routes").textContent = d.totalRoutes ?? "—";
-                document.getElementById("s-reports").textContent = d.totalReports ?? "—";
-                document.getElementById("s-fuel").textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) + "L" : "0L";
-            } catch { showToast("Failed to load stats", "error"); }
-        }
-
-        async function loadChart() {
-            try {
-                const res = await API.get("/admin/analytics");
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-
-                let reportData = [];
-                if (data.type_breakdown && Array.isArray(data.type_breakdown)) {
-                    reportData = data.type_breakdown;
-                } else if (Array.isArray(data)) {
-                    reportData = data;
-                }
-
-                reportData = reportData.filter(d => d.type !== 'ALL');
-
-                if (reportData.length === 0) {
-                    document.getElementById('reportChart').parentElement.innerHTML =
-                        '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">No report data available</div></div>';
-                    return;
-                }
-
-                new Chart(document.getElementById("reportChart"), {
-                    type: "doughnut",
-                    data: {
-                        labels: reportData.map(d => d.type.replace("_", " ").toUpperCase()),
-                        datasets: [{
-                            data: reportData.map(d => d.total),
-                            backgroundColor: ["#ffc13c", "#3ddc84", "#ff5c5c", "#60a5fa", "#a78bfa", "#fb923c"],
-                            borderWidth: 0,
-                            hoverOffset: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: "bottom",
-                                labels: {
-                                    color: "var(--text2)",
-                                    font: { family: "Outfit", size: 11 },
-                                    padding: 16,
-                                    boxWidth: 10
-                                }
-                            }
-                        },
-                        cutout: "65%"
-                    }
-                });
-            } catch (err) {
-                console.error('Chart error:', err);
-                document.getElementById('reportChart').parentElement.innerHTML =
-                    '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">Failed to load chart data</div></div>';
-            }
-        }
-
         async function loadRecentReports() {
-            try {
-                const res = await API.get("/admin/reports");
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                const el = document.getElementById("recentReports");
-
-                let reports = [];
-                if (Array.isArray(data)) {
-                    reports = data;
-                } else if (data.data && Array.isArray(data.data)) {
-                    reports = data.data;
-                }
-
-                if (!reports.length) {
-                    el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">No reports yet</div></div>';
-                    return;
-                }
-
-                el.innerHTML = reports.slice(0, 5).map(r => `
-                    <div class="activity-item">
-                        <div class="activity-dot" style="background:${r.type === 'missed_pickup' ? 'var(--gold)' : r.type === 'overflowing_bin' ? 'var(--green)' : 'var(--red)'}"></div>
-                        <div>
-                            <div class="activity-text">${(r.type || '').replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown'}</div>
-                            <div class="activity-time">${r.description?.slice(0, 60) || "No description"}</div>
-                            <div class="activity-time">${fmtDate(r.created_at || new Date())}</div>
-                        </div>
-                    </div>`).join("");
-            } catch (err) {
-                console.error('Recent reports error:', err);
-                document.getElementById("recentReports").innerHTML =
-                    '<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Failed to load reports</div></div>';
-            }
+            try { const res = await API.get('/admin/reports'); if (!res.ok) throw new Error(); const data = await res.json(); const reports = Array.isArray(data) ? data : (data.data || []); const el = document.getElementById('recentReports'); if (!reports.length) { el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">No reports</div></div>'; return; } el.innerHTML = reports.slice(0, 5).map(r => `<div class="activity-item"><div class="activity-dot" style="background:${r.type === 'missed_pickup' ? 'var(--gold)' : r.type === 'overflowing_bin' ? 'var(--green)' : 'var(--red)'}"></div><div><div class="activity-text">${(r.type || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown'}</div><div class="activity-time">${r.description?.slice(0, 60) || 'No description'}</div><div class="activity-time">${fmtDate(r.created_at)}</div></div></div>`).join(''); } catch (e) { }
         }
-
         async function loadPickups() {
-            try {
-                const res = await API.get("/admin/pickups");
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                const tbody = document.getElementById("pickupBody");
-                if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">No schedules found</td></tr>'; return; }
-                tbody.innerHTML = data.slice(0, 7).map(p => `
-                    <tr>
-                        <td class="table-mono">${fmtDate(p.assigned_date)}</td>
-                        <td>${p.driver_name || "—"}</td>
-                        <td class="table-mono">${p.truck_plate || "—"}</td>
-                        <td>${p.zone_name || "—"}</td>
-                        <td>${statusBadge(p.status)}</td>
-                    </tr>`).join("");
-            } catch (err) {
-                console.error('Pickups error:', err);
-            }
+            try { const res = await API.get('/admin/pickups'); if (!res.ok) throw new Error(); const data = await res.json(); const tbody = document.getElementById('pickupBody'); if (!data.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text2)">No schedules</td></tr>'; return; } tbody.innerHTML = data.slice(0, 7).map(p => `<tr><td class="table-mono">${fmtDate(p.assigned_date)}</td><td>${p.driver_name || '—'}</td><td class="table-mono">${p.truck_plate || '—'}</td><td>${p.zone_name || '—'}</td><td>${statusBadge(p.status)}</td></tr>`).join(''); } catch (e) { }
         }
 
-        async function loadProfile() {
-            try {
-                const res = await API.get("/admin/profile");
-                if (!res.ok) throw new Error();
-                const d = await res.json();
-                document.getElementById("adminName").textContent = d.name || "Admin";
-            } catch { /* ignore */ }
+        // ── TRUCKS ──
+        let allTrucks = [], selectedTruck = null;
+        async function renderTrucks() {
+            const html = `
+      <div class="trucks-layout">
+        <div><div class="panel"><div class="panel-header"><div class="panel-title">🚛 Fleet</div><span class="badge badge-gold" id="truckCount">0</span></div><div style="padding:0 14px 12px;"><div class="search-bar"><input type="text" placeholder="Search trucks..." id="searchInput" oninput="filterTrucks()"></div></div><div style="padding:0 14px 14px;" id="truckList"><div class="empty-state"><span class="empty-state-icon">🚛</span><div class="empty-state-text">Loading...</div></div></div></div></div>
+        <div><div class="panel"><div class="panel-header"><div class="panel-title">📋 Truck Details</div><div id="detailActions" style="display:flex;gap:6px;"></div></div><div class="panel-body" id="truckDetailBody"><div class="empty-state"><span class="empty-state-icon">🚛</span><div class="empty-state-text">Select a truck</div></div></div></div></div>
+      </div>
+      <div class="panel section-gap"><div class="panel-header"><div class="panel-title">🗺️ Fleet Map</div></div><div class="panel-body"><div id="fleetMap" style="height:320px;background:var(--bg2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text2);">Map placeholder</div></div></div>
+    `;
+            document.getElementById('pageContent').innerHTML = html;
+            loadTrucks();
+            document.getElementById('actionBtn').onclick = () => { openModal('addItemModal'); document.getElementById('addModalTitle').textContent = '🚛 Add Truck'; document.getElementById('addModalBody').innerHTML = `<div class="form-group"><label class="form-label">Plate *</label><input class="form-control" id="addPlate" placeholder="ABC-1234"></div><div class="form-group"><label class="form-label">Model</label><input class="form-control" id="addModel" placeholder="Isuzu"></div>`; document.getElementById('addModalSaveBtn').onclick = addTruck; };
+        }
+        async function loadTrucks() {
+            try { const res = await API.get('/admin/trucks'); if (!res.ok) throw new Error(); allTrucks = await res.json(); document.getElementById('truckCount').textContent = allTrucks.length + ' trucks'; renderTruckList(allTrucks); } catch (e) { showToast('Failed to load trucks', 'error'); }
+        }
+        function renderTruckList(data) {
+            const c = document.getElementById('truckList'); if (!data.length) { c.innerHTML = '<div class="empty-state"><span class="empty-state-icon">🚛</span><div class="empty-state-text">No trucks</div></div>'; return; } c.innerHTML = data.map(t => `<div class="truck-card ${selectedTruck?.id === t.id ? 'active' : ''}" onclick="selectTruck(${t.id})"><div class="truck-plate">🚛 ${escHtml(t.plate_number)}</div><div class="truck-model">${escHtml(t.model || 'Unknown')}</div><div class="truck-coords"><div class="truck-coords-row"><span>LAT: ${t.latitude ?? '—'}</span><span>LNG: ${t.longitude ?? '—'}</span></div></div></div>`).join('');
+        }
+        function selectTruck(id) { selectedTruck = allTrucks.find(t => t.id === id); renderTruckList(allTrucks); renderDetail(selectedTruck); }
+        function renderDetail(t) { if (!t) return; document.getElementById('detailActions').innerHTML = `<button class="btn btn-outline btn-sm" onclick="editTruck(${t.id})">✏️ Edit</button><button class="btn btn-danger btn-sm" onclick="confirmDeleteTruck(${t.id},'${escHtml(t.plate_number)}')">🗑️ Delete</button>`; document.getElementById('truckDetailBody').innerHTML = `<div class="detail-zone-name">🚛 ${escHtml(t.plate_number)}</div><div class="detail-stats"><div class="detail-stat">📍 <span class="num">${t.latitude ?? '—'}</span></div><div class="detail-stat">📍 <span class="num">${t.longitude ?? '—'}</span></div><div class="detail-stat">📅 ${fmtDate(t.created_at)}</div></div>`; }
+        window.filterTrucks = function () { const q = document.getElementById('searchInput').value.toLowerCase(); renderTruckList(allTrucks.filter(t => t.plate_number.toLowerCase().includes(q) || (t.model && t.model.toLowerCase().includes(q)))); };
+        window.selectTruck = selectTruck;
+
+        async function addTruck() {
+            const plate = document.getElementById('addPlate').value.trim(); if (!plate) { showToast('Plate required', 'error'); return; } const model = document.getElementById('addModel').value.trim(); try { const res = await API.post('/admin/trucks', { plate_number: plate, model }); if (!res.ok) throw new Error(); closeModal('addItemModal'); showToast('Truck added', 'success'); loadTrucks(); } catch (e) { showToast('Failed', 'error'); }
+        }
+        function editTruck(id) { const t = allTrucks.find(x => x.id === id); if (!t) return; openModal('addItemModal'); document.getElementById('addModalTitle').textContent = '✏️ Edit Truck'; document.getElementById('addModalBody').innerHTML = `<input type="hidden" id="editId" value="${t.id}"><div class="form-group"><label class="form-label">Plate *</label><input class="form-control" id="editPlate" value="${escHtml(t.plate_number)}"></div><div class="form-group"><label class="form-label">Model</label><input class="form-control" id="editModel" value="${escHtml(t.model || '')}"></div>`; document.getElementById('addModalSaveBtn').onclick = saveTruckEdit; }
+        async function saveTruckEdit() { const id = document.getElementById('editId').value; const plate = document.getElementById('editPlate').value.trim(); const model = document.getElementById('editModel').value.trim(); if (!plate) { showToast('Plate required', 'error'); return; } try { const res = await API.put(`/admin/trucks/${id}`, { plate_number: plate, model }); if (!res.ok) throw new Error(); closeModal('addItemModal'); showToast('Updated', 'success'); loadTrucks(); } catch (e) { showToast('Failed', 'error'); } }
+        function confirmDeleteTruck(id, plate) { document.getElementById('deleteModalMessage').textContent = `Are you sure you want to delete truck "${plate}"? This cannot be undone.`; document.getElementById('deleteConfirmBtn').onclick = () => executeDeleteTruck(id); openModal('deleteConfirmModal'); }
+        async function executeDeleteTruck(id) { try { const res = await API.del(`/admin/trucks/${id}`); if (!res.ok) throw new Error(); closeModal('deleteConfirmModal'); showToast('Deleted', 'success'); selectedTruck = null; loadTrucks(); } catch (e) { showToast('Delete failed', 'error'); } }
+
+        // ── ANALYTICS ──
+        async function renderAnalytics() {
+            const html = `
+      <div class="stat-grid"><div class="stat-card"><div class="stat-label">Users</div><div class="stat-value" id="a-users">—</div></div><div class="stat-card"><div class="stat-label">Trucks</div><div class="stat-value" id="a-trucks">—</div></div><div class="stat-card"><div class="stat-label">Schedules</div><div class="stat-value" id="a-sched">—</div></div><div class="stat-card"><div class="stat-label">Reports</div><div class="stat-value" id="a-reports">—</div></div></div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">📊 Report Distribution</div></div><div class="panel-body"><div class="chart-wrap"><canvas id="analyticsDonut"></canvas></div></div></div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">📋 Data Table</div></div><div class="panel-body-flush"><table class="data-table"><thead><tr><th>Type</th><th>Count</th><th>%</th></tr></thead><tbody id="analyticsTable"><tr><td colspan="3" style="text-align:center;padding:20px;">Loading...</td></tr></tbody></table></div></div>
+    `;
+            document.getElementById('pageContent').innerHTML = html;
+            loadAnalyticsData();
+            document.getElementById('actionBtn').onclick = () => showToast('Export Excel', 'info');
+        }
+        async function loadAnalyticsData() {
+            try { const res = await API.get('/admin/analytics'); if (!res.ok) throw new Error(); const data = await res.json(); const rd = Array.isArray(data.type_breakdown) ? data.type_breakdown : (Array.isArray(data) ? data : []); const total = rd.reduce((s, d) => s + Number(d.total || 0), 0); const labels = rd.map(d => d.type.replace('_', ' ').toUpperCase()); const values = rd.map(d => Number(d.total || 0)); if (document.getElementById('analyticsDonut')) new Chart(document.getElementById('analyticsDonut'), { type: 'doughnut', data: { labels: labels.length ? labels : ['No Data'], datasets: [{ data: labels.length ? values : [1], backgroundColor: ['#ffc13c', '#3ddc84', '#ff5c5c', '#60a5fa', '#a78bfa'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'var(--text2)', font: { size: 10 } } } }, cutout: '65%' } }); const tb = document.getElementById('analyticsTable'); if (!rd.length) { tb.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text2)">No data</td></tr>'; } else { tb.innerHTML = rd.map(d => { const v = Number(d.total || 0); const p = total ? ((v / total) * 100).toFixed(1) : 0; return `<tr><td>${d.type.replace('_', ' ').toUpperCase()}</td><td class="table-mono">${v}</td><td>${p}%</td></tr>`; }).join(''); } const dash = await API.get('/admin/dashboard'); if (dash.ok) { const dd = await dash.json(); document.getElementById('a-users').textContent = dd.totalUsers ?? '—'; document.getElementById('a-trucks').textContent = dd.totalTrucks ?? '—'; document.getElementById('a-sched').textContent = dd.totalSchedules ?? '—'; document.getElementById('a-reports').textContent = dd.totalReports ?? '—'; } } catch (e) { showToast('Analytics error', 'error'); }
         }
 
-        function checkAuth() {
-            if (!getToken()) window.location.href = '/login.html';
+        // ── ANNOUNCEMENTS ──
+        async function renderAnnouncements() {
+            const html = `
+      <div class="panel"><div class="panel-header"><div class="panel-title">✍️ Compose</div><button class="btn btn-gold" onclick="publishAnnounce()">Publish →</button></div><div class="panel-body"><div class="form-grid"><div class="form-group"><label class="form-label">Title</label><input class="form-control" id="annTitle" placeholder="Title"></div><div class="form-group"><label class="form-label">Date (optional)</label><input class="form-control" type="date" id="annDate"></div><div class="form-group"><label class="form-label">Image URL</label><input class="form-control" id="annImg" placeholder="https://..."></div><div class="form-group" style="grid-column:1/-1"><label class="form-label">Message</label><textarea class="form-control" id="annMsg" style="min-height:70px;"></textarea></div></div></div></div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">📢 Published</div><span class="badge badge-gold" id="annCount">0</span></div><div style="padding:20px;"><div class="ann-grid" id="annGrid"><div style="text-align:center;padding:20px;color:var(--text2);grid-column:1/-1;"><span class="loading-spinner"></span></div></div></div></div>
+    `;
+            document.getElementById('pageContent').innerHTML = html;
+            loadAnnouncements();
+            document.getElementById('actionBtn').onclick = () => { document.getElementById('annTitle').value = ''; document.getElementById('annMsg').value = ''; document.getElementById('annDate').value = ''; document.getElementById('annImg').value = ''; };
         }
+        async function loadAnnouncements() {
+            try { const res = await API.get('/admin/announcements'); if (!res.ok) throw new Error(); const data = await res.json(); document.getElementById('annCount').textContent = data.length; const grid = document.getElementById('annGrid'); if (!data.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><span class="empty-state-icon">📢</span><div class="empty-state-text">No announcements</div></div>'; return; } grid.innerHTML = data.map(a => `<div class="ann-card">${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder">📢</div>`}<div class="ann-card-body"><div class="ann-card-title">${escHtml(a.title)}</div><div class="ann-card-msg">${escHtml(a.message)}</div><div style="font-size:0.65rem;color:var(--text3);margin-top:6px;">${fmtDate(a.created_at)}</div></div><div class="ann-card-footer"><span class="badge badge-gold">Published</span><button class="btn btn-danger btn-sm" onclick="confirmDeleteAnn(${a.id},'${escHtml(a.title)}')">🗑 Delete</button></div></div>`).join(''); } catch (e) { showToast('Failed to load announcements', 'error'); }
+        }
+        async function publishAnnounce() {
+            const title = document.getElementById('annTitle').value.trim(); const msg = document.getElementById('annMsg').value.trim(); if (!title || !msg) { showToast('Title and message required', 'error'); return; } try { const res = await API.post('/admin/announcements', { title, message: msg, pickup_date: document.getElementById('annDate').value || null, image_url: document.getElementById('annImg').value.trim() || null }); if (!res.ok) throw new Error(); showToast('Published!', 'success'); loadAnnouncements(); document.getElementById('annTitle').value = ''; document.getElementById('annMsg').value = ''; document.getElementById('annDate').value = ''; document.getElementById('annImg').value = ''; } catch (e) { showToast('Publish failed', 'error'); }
+        }
+        function confirmDeleteAnn(id, name) { document.getElementById('deleteModalMessage').textContent = `Delete "${name}"? Cannot be undone.`; document.getElementById('deleteConfirmBtn').onclick = async () => { try { const res = await API.del(`/admin/announcements/${id}`); if (!res.ok) throw new Error(); closeModal('deleteConfirmModal'); showToast('Deleted', 'success'); loadAnnouncements(); } catch (e) { showToast('Delete failed', 'error'); } }; openModal('deleteConfirmModal'); }
+
+        // ── CLOCK ──
+        function updateClock() { const now = new Date(); const el = document.getElementById('clock'); if (el) el.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); } setInterval(updateClock, 1000); updateClock();
+
+        // ── INIT ──
         checkAuth();
+        (async () => { try { const res = await API.get('/admin/profile'); if (res.ok) { const d = await res.json(); document.getElementById('adminName').textContent = d.name || 'Admin'; } } catch (e) { } })();
 
-        // Load all data
-        loadStats();
-        loadChart();
-        loadRecentReports();
-        loadPickups();
-        loadProfile();
+        document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+            el.addEventListener('click', e => {
+                e.preventDefault();
+                const page = el.dataset.page;
+                if (page) navigate(page);
+            });
+        });
 
-        // ── Hamburger toggle ──
-        document.getElementById('hamburger')?.addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebarOverlay').classList.toggle('visible');
-        });
-        document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('visible');
-        });
+
+        navigate('dashboard');
     </script>
 </body>
 

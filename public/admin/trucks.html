@@ -1437,15 +1437,6 @@
             if (detailMapInstance) setTimeout(() => detailMapInstance.invalidateSize(), 100);
         });
 
-        // ── Hamburger toggle ──
-        document.getElementById('hamburger')?.addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebarOverlay').classList.toggle('visible');
-        });
-        document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('visible');
-        });
     </script>
 </body>
 

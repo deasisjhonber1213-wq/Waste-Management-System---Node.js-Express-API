@@ -442,7 +442,21 @@
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
-
+    <div class="modal-overlay" id="deleteScheduleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" style="color:var(--red);">🗑️ Confirm Delete</div>
+                <button class="modal-close" onclick="closeModal('deleteScheduleModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this schedule? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteScheduleModal')">Cancel</button>
+                <button class="btn btn-danger" id="deleteScheduleConfirmBtn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
     <script>
         // ---- SIDEBAR TOGGLE ----
         (function () {
@@ -796,21 +810,30 @@
             }
         }
 
-        async function deleteSchedule(id) {
-            if (!confirm("Delete this schedule?")) return;
+        let pendingDeleteScheduleId = null;
+
+        function deleteSchedule(id) {
+            pendingDeleteScheduleId = id;
+            document.getElementById('deleteScheduleConfirmBtn').onclick = executeDeleteSchedule;
+            openModal('deleteScheduleModal');
+        }
+
+        async function executeDeleteSchedule() {
+            const id = pendingDeleteScheduleId;
+            if (!id) return;
             try {
                 const res = await API.del(`/admin/pickups/${id}`);
-                if (!res.ok) {
-                    const err = await res.text();
-                    throw new Error(err);
-                }
+                if (!res.ok) throw new Error(await res.text());
+                closeModal('deleteScheduleModal');
                 showToast("Schedule deleted", "success");
                 loadSchedules();
             } catch (err) {
                 console.error('Delete failed:', err);
                 showToast("Delete failed: " + err.message, "error");
             }
+            pendingDeleteScheduleId = null;
         }
+        window.deleteSchedule = deleteSchedule;
 
         async function loadAdminProfile() {
             try {
