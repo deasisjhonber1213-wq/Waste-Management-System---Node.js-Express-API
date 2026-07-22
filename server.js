@@ -13,6 +13,9 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
+function manilaToday() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -301,6 +304,11 @@ io.on('connection', (socket) => {
                      LIMIT 1`,
                     [latitude, longitude, driverId]
                 );
+                io.emit('truck-location', {
+                    truckId: assignment[0].truck_id,
+                    latitude, longitude, accuracy,
+                    timestamp: timestamp || Date.now()
+                });
             }
 
             socket.broadcast.to(`dispatcher-${driverId}`).emit('driver-moved', {
@@ -353,6 +361,7 @@ io.on('connection', (socket) => {
                 status,
                 timestamp: new Date()
             });
+            io.emit('assignment-public-status', { assignmentId, status, driverId });
 
             socket.broadcast.to(`dispatcher-${driverId}`).emit('driver-status-changed', {
                 driverId,

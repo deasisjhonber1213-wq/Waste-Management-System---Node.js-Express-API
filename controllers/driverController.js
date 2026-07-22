@@ -1,6 +1,13 @@
 const db = require("../config/db");
 
 // ─────────────────────────────────────────────────────────
+// HELPER: Get today's date in Asia/Manila timezone
+// ─────────────────────────────────────────────────────────
+function manilaToday() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
+
+// ─────────────────────────────────────────────────────────
 // AUTO-CANCEL MISSED ASSIGNMENTS
 // Any assignment whose scheduled date has already passed and
 // which never got started (still 'pending') or was left hanging
@@ -11,7 +18,7 @@ const db = require("../config/db");
 // ─────────────────────────────────────────────────────────
 async function autoCancelMissedAssignments() {
     try {
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const today = manilaToday();
         const [result] = await db.query(
             `UPDATE route_assignments
              SET status = 'cancelled'
@@ -41,7 +48,7 @@ exports.getTodayAssignment = async (req, res) => {
 
         await autoCancelMissedAssignments();
 
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const today = manilaToday();
         console.log("Today's date (Philippines):", today);
 
         const [assignments] = await db.query(
@@ -111,6 +118,14 @@ exports.updateAssignmentStatus = async (req, res) => {
                 status: status,
                 timestamp: new Date()
             });
+
+            // Broadcast to all residents so they can see the status change
+            io.emit('assignment-public-status', {
+                assignmentId: req.params.id,
+                status: status,
+                driverId: req.user.id,
+                timestamp: new Date()
+            });
         }
 
         res.json({ message: `Status updated to ${status}` });
@@ -155,7 +170,7 @@ exports.updateMyLocation = async (req, res) => {
             return res.status(400).json({ error: "latitude and longitude required" });
         }
 
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const today = manilaToday();
 
         const [[assignment]] = await db.query(
             `SELECT truck_id FROM route_assignments
@@ -167,9 +182,8 @@ exports.updateMyLocation = async (req, res) => {
             return res.status(404).json({ error: "No truck assigned today" });
         }
 
-
         await db.query(
-            "UPDATE trucks SET latitude=?, longitude=?, last_location_update=NOW() WHERE id=?",
+            "UPDATE trucks SET latitude=?, longitude=?, location_updated_at=NOW() WHERE id=?",
             [latitude, longitude, assignment.truck_id]
         );
 
@@ -182,11 +196,19 @@ exports.updateMyLocation = async (req, res) => {
             [latitude, longitude, req.user.id, today]
         );
 
-
         if (req.app.get('io')) {
             const io = req.app.get('io');
             io.to(`dispatcher-${req.user.id}`).emit('driver-moved', {
                 driverId: req.user.id,
+                latitude: latitude,
+                longitude: longitude,
+                accuracy: accuracy || 0,
+                timestamp: Date.now()
+            });
+
+            // Broadcast truck location to all residents
+            io.emit('truck-location', {
+                truckId: assignment.truck_id,
                 latitude: latitude,
                 longitude: longitude,
                 accuracy: accuracy || 0,
@@ -228,6 +250,7 @@ exports.submitReport = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
 exports.getMyReports = async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -308,7 +331,6 @@ exports.updateProfile = async (req, res) => {
             "UPDATE users SET name=?, phone=?, address=? WHERE id=?",
             [name, phone, address, req.user.id]
         );
-
 
         if (req.app.get('io')) {
             const io = req.app.get('io');
@@ -403,7 +425,6 @@ exports.getRouteWaypoints = async (req, res) => {
     }
 };
 
-
 exports.getStats = async (req, res) => {
     try {
         const [stats] = await db.query(
@@ -428,7 +449,7 @@ exports.getTodayRouteDetails = async (req, res) => {
     try {
         await autoCancelMissedAssignments();
 
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const today = manilaToday();
 
         const [assignments] = await db.query(
             `SELECT
@@ -479,7 +500,7 @@ exports.getTodayRouteDetails = async (req, res) => {
 exports.getLocationHistory = async (req, res) => {
     try {
         const { limit = 50 } = req.query;
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const today = manilaToday();
 
         const [rows] = await db.query(
             `SELECT 
@@ -519,7 +540,6 @@ exports.updateRouteProgress = async (req, res) => {
             return res.status(403).json({ error: "Not authorised" });
         }
 
-
         await db.query(
             `UPDATE route_assignments 
              SET progress_log = JSON_SET(
@@ -530,7 +550,6 @@ exports.updateRouteProgress = async (req, res) => {
              WHERE id = ?`,
             [stop_index, stop_status || 'reached', assignment_id]
         );
-
 
         if (req.app.get('io')) {
             const io = req.app.get('io');
@@ -553,7 +572,6 @@ exports.updateRouteProgress = async (req, res) => {
 
 exports.getConnectedDrivers = async (req, res) => {
     try {
-
         const connectedDrivers = req.app.get('connectedDrivers') || new Map();
 
         const online = Array.from(connectedDrivers.entries()).map(([id, data]) => ({
@@ -667,11 +685,10 @@ exports.markNotificationRead = async (req, res) => {
 
 exports.getPerformanceStats = async (req, res) => {
     try {
-        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const today = manilaToday();
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         const weekAgoStr = weekAgo.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
-
 
         const [weekly] = await db.query(
             `SELECT 
@@ -687,7 +704,6 @@ exports.getPerformanceStats = async (req, res) => {
             AND assigned_date BETWEEN ? AND ?`,
             [req.user.id, weekAgoStr, today]
         );
-
 
         const [todayStats] = await db.query(
             `SELECT 
@@ -708,7 +724,6 @@ exports.getPerformanceStats = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 exports.getOpenReports = async (req, res) => {
     try {
@@ -739,12 +754,10 @@ exports.getOpenReports = async (req, res) => {
     }
 };
 
-
 exports.updateReportStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-
 
         let nextStatus = status;
         if (status === 'completed') {
@@ -767,7 +780,6 @@ exports.updateReportStatus = async (req, res) => {
             return res.status(404).json({ error: 'Report not found' });
         }
 
-
         await db.query(
             `UPDATE reports 
              SET status = ?, 
@@ -776,7 +788,6 @@ exports.updateReportStatus = async (req, res) => {
              WHERE id = ?`,
             [nextStatus, req.user.id, id]
         );
-
 
         if (req.app.get('io')) {
             const io = req.app.get('io');

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
@@ -876,6 +877,17 @@
             justify-content: center;
             position: relative;
             z-index: 2;
+            transition: background .35s, opacity .35s, box-shadow .35s;
+        }
+
+        .mrf-pin.passed {
+            background: linear-gradient(135deg, #64748b, #475569);
+            box-shadow: 0 2px 8px rgba(71, 85, 105, .35);
+            opacity: .65;
+        }
+
+        .mrf-wrap.passed .mrf-pulse-ring {
+            display: none;
         }
 
         .stop-pin {
@@ -961,6 +973,15 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            transition: border-color .3s;
+        }
+
+        .truck-status.completed {
+            border-left-color: var(--green);
+        }
+
+        .truck-status.cancelled {
+            border-left-color: var(--text-3);
         }
 
         .truck-status-icon {
@@ -999,6 +1020,77 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        /* ── Collection completion / cancellation banner ── */
+        .collection-banner {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            background: var(--green-dim);
+            border: 1px solid var(--border-hi);
+            border-radius: 14px;
+            padding: 0.9rem 1rem;
+            margin-top: 0.75rem;
+            animation: fadeUpBanner .4s ease;
+        }
+
+        .collection-banner.show {
+            display: flex;
+        }
+
+        .collection-banner.cancelled {
+            background: rgba(148, 163, 184, 0.1);
+            border-color: var(--border);
+        }
+
+        .collection-banner .cb-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--green);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 4px var(--green-dim);
+        }
+
+        .collection-banner.cancelled .cb-icon {
+            background: var(--text-3);
+            box-shadow: none;
+        }
+
+        .cb-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--green);
+        }
+
+        .collection-banner.cancelled .cb-title {
+            color: var(--text-2);
+        }
+
+        .cb-sub {
+            font-size: 0.7rem;
+            color: var(--text-2);
+            margin-top: 2px;
+            font-family: var(--ff-mono);
+        }
+
+        @keyframes fadeUpBanner {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
         }
 
         .about-grid {
@@ -2331,12 +2423,19 @@
                 <div class="truck-card">
                     <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80"
                         alt="Waste truck">
-                    <div class="truck-status">
+                    <div class="truck-status" id="truckStatusBox">
                         <div class="truck-status-icon">🚛</div>
                         <div>
                             <div class="truck-status-label"><span class="live-dot"></span>&nbsp;Live Truck Status</div>
                             <div id="todayTruck">Loading...</div>
                         </div>
+                    </div>
+                </div>
+                <div class="collection-banner" id="collectionBanner">
+                    <div class="cb-icon" id="cbIcon">✓</div>
+                    <div>
+                        <div class="cb-title" id="cbTitle">Today's Collection Complete</div>
+                        <div class="cb-sub" id="cbSub">Thanks for keeping Jose Dalman clean ♻️</div>
                     </div>
                 </div>
                 <div class="map-panel">
@@ -2833,6 +2932,11 @@
         let routeStarted = false;
         let hasLiveTruckLocation = false;
 
+        // Current-day assignment + status tracking (used for socket push updates
+        // and for the completion/cancellation banner).
+        let currentAssignmentId = null;
+        let routeStatus = null; // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+
         let animFrame = null;
         let animating = false;
         let animStart = null;
@@ -2846,6 +2950,9 @@
         let drawnCoords = [];
         let progressIndex = 0;
         let pinStops = [];
+        // MRF stops get a similar "passed" treatment once the truck's progress
+        // along the road has advanced beyond their position.
+        let mrfStops = [];
         const DEFAULT_CENTER = { lat: 8.2317, lng: 123.4018 };
 
         tileStreet = L.tileLayer(
@@ -2931,6 +3038,21 @@
             } catch (e) { console.error("parseWaypointsJson error:", e); return { road: [], pins: [], mrfs: [] }; }
         }
 
+        // Finds the closest point on the road polyline to a given lat/lng, expressed
+        // as an index into drawnCoords. Used to know "where along the route" a pin
+        // or MRF stop sits, so we only flag it as passed once the truck's progress
+        // has actually advanced beyond that point (not just because it's nearby).
+        function nearestRoadIndex(lat, lng) {
+            if (!drawnCoords.length) return -1;
+            const pt = L.latLng(lat, lng);
+            let best = 0, bestDist = Infinity;
+            for (let i = 0; i < drawnCoords.length; i++) {
+                const d = pt.distanceTo(drawnCoords[i]);
+                if (d < bestDist) { bestDist = d; best = i; }
+            }
+            return best;
+        }
+
         function showRouteWithTrail(routeData) {
             if (!map) return;
 
@@ -2943,6 +3065,7 @@
             drawnCoords = [];
             progressIndex = 0;
             pinStops = [];
+            mrfStops = [];
 
             const { road, pins, mrfs } = routeData;
 
@@ -2989,10 +3112,18 @@
                 );
             });
 
-            mrfs.forEach(m => {
+            // Tag each MRF stop with its position along the road so we know when the
+            // truck has driven past it, and give it its own marker index for styling.
+            mrfStops = mrfs.map(m => ({
+                ...m,
+                _routeIdx: drawnCoords.length ? nearestRoadIndex(m.lat, m.lng) : null,
+                _passed: false
+            }));
+
+            mrfStops.forEach((m, i) => {
                 const icon = L.divIcon({
                     className: "",
-                    html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
+                    html: `<div class="mrf-wrap" id="mrfWrap${i}"><div class="mrf-pulse-ring"></div><div class="mrf-pin" id="mrfPin${i}"><span style="font-size:15px">🏭</span></div></div>`,
                     iconSize: [36, 36],
                     iconAnchor: [18, 18]
                 });
@@ -3012,6 +3143,29 @@
             if (allPoints.length) {
                 map.fitBounds(L.latLngBounds(allPoints).pad(0.12));
             }
+
+            // If we already have a live truck position (e.g. re-rendering the route
+            // after a socket reconnect), re-apply progress immediately instead of
+            // leaving the trail reset at the start.
+            if (truckLat !== null && truckLng !== null) {
+                updateRouteProgress(truckLat, truckLng);
+            }
+        }
+
+        // Marks any MRF stop as "passed" (greyed out, pulse ring hidden) once the
+        // truck's progress along the route has advanced beyond that stop's position.
+        function markMRFPassed(idxLimit) {
+            mrfStops.forEach((m, i) => {
+                if (m._passed) return;
+                if (m._routeIdx == null || m._routeIdx > idxLimit) return;
+                m._passed = true;
+                const wrap = document.getElementById(`mrfWrap${i}`);
+                const pin = document.getElementById(`mrfPin${i}`);
+                if (wrap) wrap.classList.add('passed');
+                if (pin) { pin.classList.add('passed'); pin.innerHTML = '<span style="font-size:14px">✓</span>'; }
+                const marker = mrfMarkers[i];
+                if (marker) marker.setPopupContent(`<b style="color:#94a3b8">🏭 ${m.name}</b><br><span style="color:#4ade80">✓ Truck already passed</span>`);
+            });
         }
 
         // Splits the road line at the truck's current position: everything behind becomes
@@ -3043,11 +3197,13 @@
                     }
                 }
             });
+
+            markMRFPassed(progressIndex);
         }
 
         function animateTruck(from, to, duration = 3000) {
-            // Duration is tuned close to the 10s truck-poll interval (pollTruckLocation)
-            // so the marker glides continuously instead of jump-then-pause.
+            // Duration is tuned close to the poll/push interval so the marker glides
+            // continuously instead of jump-then-pause.
             if (animating && animFrame) {
                 cancelAnimationFrame(animFrame);
                 animFrame = null;
@@ -3143,79 +3299,6 @@
                     }
                 });
             } catch (e) { console.warn('Resident locations failed', e); }
-        }
-
-        async function loadTodayTruck() {
-            const statusEl = document.getElementById('todayTruck');
-            try {
-                const data = await apiFetch('/api/resident/today-truck');
-                if (!data) {
-                    statusEl.textContent = 'No truck assigned today.';
-                    initMap();
-                    startUserTracking();
-                    return;
-                }
-                currentTruckId = data.truck_id;
-                routeStarted = !!data.route_started;
-                hasLiveTruckLocation = !!data.has_live_location;
-
-                if (!routeStarted) {
-                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--amber)">· Not on route yet</span>`;
-                } else if (!hasLiveTruckLocation) {
-                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--amber)">· Waiting for GPS…</span>`;
-                } else {
-                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
-                }
-
-                if (data.route_id) {
-                    try {
-                        const routeData = await apiFetch(`/api/resident/route-waypoints?route_id=${data.route_id}`);
-                        const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
-                        if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
-                            initMap(parsed.road[0]?.lat || DEFAULT_CENTER.lat, parsed.road[0]?.lng || DEFAULT_CENTER.lng);
-                            showRouteWithTrail(parsed);
-                        } else {
-                            initMap();
-                        }
-                    } catch (e) {
-                        console.warn('route-waypoints failed', e);
-                        initMap();
-                    }
-                } else {
-                    initMap();
-                }
-
-                // Only place the truck marker (and start the road "erasing" trail)
-                // once the driver has actually pressed Start Route AND we have a
-                // fresh GPS ping — otherwise this was showing a static depot
-                // position as if it were a live truck.
-                if (routeStarted && hasLiveTruckLocation && data.latitude && data.longitude) {
-                    placeTruckMarker(data.latitude, data.longitude, false);
-                }
-
-                startUserTracking();
-
-                if (routeStarted) {
-                    pollTruckLocation();
-                    setInterval(pollTruckLocation, 10000);
-                }
-            } catch (err) {
-                console.error('loadTodayTruck failed:', err);
-                statusEl.textContent = 'Failed to load truck.';
-                initMap();
-                startUserTracking();
-            }
-        }
-
-        async function pollTruckLocation() {
-            if (!currentTruckId || !routeStarted) return;
-            try {
-                const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
-                if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) {
-                    hasLiveTruckLocation = true;
-                    placeTruckMarker(logs[0].latitude, logs[0].longitude, true);
-                }
-            } catch (e) { console.warn('Truck poll failed', e); }
         }
 
         function haversineKm(lat1, lng1, lat2, lng2) {
@@ -3488,6 +3571,189 @@
         function toggleAnnAll() {
             annShowAll = !annShowAll;
             renderAnnouncements();
+        }
+
+        /* ── Truck status card + completion/cancellation banner ── */
+        function resetCollectionBanner() {
+            const banner = document.getElementById('collectionBanner');
+            const box = document.getElementById('truckStatusBox');
+            if (banner) banner.classList.remove('show', 'cancelled');
+            if (box) box.classList.remove('completed', 'cancelled');
+        }
+
+        function showCompletionBanner(cancelled) {
+            const banner = document.getElementById('collectionBanner');
+            const icon = document.getElementById('cbIcon');
+            const title = document.getElementById('cbTitle');
+            const sub = document.getElementById('cbSub');
+            const box = document.getElementById('truckStatusBox');
+            if (!banner) return;
+            banner.classList.add('show');
+            banner.classList.toggle('cancelled', !!cancelled);
+            if (box) {
+                box.classList.toggle('completed', !cancelled);
+                box.classList.toggle('cancelled', !!cancelled);
+            }
+            icon.textContent = cancelled ? '✕' : '✓';
+            title.textContent = cancelled ? 'Route Cancelled Today' : "Today's Collection Complete";
+            sub.textContent = cancelled
+                ? 'No pickup was completed for your zone today.'
+                : 'Thanks for keeping Jose Dalman clean ♻️';
+        }
+
+        function applyStatusToUI(status) {
+            routeStatus = status;
+            const statusEl = document.getElementById('todayTruck');
+            if (status === 'completed') {
+                showCompletionBanner(false);
+            } else if (status === 'cancelled') {
+                showCompletionBanner(true);
+            } else {
+                resetCollectionBanner();
+            }
+        }
+
+        async function loadTodayTruck() {
+            const statusEl = document.getElementById('todayTruck');
+            resetCollectionBanner();
+            try {
+                const data = await apiFetch('/api/resident/today-truck');
+                if (!data) {
+                    statusEl.textContent = 'No truck assigned today.';
+                    currentAssignmentId = null;
+                    routeStatus = null;
+                    initMap();
+                    startUserTracking();
+                    return;
+                }
+                currentTruckId = data.truck_id;
+                currentAssignmentId = data.id || null;
+                routeStarted = !!data.route_started;
+                hasLiveTruckLocation = !!data.has_live_location;
+                routeStatus = data.status || (routeStarted ? 'in_progress' : 'pending');
+
+                if (routeStatus === 'completed') {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--green)">· Collection complete ✓</span>`;
+                    showCompletionBanner(false);
+                } else if (routeStatus === 'cancelled') {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--text-3)">· Route cancelled</span>`;
+                    showCompletionBanner(true);
+                } else if (!routeStarted) {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--amber)">· Not on route yet</span>`;
+                } else if (!hasLiveTruckLocation) {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--amber)">· Waiting for GPS…</span>`;
+                } else {
+                    statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name}`;
+                }
+
+                if (data.route_id) {
+                    try {
+                        const routeData = await apiFetch(`/api/resident/route-waypoints?route_id=${data.route_id}`);
+                        const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
+                        if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
+                            initMap(parsed.road[0]?.lat || DEFAULT_CENTER.lat, parsed.road[0]?.lng || DEFAULT_CENTER.lng);
+                            showRouteWithTrail(parsed);
+                        } else {
+                            initMap();
+                        }
+                    } catch (e) {
+                        console.warn('route-waypoints failed', e);
+                        initMap();
+                    }
+                } else {
+                    initMap();
+                }
+
+                // Only place the truck marker (and start the road "erasing" trail)
+                // once the driver has actually pressed Start Route AND we have a
+                // fresh GPS ping — otherwise this was showing a static depot
+                // position as if it were a live truck.
+                if (routeStarted && hasLiveTruckLocation && data.latitude && data.longitude) {
+                    placeTruckMarker(data.latitude, data.longitude, false);
+                }
+
+                startUserTracking();
+
+                if (routeStarted && routeStatus === 'in_progress') {
+                    pollTruckLocation();
+                    setInterval(pollTruckLocation, 10000);
+                }
+            } catch (err) {
+                console.error('loadTodayTruck failed:', err);
+                statusEl.textContent = 'Failed to load truck.';
+                initMap();
+                startUserTracking();
+            }
+        }
+
+        async function pollTruckLocation() {
+            if (!currentTruckId || routeStatus !== 'in_progress') return;
+            try {
+                const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
+                if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) {
+                    hasLiveTruckLocation = true;
+                    placeTruckMarker(logs[0].latitude, logs[0].longitude, true);
+                    const statusEl = document.getElementById('todayTruck');
+                    if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
+                        statusEl.innerHTML = statusEl.innerHTML.replace(
+                            /<span style="color:var\(--amber\)">· Waiting for GPS…<\/span>/,
+                            ''
+                        );
+                    }
+                }
+            } catch (e) { console.warn('Truck poll failed', e); }
+        }
+
+        /* ── Real-time push updates (Socket.IO) ──
+           Backs up / speeds up the 10s REST poll above with instant pushes from
+           the driver's GPS stream and status changes, so the resident sees smooth
+           movement and immediate "route started / completed" updates instead of
+           waiting on the next poll cycle. Falls back gracefully to REST polling
+           if the socket can't connect. */
+        let residentSocket = null;
+
+        function connectResidentSocket() {
+            if (!window.io) return; // socket.io client script didn't load
+            if (residentSocket && residentSocket.connected) return;
+
+            residentSocket = window.io(window.location.origin, {
+                transports: ['websocket', 'polling'],
+                auth: { token },
+                reconnection: true,
+                reconnectionAttempts: 10,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000
+            });
+
+            residentSocket.on('connect_error', (err) => {
+                console.warn('Resident live-update socket unavailable, using polling fallback:', err.message);
+            });
+
+            residentSocket.on('truck-location', (data) => {
+                if (!currentTruckId || !data || String(data.truckId) !== String(currentTruckId)) return;
+                if (routeStatus !== 'in_progress') return;
+                hasLiveTruckLocation = true;
+                placeTruckMarker(data.latitude, data.longitude, true);
+                const statusEl = document.getElementById('todayTruck');
+                if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
+                    loadTodayTruck();
+                }
+            });
+
+            residentSocket.on('assignment-public-status', (data) => {
+                if (!currentAssignmentId || !data || String(data.assignmentId) !== String(currentAssignmentId)) return;
+                const prevStatus = routeStatus;
+                applyStatusToUI(data.status);
+                if (data.status === 'in_progress' && prevStatus !== 'in_progress') {
+                    routeStarted = true;
+                    showToast('🚛 Your collection truck is on the way!');
+                    pollTruckLocation();
+                } else if (data.status === 'completed') {
+                    showToast('✅ Today\'s pickup is complete!');
+                } else if (data.status === 'cancelled') {
+                    showToast('Route cancelled for today', 'info');
+                }
+            });
         }
 
         /* ── PROFILE ── */
@@ -3791,6 +4057,7 @@
         loadSchedule();
         loadAnnouncements();
         loadProfile();
+        connectResidentSocket();
     </script>
 </body>
 

@@ -44,21 +44,40 @@ function parseWaypoints(raw) {
 
 // A truck is only "really" trackable once the driver has pressed Start Route
 // (route_assignments.status === 'in_progress') AND has a GPS ping within the
-// last few minutes. Otherwise we were previously showing the truck's static
-// depot coordinates as if it were live, which is the bug being fixed here.
+// last few minutes.
 const LIVE_LOCATION_FRESHNESS_MS = 3 * 60 * 1000;
+
+// Both the driver and resident sides must agree on what "today" means. The
+// driver dashboard computes it in Asia/Manila local time (see driverController
+// getTodayAssignment) — this side previously used MySQL's CURDATE(), which
+// depends on the DB server's own timezone and can silently disagree with the
+// driver's "today", making an already-started route look like it hasn't
+// started yet (or vice versa) around midnight. We standardize on the same
+// Asia/Manila date string everywhere here.
+function manilaToday() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
 
 exports.getTodayTruck = async (req, res) => {
     try {
+        const today = manilaToday();
+
+        // Previously this picked "any" assignment for today with no ordering,
+        // which could surface a cancelled/older row ahead of the actual active
+        // one if more than one assignment existed for the same date. Ordering
+        // by status prioritizes an in-progress route, then a pending one.
         const [assignment] = await db.query(`
             SELECT ra.*, t.plate_number, t.model,
+                   t.latitude AS truck_lat, t.longitude AS truck_lng,
+                   t.location_updated_at AS truck_loc_updated_at,
                    r.id as route_id, r.zone_name, r.waypoints_json
             FROM route_assignments ra
             JOIN trucks t ON ra.truck_id = t.id
             JOIN routes r ON ra.route_id = r.id
-            WHERE ra.assigned_date = CURDATE()
+            WHERE ra.assigned_date = ?
+            ORDER BY FIELD(ra.status, 'in_progress', 'pending', 'completed', 'cancelled')
             LIMIT 1
-        `);
+        `, [today]);
 
         if (!assignment[0]) {
             return res.json(null);
@@ -70,27 +89,29 @@ exports.getTodayTruck = async (req, res) => {
             : { road: [], pins: [], mrfs: [] };
 
         route.route_started = route.status === "in_progress";
+        route.route_completed = route.status === "completed";
+        route.route_cancelled = route.status === "cancelled";
         route.has_live_location = false;
         route.latitude = null;
         route.longitude = null;
 
-        if (route.route_started) {
-            const [logs] = await db.query(
-                `SELECT latitude, longitude, recorded_at FROM gps_logs
-                 WHERE truck_id = ? ORDER BY recorded_at DESC LIMIT 1`,
-                [route.truck_id]
-            ).catch(() => [[]]);
-
-            const latest = logs && logs[0];
-            const isFresh = latest &&
-                (Date.now() - new Date(latest.recorded_at).getTime()) < LIVE_LOCATION_FRESHNESS_MS;
-
+        // Live location now comes straight from the trucks table, which is the
+        // row both the driver's socket updates (server.js `driver-location`)
+        // and the driver's REST fallback (driverController.updateMyLocation)
+        // actually write to. The old code queried a `gps_logs` table that
+        // nothing in the app inserts into, so this was always empty.
+        if (route.route_started && route.truck_lat != null && route.truck_lng != null && route.truck_loc_updated_at) {
+            const isFresh = (Date.now() - new Date(route.truck_loc_updated_at).getTime()) < LIVE_LOCATION_FRESHNESS_MS;
             if (isFresh) {
                 route.has_live_location = true;
-                route.latitude = latest.latitude;
-                route.longitude = latest.longitude;
+                route.latitude = route.truck_lat;
+                route.longitude = route.truck_lng;
             }
         }
+
+        delete route.truck_lat;
+        delete route.truck_lng;
+        delete route.truck_loc_updated_at;
 
         res.json(route);
     } catch (err) {
@@ -161,40 +182,54 @@ exports.getPickupSchedule = async (req, res) => {
 exports.getTruckLocation = async (req, res) => {
     try {
         const truckId = req.params.truckId;
+        const today = manilaToday();
 
         // Don't return any location data (fresh or stale) unless today's
         // assignment for this truck has actually been started by the driver.
         const [assignment] = await db.query(
-            `SELECT status FROM route_assignments
-             WHERE truck_id = ? AND assigned_date = CURDATE() LIMIT 1`,
-            [truckId]
+            `SELECT id, status FROM route_assignments
+             WHERE truck_id = ? AND assigned_date = ? LIMIT 1`,
+            [truckId, today]
         );
         if (!assignment[0] || assignment[0].status !== "in_progress") {
             return res.json([]);
         }
 
-        const [tables] = await db.query(
-            "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'gps_logs'"
-        );
-
-        if (tables[0].count === 0) {
-            return res.json([]);
-        }
-
+        // Real-time pings actually land in trip_logs (written by both the
+        // driver's socket `driver-location` handler and the REST fallback in
+        // driverController.updateMyLocation), so pull the recent trail from
+        // there for smooth resident-side animation instead of the unused
+        // gps_logs table.
         const [logs] = await db.query(`
-            SELECT latitude, longitude, recorded_at
-            FROM gps_logs
-            WHERE truck_id = ?
-            ORDER BY recorded_at DESC LIMIT 50
-        `, [truckId]);
+            SELECT latitude, longitude, logged_at AS recorded_at
+            FROM trip_logs
+            WHERE assignment_id = ?
+              AND latitude IS NOT NULL AND longitude IS NOT NULL
+            ORDER BY logged_at DESC
+            LIMIT 50
+        `, [assignment[0].id]);
 
-        // Only trust pings from the last few minutes — an old parked/last-known
-        // ping shouldn't make the truck look live on the resident's map.
         const fresh = logs.filter(l =>
             (Date.now() - new Date(l.recorded_at).getTime()) < LIVE_LOCATION_FRESHNESS_MS
         );
 
-        res.json(fresh);
+        if (fresh.length) {
+            return res.json(fresh);
+        }
+
+        // Fallback: the trucks table's own snapshot covers the brief race
+        // right after "Start Route" before the first trip_logs row lands.
+        const [[truck]] = await db.query(
+            `SELECT latitude, longitude, location_updated_at AS recorded_at
+             FROM trucks WHERE id = ?`,
+            [truckId]
+        );
+        if (truck && truck.latitude != null && truck.longitude != null && truck.recorded_at &&
+            (Date.now() - new Date(truck.recorded_at).getTime()) < LIVE_LOCATION_FRESHNESS_MS) {
+            return res.json([truck]);
+        }
+
+        res.json([]);
     } catch (err) {
         console.error(err);
         res.json([]);
