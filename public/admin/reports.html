@@ -386,6 +386,148 @@
             font-size: 0.75rem;
         }
 
+        /* ── Modal fixes ── */
+        .modal-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 99999 !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(4px) !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+        }
+
+        .modal-overlay.open {
+            display: flex !important;
+        }
+
+        .modal {
+            background: var(--panel) !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 16px !important;
+            max-width: 540px !important;
+            width: 100% !important;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
+            animation: modalSlideIn 0.25s ease !important;
+            position: relative !important;
+            z-index: 999999 !important;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px !important;
+            border-bottom: 1px solid var(--border2) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+
+        .modal-title {
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .modal-close {
+            background: none !important;
+            border: none !important;
+            color: var(--text2) !important;
+            font-size: 1.2rem !important;
+            cursor: pointer !important;
+            padding: 4px 8px !important;
+            border-radius: 6px !important;
+            transition: all 0.2s !important;
+        }
+
+        .modal-close:hover {
+            color: var(--red) !important;
+            background: var(--red-dim) !important;
+        }
+
+        .modal-body {
+            padding: 20px 24px !important;
+        }
+
+        .modal-body p {
+            color: var(--text2) !important;
+            font-size: 0.9rem !important;
+            line-height: 1.6 !important;
+            margin: 0 !important;
+        }
+
+        .modal-footer {
+            padding: 16px 24px !important;
+            border-top: 1px solid var(--border2) !important;
+            display: flex !important;
+            gap: 10px !important;
+            justify-content: flex-end !important;
+            flex-wrap: wrap !important;
+        }
+
+        .modal-footer .btn {
+            padding: 10px 24px !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            border-radius: 10px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            border: none !important;
+        }
+
+        .btn-outline {
+            background: transparent !important;
+            border: 1px solid var(--border2) !important;
+            color: var(--text2) !important;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold) !important;
+            color: var(--gold) !important;
+            background: var(--gold-dim) !important;
+        }
+
+        .btn-danger {
+            background: var(--red) !important;
+            color: #fff !important;
+        }
+
+        .btn-danger:hover {
+            background: #e74c3c !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
+        }
+
+        .sidebar {
+            z-index: 1000 !important;
+        }
+
+        .sidebar-overlay {
+            z-index: 999 !important;
+        }
+
+        .topbar {
+            z-index: 100 !important;
+        }
+
+        .toast-container {
+            z-index: 9999999 !important;
+        }
+
         /* ── responsive tweaks ── */
         @media (max-width: 1100px) {
             .reports-layout {
@@ -428,6 +570,16 @@
             .data-table th,
             .data-table td {
                 padding: 6px 8px;
+            }
+
+            .modal {
+                margin: 10px !important;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 16px !important;
             }
         }
 
@@ -556,12 +708,6 @@
             }
         }
 
-        /* Panel body padding fix for reports tab */
-        #reports-tab .panel-body-flush {
-            padding: 0;
-        }
-
-        /* Ensure proper spacing in panels */
         .panel-body-flush {
             padding: 0;
         }
@@ -755,6 +901,26 @@
         </div>
     </main>
 
+    <!-- ── MODALS ── -->
+
+    <!-- Logout Confirmation Modal -->
+    <div class="modal-overlay" id="logoutConfirmModal">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to log out of the admin panel?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Report Modal -->
     <div class="modal-overlay" id="viewReportModal">
         <div class="modal" style="max-width:540px;">
             <div class="modal-header">
@@ -768,6 +934,7 @@
         </div>
     </div>
 
+    <!-- View Resident Modal -->
     <div class="modal-overlay" id="viewResidentModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
@@ -786,24 +953,22 @@
         <img id="lightboxImg" src="" alt="Report photo">
     </div>
 
-    <div class="modal-overlay" id="logoutConfirmModal">
-        <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
-                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
-                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
-            </div>
-        </div>
-    </div>
-
     <div class="toast-container" id="toastContainer"></div>
+
     <script>
+        // ── Modal helpers ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
         // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
@@ -837,7 +1002,6 @@
         }
         checkAuth();
 
-        // ---- LOGOUT FUNCTION ----
         function doLogout() {
             localStorage.removeItem('token');
             closeModal('logoutConfirmModal');
@@ -891,7 +1055,9 @@
         }
 
         function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+
         function startOfWeek(d) { const x = startOfDay(d); x.setDate(x.getDate() - x.getDay()); return x; }
+
         function startOfMonth(d) { const x = new Date(d); x.setDate(1); x.setHours(0, 0, 0, 0); return x; }
 
         function inDateRange(r, filter) {
@@ -933,8 +1099,10 @@
 
         function applyTile(map, tiles, sat) {
             Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
-            if (sat) { tiles.sat.addTo(map); tiles.label.addTo(map); }
-            else { tiles.dark.addTo(map); }
+            if (sat) {
+                tiles.sat.addTo(map);
+                tiles.label.addTo(map);
+            } else { tiles.dark.addTo(map); }
         }
 
         function toggleSat() {
@@ -974,24 +1142,25 @@
         function buildReportPopupHtml(r) {
             const color = TYPE_COLOR[r.type] || '#a78bfa';
             const label = TYPE_LABEL[r.type] || r.type.replace(/_/g, ' ');
-            const imgHtml = r.image_url
-                ? `<img class="rp-popup-img" src="${escHtml(r.image_url)}"
-                    alt="Report photo"
-                    onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')"
-                    onerror="this.style.display='none'">`
-                : '<div style="color:var(--text3);font-size:0.7rem;">No photo</div>';
-            const desc = r.description ? escHtml(r.description).substring(0, 120) + (r.description.length > 120 ? '…' : '') : 'No description';
+            const imgHtml = r.image_url ?
+                `<img class="rp-popup-img" src="${escHtml(r.image_url)}"
+                        alt="Report photo"
+                        onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')"
+                        onerror="this.style.display='none'">` :
+                '<div style="color:var(--text3);font-size:0.7rem;">No photo</div>';
+            const desc = r.description ? escHtml(r.description).substring(0, 120) + (r.description.length > 120 ? '…' : '') :
+                'No description';
             return `
-                <div>
-                    <div class="rp-popup-type" style="color:${color};">${label}</div>
-                    ${imgHtml}
-                    <div class="rp-popup-desc">${desc}</div>
-                    <div class="rp-popup-meta">
-                        <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
-                        <span>${fmtDate(r.created_at)}</span>
-                    </div>
-                    <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
-                </div>`;
+                    <div>
+                        <div class="rp-popup-type" style="color:${color};">${label}</div>
+                        ${imgHtml}
+                        <div class="rp-popup-desc">${desc}</div>
+                        <div class="rp-popup-meta">
+                            <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
+                            <span>${fmtDate(r.created_at)}</span>
+                        </div>
+                        <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
+                    </div>`;
         }
 
         function renderResidentPins(residents) {
@@ -1017,21 +1186,22 @@
                 const marker = L.marker([lat, lng], { icon })
                     .addTo(reportMap)
                     .bindPopup(`
-                        <div>
-                            <strong style="color:#60a5fa;">👤 ${escHtml(r.name || 'Resident')}</strong><br>
-                            <span style="font-size:0.7rem;">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
-                            <span style="font-size:0.65rem;color:${isRecent ? '#4ade80' : '#7a8499'}">
-                                Last seen: ${fmtTime(r.location_updated_at)}
-                            </span>
-                            <button class="rp-popup-btn" style="margin-top:6px;" onclick="viewResident(${r.id})">👁 View Details</button>
-                        </div>
-                    `, { maxWidth: 260 });
+                            <div>
+                                <strong style="color:#60a5fa;">👤 ${escHtml(r.name || 'Resident')}</strong><br>
+                                <span style="font-size:0.7rem;">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
+                                <span style="font-size:0.65rem;color:${isRecent ? '#4ade80' : '#7a8499'}">
+                                    Last seen: ${fmtTime(r.location_updated_at)}
+                                </span>
+                                <button class="rp-popup-btn" style="margin-top:6px;" onclick="viewResident(${r.id})">👁 View Details</button>
+                            </div>
+                        `, { maxWidth: 260 });
 
                 residentMarkers.push({ id: r.id, marker });
             });
 
             const totalPins = reportMarkers.length + residentMarkers.length;
-            document.getElementById('mapPinCount').textContent = `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+            document.getElementById('mapPinCount').textContent =
+                `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
         }
 
         function updateAllMapPins() {
@@ -1104,7 +1274,8 @@
         function renderResidentList() {
             const container = document.getElementById('residentList');
             if (!allResidents.length) {
-                container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text2)">No active residents found</div>';
+                container.innerHTML =
+                    '<div style="text-align:center;padding:32px;color:var(--text2)">No active residents found</div>';
                 return;
             }
 
@@ -1117,18 +1288,18 @@
                 const lngStr = lng != null && !isNaN(lng) ? lng.toFixed(5) : '—';
 
                 return `
-                    <div class="resident-card" onclick="viewResident(${r.id})">
-                        <div class="resident-avatar">👤</div>
-                        <div class="resident-info">
-                            <div class="resident-name">${escHtml(r.name || 'Resident')}</div>
-                            <div class="resident-loc-time">
-                                📍 ${latStr}, ${lngStr}<br>
-                                🕐 ${fmtTime(r.location_updated_at)} ${isRecent ? '<span style="color:#4ade80;">(Active)</span>' : ''}
+                        <div class="resident-card" onclick="viewResident(${r.id})">
+                            <div class="resident-avatar">👤</div>
+                            <div class="resident-info">
+                                <div class="resident-name">${escHtml(r.name || 'Resident')}</div>
+                                <div class="resident-loc-time">
+                                    📍 ${latStr}, ${lngStr}<br>
+                                    🕐 ${fmtTime(r.location_updated_at)} ${isRecent ? '<span style="color:#4ade80;">(Active)</span>' : ''}
+                                </div>
                             </div>
+                            <div style="font-size:1.2rem;">📍</div>
                         </div>
-                        <div style="font-size:1.2rem;">📍</div>
-                    </div>
-                `;
+                    `;
             }).join('');
         }
 
@@ -1166,28 +1337,30 @@
             document.getElementById('visibleCount').textContent = filtered.length;
 
             const totalPins = reportMarkers.length + residentMarkers.length;
-            document.getElementById('mapPinCount').textContent = `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+            document.getElementById('mapPinCount').textContent =
+                `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('reportsBody');
             if (!data.length) {
-                tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No reports match this filter</div></div></td></tr>`;
+                tbody.innerHTML =
+                    `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No reports match this filter</div></div></td></tr>`;
                 return;
             }
             tbody.innerHTML = data.map((r, i) => {
                 const hasLoc = r.latitude != null && r.longitude != null;
                 return `<tr class="${hasLoc ? 'row-has-location' : ''}" ${hasLoc ? `onclick="flyToReport(${r.id})" title="Click to locate on map"` : ''}>
-                    <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
-                    <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
-                    <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
-                        ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
-                    </td>
-                    <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
-                    <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
-                    <td style="text-align:center;">${r.image_url ? `<img src="${escHtml(r.image_url)}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')" onerror="this.style.display='none'">` : '—'}</td>
-                    <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
-                 </tr>`;
+                        <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
+                        <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
+                        <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
+                            ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
+                        </td>
+                        <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
+                        <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
+                        <td style="text-align:center;">${r.image_url ? `<img src="${escHtml(r.image_url)}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')" onerror="this.style.display='none'">` : '—'}</td>
+                        <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
+                     </tr>`;
             }).join('');
         }
 
@@ -1199,54 +1372,56 @@
             const label = TYPE_LABEL[r.type] || r.type.replace(/_/g, ' ');
 
             const imgSection = r.image_url ? `
-                <div>
-                    <div class="form-label" style="margin-bottom:6px;">Photo</div>
-                    <img src="${escHtml(r.image_url)}"
-                         alt="Report photo"
-                         style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;cursor:pointer;"
-                         onclick="openLightbox('${escHtml(r.image_url)}')"
-                         onerror="this.parentElement.style.display='none'">
-                </div>` : '<div style="color:var(--text3);">No photo attached</div>';
+                        <div>
+                            <div class="form-label" style="margin-bottom:6px;">Photo</div>
+                            <img src="${escHtml(r.image_url)}"
+                                 alt="Report photo"
+                                 style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;cursor:pointer;"
+                                 onclick="openLightbox('${escHtml(r.image_url)}')"
+                                 onerror="this.parentElement.style.display='none'">
+                        </div>` :
+                '<div style="color:var(--text3);">No photo attached</div>';
 
             const locSection = (r.latitude != null && r.longitude != null) ? `
-                <div>
-                    <div class="form-label" style="margin-bottom:4px;">Location</div>
-                    <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
-                        ${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}
-                    </div>
-                    <button class="btn btn-outline btn-sm" style="margin-top:6px;"
-                            onclick="closeModal('viewReportModal');flyToReport(${r.id})">
-                        🗺️ Show on Map
-                    </button>
-                </div>` : '<div style="color:var(--text3);">No location provided</div>';
+                        <div>
+                            <div class="form-label" style="margin-bottom:4px;">Location</div>
+                            <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
+                                ${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}
+                            </div>
+                            <button class="btn btn-outline btn-sm" style="margin-top:6px;"
+                                    onclick="closeModal('viewReportModal');flyToReport(${r.id})">
+                                🗺️ Show on Map
+                            </button>
+                        </div>` :
+                '<div style="color:var(--text3);">No location provided</div>';
 
             document.getElementById('reportModalBody').innerHTML = `
-                <div style="display:flex;flex-direction:column;gap:16px;">
-                    <div>
-                        <div class="form-label">Type</div>
-                        <div style="margin-top:6px;"><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}" style="background:${color}20;color:${color};">${label}</span></div>
-                    </div>
-                    <div>
-                        <div class="form-label">Description</div>
-                        <div style="margin-top:6px;font-size:0.85rem;color:var(--text);line-height:1.6;background:var(--bg3);padding:12px;border-radius:8px;">
-                            ${escHtml(r.description || 'No description provided.')}
-                        </div>
-                    </div>
-                    ${imgSection}
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div>
-                            <div class="form-label">Reporter</div>
-                            <div style="margin-top:4px;font-size:0.8rem;">
-                                ${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}
+                        <div style="display:flex;flex-direction:column;gap:16px;">
+                            <div>
+                                <div class="form-label">Type</div>
+                                <div style="margin-top:6px;"><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}" style="background:${color}20;color:${color};">${label}</span></div>
                             </div>
-                        </div>
-                        <div>
-                            <div class="form-label">Submitted</div>
-                            <div style="margin-top:4px;font-size:0.8rem;">${fmtDate(r.created_at)}</div>
-                        </div>
-                    </div>
-                    ${locSection}
-                </div>`;
+                            <div>
+                                <div class="form-label">Description</div>
+                                <div style="margin-top:6px;font-size:0.85rem;color:var(--text);line-height:1.6;background:var(--bg3);padding:12px;border-radius:8px;">
+                                    ${escHtml(r.description || 'No description provided.')}
+                                </div>
+                            </div>
+                            ${imgSection}
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <div class="form-label">Reporter</div>
+                                    <div style="margin-top:4px;font-size:0.8rem;">
+                                        ${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="form-label">Submitted</div>
+                                    <div style="margin-top:4px;font-size:0.8rem;">${fmtDate(r.created_at)}</div>
+                                </div>
+                            </div>
+                            ${locSection}
+                        </div>`;
             openModal('viewReportModal');
         }
 
@@ -1263,42 +1438,34 @@
             const lngStr = lng != null && !isNaN(lng) ? lng.toFixed(6) : '—';
 
             document.getElementById('residentModalBody').innerHTML = `
-                <div style="display:flex;flex-direction:column;gap:16px;">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <div style="width:50px;height:50px;background:var(--blue-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</div>
-                        <div>
-                            <div class="form-label">Name</div>
-                            <div style="font-size:1rem;font-weight:700;">${escHtml(r.name || 'Resident')}</div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="form-label">Location</div>
-                        <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
-                            📍 ${latStr}, ${lngStr}
-                        </div>
-                        <button class="btn btn-outline btn-sm" style="margin-top:6px;"
-                                onclick="closeModal('viewResidentModal');flyToResident(${r.id})">
-                            🗺️ Show on Map
-                        </button>
-                    </div>
-                    <div>
-                        <div class="form-label">Last Seen</div>
-                        <div style="color:${isRecent ? '#4ade80' : '#7a8499'}">
-                            ${fmtDate(r.location_updated_at)} at ${fmtTime(r.location_updated_at)}
-                            ${isRecent ? ' (Active)' : ''}
-                        </div>
-                    </div>
-                    ${r.address ? `<div><div class="form-label">Address</div><div style="font-size:0.85rem;">${escHtml(r.address)}</div></div>` : ''}
-                </div>`;
+                        <div style="display:flex;flex-direction:column;gap:16px;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:50px;height:50px;background:var(--blue-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</div>
+                                <div>
+                                    <div class="form-label">Name</div>
+                                    <div style="font-size:1rem;font-weight:700;">${escHtml(r.name || 'Resident')}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="form-label">Location</div>
+                                <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
+                                    📍 ${latStr}, ${lngStr}
+                                </div>
+                                <button class="btn btn-outline btn-sm" style="margin-top:6px;"
+                                        onclick="closeModal('viewResidentModal');flyToResident(${r.id})">
+                                    🗺️ Show on Map
+                                </button>
+                            </div>
+                            <div>
+                                <div class="form-label">Last Seen</div>
+                                <div style="color:${isRecent ? '#4ade80' : '#7a8499'}">
+                                    ${fmtDate(r.location_updated_at)} at ${fmtTime(r.location_updated_at)}
+                                    ${isRecent ? ' (Active)' : ''}
+                                </div>
+                            </div>
+                            ${r.address ? `<div><div class="form-label">Address</div><div style="font-size:0.85rem;">${escHtml(r.address)}</div></div>` : ''}
+                        </div>`;
             openModal('viewResidentModal');
-        }
-
-        function openModal(id) {
-            document.getElementById(id).classList.add('open');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('open');
         }
 
         function switchTab(tab) {
@@ -1349,6 +1516,16 @@
         loadResidents();
 
         setInterval(loadResidents, 30000);
+
+        // ── Hamburger toggle ──
+        document.getElementById('hamburger')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('visible');
+        });
+        document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('visible');
+        });
     </script>
 </body>
 

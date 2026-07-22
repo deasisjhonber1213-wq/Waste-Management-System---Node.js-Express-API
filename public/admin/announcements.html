@@ -7,274 +7,152 @@
     <title>Announcements · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="../js/style.js"></script>
-</head>
-
-<body>
-
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-logo">
-            <div class="sidebar-logo-icon">♻</div>
-            <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
-        </div>
-        <nav class="sidebar-nav">
-            <div class="nav-section-label">Overview</div>
-            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
-            <div class="nav-section-label">Management</div>
-            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
-            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
-            <div class="nav-section-label">Community</div>
-            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
-            <a href="/announcements" class="nav-item active"><span class="nav-icon">📢</span>Announcements</a>
-            <div class="nav-section-label">Analytics</div>
-            <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
-
-            <div class="nav-section-label"
-                style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
-            <button class="theme-toggle" id="themeToggleBtn">
-                <span class="theme-icon">🌙</span>
-                <span class="theme-label">Dark Mode</span>
-                <span class="theme-switch">
-                    <span class="theme-knob"></span>
-                </span>
-            </button>
-        </nav>
-        <div class="sidebar-footer">
-            <div class="sidebar-user">
-                <div class="sidebar-avatar">👤</div>
-                <div>
-                    <div class="sidebar-user-name" id="adminName">Admin</div>
-                    <div class="sidebar-user-role">Administrator</div>
-                </div>
-            </div>
-            <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
-                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
-        </div>
-    </aside>
-
-    <div class="topbar">
-        <div style="display:flex;align-items:center;gap:14px;">
-            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
-            <div class="topbar-left">
-                <div class="topbar-title">Announcements</div>
-                <div class="topbar-breadcrumb">Jose Dalman WM / Community / <span>Announcements</span></div>
-            </div>
-        </div>
-        <div class="topbar-right">
-            <!-- Removed duplicate "New Announcement" button -->
-        </div>
-    </div>
-
-    <main class="main">
-
-        <div class="panel reveal section-gap">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <div class="panel-title-icon">✍️</div>Compose Announcement
-                </div>
-                <button class="btn btn-gold" onclick="createAnnouncement()">Publish →</button>
-            </div>
-            <div class="panel-body">
-                <div class="form-grid form-grid-3">
-                    <div class="form-group"><label class="form-label">Title</label><input class="form-control"
-                            id="annTitle" placeholder="Announcement title…"></div>
-                    <div class="form-group"><label class="form-label">Pickup Date (optional)</label><input
-                            class="form-control" type="date" id="annDate"></div>
-                    <div class="form-group"><label class="form-label">Image URL (optional)</label><input
-                            class="form-control" id="annImg" placeholder="https://…"></div>
-                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Message</label><textarea
-                            class="form-control" id="annMsg" placeholder="Write your message to residents…"
-                            style="min-height:80px"></textarea></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel reveal">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <div class="panel-title-icon">📢</div>Published Announcements
-                </div>
-                <span class="badge badge-gold" id="annCount">0</span>
-            </div>
-            <div style="padding:20px">
-                <div class="ann-grid" id="annGrid">
-                    <div style="text-align:center;padding:28px;color:var(--text2);grid-column:1/-1"><span
-                            class="loading-spinner"></span></div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <div class="modal-overlay" id="logoutConfirmModal">
-        <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
-                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
-                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="toast-container" id="toastContainer"></div>
-
-    <script>
-        // ---- API ----
-        const API_URL = window.location.origin + '/api';
-        console.log('📡 API URL:', API_URL);
-
-        function getToken() {
-            return localStorage.getItem('token');
-        }
-
-        const API = {
-            get: async (endpoint) => {
-                return fetch(API_URL + endpoint, {
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-            },
-            post: async (endpoint, data) => {
-                return fetch(API_URL + endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getToken()}`
-                    },
-                    body: JSON.stringify(data)
-                });
-            },
-            del: async (endpoint) => {
-                return fetch(API_URL + endpoint, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-            }
-        };
-
-        function fmtDate(date) {
-            if (!date) return '—';
-            const d = new Date(date);
-            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-
-        function showToast(msg, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span>${msg}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
-        function checkAuth() {
-            const token = getToken();
-            if (!token) {
-                window.location.href = '/login.html';
-            }
-        }
-        checkAuth();
-
-        // ---- LOGOUT FUNCTION ----
-        function doLogout() {
-            localStorage.removeItem('token');
-            closeModal('logoutConfirmModal');
-            showToast('Logged out successfully', 'success');
-            setTimeout(() => {
-                window.location.href = '/login.html';
-            }, 500);
-        }
-        window.doLogout = doLogout;
-
-        function escHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c =>
-                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-
-        async function loadAnnouncements() {
-            try {
-                const res = await API.get("/admin/announcements");
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                document.getElementById("annCount").textContent = data.length;
-                const grid = document.getElementById("annGrid");
-                if (!data.length) {
-                    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📢</div><div class="empty-state-text">No announcements yet. Create one above!</div></div>';
-                    return;
-                }
-                grid.innerHTML = data.map(a => `
-                    <div class="ann-card">
-                        ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder">📢</div>`}
-                        <div class="ann-card-body">
-                            <div class="ann-card-meta">
-                                <span class="ann-card-date">${fmtDate(a.created_at)}</span>
-                                <span class="ann-card-author">· ${escHtml(a.admin_name || "Admin")}</span>
-                            </div>
-                            <div class="ann-card-title">${escHtml(a.title)}</div>
-                            <div class="ann-card-msg">${escHtml(a.message)}</div>
-                            ${a.pickup_date ? `<div class="ann-card-pickup">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
-                        </div>
-                        <div class="ann-card-footer">
-                            <span class="badge badge-gold">Published</span>
-                            <button class="btn btn-danger btn-sm" onclick="deleteAnn(${a.id})">🗑 Delete</button>
-                        </div>
-                    </div>`).join("");
-            } catch { showToast("Failed to load announcements", "error"); }
-        }
-
-        async function createAnnouncement() {
-            const title = document.getElementById("annTitle").value.trim();
-            const msg = document.getElementById("annMsg").value.trim();
-            const date = document.getElementById("annDate").value;
-            const imgUrl = document.getElementById("annImg").value.trim();
-            if (!title || !msg) { showToast("Title and message required", "error"); return; }
-            try {
-                const res = await API.post("/admin/announcements", { title, message: msg, pickup_date: date || null, image_url: imgUrl || null });
-                if (!res.ok) throw new Error();
-                document.getElementById("annTitle").value = "";
-                document.getElementById("annMsg").value = "";
-                document.getElementById("annDate").value = "";
-                document.getElementById("annImg").value = "";
-                showToast("Announcement published!", "success");
-                loadAnnouncements();
-            } catch { showToast("Failed to create announcement", "error"); }
-        }
-
-        async function deleteAnn(id) {
-            if (!confirm("Delete this announcement?")) return;
-            try {
-                const res = await API.del(`/admin/announcements/${id}`);
-                if (!res.ok) throw new Error();
-                showToast("Deleted", "success");
-                loadAnnouncements();
-            } catch { showToast("Delete failed", "error"); }
-        }
-
-        async function loadAdminProfile() {
-            try {
-                const res = await API.get("/admin/profile");
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById("adminName").textContent = data.name || "Admin";
-                }
-            } catch { }
-        }
-
-        loadAdminProfile();
-        loadAnnouncements();
-    </script>
-
-    <!-- Additional CSS for enhanced announcement cards -->
     <style>
-        /* Enhanced announcement grid and card styles */
+        /* ── Modal fixes ── */
+        .modal-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 99999 !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(4px) !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+        }
+
+        .modal-overlay.open {
+            display: flex !important;
+        }
+
+        .modal {
+            background: var(--panel) !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 16px !important;
+            max-width: 420px !important;
+            width: 100% !important;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
+            animation: modalSlideIn 0.25s ease !important;
+            position: relative !important;
+            z-index: 999999 !important;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px !important;
+            border-bottom: 1px solid var(--border2) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+
+        .modal-title {
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .modal-close {
+            background: none !important;
+            border: none !important;
+            color: var(--text2) !important;
+            font-size: 1.2rem !important;
+            cursor: pointer !important;
+            padding: 4px 8px !important;
+            border-radius: 6px !important;
+            transition: all 0.2s !important;
+        }
+
+        .modal-close:hover {
+            color: var(--red) !important;
+            background: var(--red-dim) !important;
+        }
+
+        .modal-body {
+            padding: 20px 24px !important;
+        }
+
+        .modal-body p {
+            color: var(--text2) !important;
+            font-size: 0.9rem !important;
+            line-height: 1.6 !important;
+            margin: 0 !important;
+        }
+
+        .modal-footer {
+            padding: 16px 24px !important;
+            border-top: 1px solid var(--border2) !important;
+            display: flex !important;
+            gap: 10px !important;
+            justify-content: flex-end !important;
+            flex-wrap: wrap !important;
+        }
+
+        .modal-footer .btn {
+            padding: 10px 24px !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            border-radius: 10px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            border: none !important;
+        }
+
+        .btn-outline {
+            background: transparent !important;
+            border: 1px solid var(--border2) !important;
+            color: var(--text2) !important;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold) !important;
+            color: var(--gold) !important;
+            background: var(--gold-dim) !important;
+        }
+
+        .btn-danger {
+            background: var(--red) !important;
+            color: #fff !important;
+        }
+
+        .btn-danger:hover {
+            background: #e74c3c !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
+        }
+
+        /* Ensure sidebar doesn't overlap modals */
+        .sidebar {
+            z-index: 1000 !important;
+        }
+
+        .sidebar-overlay {
+            z-index: 999 !important;
+        }
+
+        .topbar {
+            z-index: 100 !important;
+        }
+
+        /* Toast fixes */
+        .toast-container {
+            z-index: 9999999 !important;
+        }
+
+        /* ── Enhanced announcement grid styles ── */
         .ann-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -390,29 +268,6 @@
             font-size: 0.72rem;
         }
 
-        /* Dark mode adjustments */
-        [data-theme="dark"] .ann-card {
-            background: var(--panel);
-        }
-
-        [data-theme="dark"] .ann-card:hover {
-            border-color: var(--gold-mid);
-            background: var(--panel2);
-        }
-
-        [data-theme="dark"] .ann-card-footer {
-            background: var(--bg2);
-        }
-
-        [data-theme="dark"] .ann-card:hover .ann-card-footer {
-            background: var(--panel);
-        }
-
-        [data-theme="dark"] .ann-card-img-placeholder {
-            background: var(--gold-dim);
-        }
-
-        /* Responsive adjustments */
         @media (max-width: 768px) {
             .ann-grid {
                 grid-template-columns: 1fr;
@@ -446,8 +301,345 @@
                 flex-wrap: wrap;
                 gap: 8px;
             }
+
+            .modal {
+                margin: 10px !important;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 16px !important;
+            }
         }
     </style>
+</head>
+
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
+            <div class="nav-section-label">Management</div>
+            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
+            <a href="/routes" class="nav-item"><span class="nav-icon">🗺️</span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
+            <div class="nav-section-label">Community</div>
+            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
+            <a href="/announcements" class="nav-item active"><span class="nav-icon">📢</span>Announcements</a>
+            <div class="nav-section-label">Analytics</div>
+            <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+
+            <div class="nav-section-label"
+                style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
+            <button class="theme-toggle" id="themeToggleBtn">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-label">Dark Mode</span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <div class="sidebar-user-name" id="adminName">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+            </div>
+            <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
+                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
+        </div>
+    </aside>
+
+    <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
+            <div class="topbar-left">
+                <div class="topbar-title">Announcements</div>
+                <div class="topbar-breadcrumb">Jose Dalman WM / Community / <span>Announcements</span></div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <!-- Removed duplicate "New Announcement" button -->
+        </div>
+    </div>
+
+    <main class="main">
+
+        <div class="panel reveal section-gap">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">✍️</div>Compose Announcement
+                </div>
+                <button class="btn btn-gold" onclick="createAnnouncement()">Publish →</button>
+            </div>
+            <div class="panel-body">
+                <div class="form-grid form-grid-3">
+                    <div class="form-group"><label class="form-label">Title</label><input class="form-control"
+                            id="annTitle" placeholder="Announcement title…"></div>
+                    <div class="form-group"><label class="form-label">Pickup Date (optional)</label><input
+                            class="form-control" type="date" id="annDate"></div>
+                    <div class="form-group"><label class="form-label">Image URL (optional)</label><input
+                            class="form-control" id="annImg" placeholder="https://…"></div>
+                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Message</label><textarea
+                            class="form-control" id="annMsg" placeholder="Write your message to residents…"
+                            style="min-height:80px"></textarea></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel reveal">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <div class="panel-title-icon">📢</div>Published Announcements
+                </div>
+                <span class="badge badge-gold" id="annCount">0</span>
+            </div>
+            <div style="padding:20px">
+                <div class="ann-grid" id="annGrid">
+                    <div style="text-align:center;padding:28px;color:var(--text2);grid-column:1/-1"><span
+                            class="loading-spinner"></span></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── MODALS ── -->
+
+    <!-- Logout Confirmation Modal -->
+    <div class="modal-overlay" id="logoutConfirmModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to log out of the admin panel?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" style="color:var(--red);">🗑️ Confirm Delete</div>
+                <button class="modal-close" onclick="closeModal('deleteConfirmModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteModalMessage">Are you sure you want to delete this announcement? This action cannot be
+                    undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" id="deleteConfirmBtn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ── Modal helpers ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // ── Delete with confirmation modal ──
+        let pendingDeleteId = null;
+
+        function confirmDelete(id, name) {
+            pendingDeleteId = id;
+            const msg = document.getElementById('deleteModalMessage');
+            if (msg) {
+                msg.textContent = `Are you sure you want to delete "${name || 'this announcement'}"? This action cannot be undone.`;
+            }
+            document.getElementById('deleteConfirmBtn').onclick = function () {
+                executeDelete(pendingDeleteId);
+            };
+            openModal('deleteConfirmModal');
+        }
+
+        async function executeDelete(id) {
+            try {
+                const res = await API.del(`/admin/announcements/${id}`);
+                if (!res.ok) throw new Error();
+                closeModal('deleteConfirmModal');
+                showToast("Announcement deleted successfully", "success");
+                loadAnnouncements();
+            } catch (err) {
+                closeModal('deleteConfirmModal');
+                showToast("Delete failed", "error");
+            }
+            pendingDeleteId = null;
+        }
+
+        // ── API ──
+        const API_URL = window.location.origin + '/api';
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        const API = {
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
+        };
+
+        function fmtDate(date) {
+            if (!date) return '—';
+            const d = new Date(date);
+            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
+        checkAuth();
+
+        function doLogout() {
+            localStorage.removeItem('token');
+            closeModal('logoutConfirmModal');
+            showToast('Logged out successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
+        }
+        window.doLogout = doLogout;
+
+        function escHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        async function loadAnnouncements() {
+            try {
+                const res = await API.get("/admin/announcements");
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                document.getElementById("annCount").textContent = data.length;
+                const grid = document.getElementById("annGrid");
+                if (!data.length) {
+                    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📢</div><div class="empty-state-text">No announcements yet. Create one above!</div></div>';
+                    return;
+                }
+                grid.innerHTML = data.map(a => `
+                    <div class="ann-card">
+                        ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder">📢</div>`}
+                        <div class="ann-card-body">
+                            <div class="ann-card-meta">
+                                <span class="ann-card-date">${fmtDate(a.created_at)}</span>
+                                <span class="ann-card-author">· ${escHtml(a.admin_name || "Admin")}</span>
+                            </div>
+                            <div class="ann-card-title">${escHtml(a.title)}</div>
+                            <div class="ann-card-msg">${escHtml(a.message)}</div>
+                            ${a.pickup_date ? `<div class="ann-card-pickup">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
+                        </div>
+                        <div class="ann-card-footer">
+                            <span class="badge badge-gold">Published</span>
+                            <button class="btn btn-danger btn-sm" onclick="confirmDelete(${a.id}, '${escHtml(a.title)}')">🗑 Delete</button>
+                        </div>
+                    </div>`).join("");
+            } catch { showToast("Failed to load announcements", "error"); }
+        }
+
+        async function createAnnouncement() {
+            const title = document.getElementById("annTitle").value.trim();
+            const msg = document.getElementById("annMsg").value.trim();
+            const date = document.getElementById("annDate").value;
+            const imgUrl = document.getElementById("annImg").value.trim();
+            if (!title || !msg) { showToast("Title and message required", "error"); return; }
+            try {
+                const res = await API.post("/admin/announcements", { title, message: msg, pickup_date: date || null, image_url: imgUrl || null });
+                if (!res.ok) throw new Error();
+                document.getElementById("annTitle").value = "";
+                document.getElementById("annMsg").value = "";
+                document.getElementById("annDate").value = "";
+                document.getElementById("annImg").value = "";
+                showToast("Announcement published!", "success");
+                loadAnnouncements();
+            } catch { showToast("Failed to create announcement", "error"); }
+        }
+
+        async function loadAdminProfile() {
+            try {
+                const res = await API.get("/admin/profile");
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("adminName").textContent = data.name || "Admin";
+                }
+            } catch { }
+        }
+
+        loadAdminProfile();
+        loadAnnouncements();
+
+        // ── Hamburger toggle ──
+        document.getElementById('hamburger')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('visible');
+        });
+        document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('visible');
+        });
+    </script>
+
 </body>
 
 </html>

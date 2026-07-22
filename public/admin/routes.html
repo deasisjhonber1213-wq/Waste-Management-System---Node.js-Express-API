@@ -10,6 +10,152 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="../js/style.js"></script>
     <style>
+        /* ── Modal fixes ── */
+        .modal-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 99999 !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(4px) !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+        }
+
+        .modal-overlay.open {
+            display: flex !important;
+        }
+
+        .modal {
+            background: var(--panel) !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 16px !important;
+            max-width: 420px !important;
+            width: 100% !important;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
+            animation: modalSlideIn 0.25s ease !important;
+            position: relative !important;
+            z-index: 999999 !important;
+        }
+
+        .modal-lg {
+            max-width: 920px !important;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px !important;
+            border-bottom: 1px solid var(--border2) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+
+        .modal-title {
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .modal-close {
+            background: none !important;
+            border: none !important;
+            color: var(--text2) !important;
+            font-size: 1.2rem !important;
+            cursor: pointer !important;
+            padding: 4px 8px !important;
+            border-radius: 6px !important;
+            transition: all 0.2s !important;
+        }
+
+        .modal-close:hover {
+            color: var(--red) !important;
+            background: var(--red-dim) !important;
+        }
+
+        .modal-body {
+            padding: 20px 24px !important;
+        }
+
+        .modal-body p {
+            color: var(--text2) !important;
+            font-size: 0.9rem !important;
+            line-height: 1.6 !important;
+            margin: 0 !important;
+        }
+
+        .modal-footer {
+            padding: 16px 24px !important;
+            border-top: 1px solid var(--border2) !important;
+            display: flex !important;
+            gap: 10px !important;
+            justify-content: flex-end !important;
+            flex-wrap: wrap !important;
+        }
+
+        .modal-footer .btn {
+            padding: 10px 24px !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            border-radius: 10px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            border: none !important;
+        }
+
+        .btn-outline {
+            background: transparent !important;
+            border: 1px solid var(--border2) !important;
+            color: var(--text2) !important;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold) !important;
+            color: var(--gold) !important;
+            background: var(--gold-dim) !important;
+        }
+
+        .btn-danger {
+            background: var(--red) !important;
+            color: #fff !important;
+        }
+
+        .btn-danger:hover {
+            background: #e74c3c !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
+        }
+
+        .sidebar {
+            z-index: 1000 !important;
+        }
+
+        .sidebar-overlay {
+            z-index: 999 !important;
+        }
+
+        .topbar {
+            z-index: 100 !important;
+        }
+
+        .toast-container {
+            z-index: 9999999 !important;
+        }
+
         /* ── Layout ── */
         .routes-layout {
             display: grid;
@@ -217,11 +363,6 @@
             color: var(--gold);
         }
 
-        /* ── Modal ── */
-        .modal-lg {
-            max-width: 920px !important;
-        }
-
         .layer-pills {
             display: flex;
             gap: 8px;
@@ -324,16 +465,6 @@
             z-index: 2;
         }
 
-        /* User location marker (blue dot) */
-        .user-marker {
-            width: 14px;
-            height: 14px;
-            background: #3b82f6;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .35), 0 0 12px rgba(59, 130, 246, .5);
-        }
-
         .user-marker-pulse {
             width: 14px;
             height: 14px;
@@ -391,12 +522,6 @@
             font-size: 0.7rem;
             color: var(--text2);
             margin-top: 6px;
-        }
-
-        .layer-summary span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
         }
 
         .layer-summary .dot {
@@ -574,7 +699,6 @@
             font-size: 14px;
         }
 
-        /* ── Scrollbar for waypoints ── */
         .waypoints-list::-webkit-scrollbar {
             width: 3px;
         }
@@ -609,6 +733,7 @@
 
             .modal-lg {
                 max-width: 100% !important;
+                margin: 10px !important;
             }
 
             .layer-pills {
@@ -631,6 +756,12 @@
 
             #mrfPickMap {
                 height: 280px;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 16px !important;
             }
         }
 
@@ -662,7 +793,7 @@
             }
 
             .modal-body {
-                padding: 12px 14px;
+                padding: 12px 14px !important;
             }
 
             .form-grid-2 {
@@ -687,6 +818,11 @@
                 font-size: 0.65rem;
                 padding: 5px 10px;
             }
+
+            .modal {
+                margin: 10px !important;
+                border-radius: 14px !important;
+            }
         }
 
         @media (max-width: 400px) {
@@ -701,6 +837,12 @@
 
             .route-meta .badge {
                 font-size: 0.55rem;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 12px !important;
             }
         }
     </style>
@@ -909,7 +1051,7 @@
         </div>
     </div>
 
-    <!-- MRF Facilities Modal - UPDATED with improved workflow -->
+    <!-- MRF Facilities Modal -->
     <div class="modal-overlay" id="mrfManageModal">
         <div class="modal modal-lg">
             <div class="modal-header">
@@ -983,6 +1125,7 @@
         </div>
     </div>
 
+    <!-- Logout Confirmation Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
@@ -1002,6 +1145,21 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        // ── Modal helpers ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
         // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
@@ -1117,8 +1275,10 @@
 
         function applyTile(map, tiles, isSat) {
             Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
-            if (isSat) { tiles.sat.addTo(map); tiles.label.addTo(map); }
-            else { tiles.dark.addTo(map); }
+            if (isSat) {
+                tiles.sat.addTo(map);
+                tiles.label.addTo(map);
+            } else { tiles.dark.addTo(map); }
         }
 
         function escHtml(s) {
@@ -1149,7 +1309,6 @@
             }
         }
 
-        // ---- MRF Facility Icon (matches resident portal) ----
         function getMRFIcon() {
             return L.divIcon({
                 className: "",
@@ -1214,7 +1373,10 @@
         }
 
         function renderDetail(route) {
-            if (detailMap) { detailMap.remove(); detailMap = null; detailTiles = null; }
+            if (detailMap) {
+                detailMap.remove(); detailMap = null;
+                detailTiles = null;
+            }
 
             const { road, pins, mrf } = parseWaypoints(route.waypoints_json);
             const hasAny = road.length || pins.length || mrf.length;
@@ -1269,7 +1431,10 @@
         }
 
         function initDetailMap(road, pins, mrf) {
-            if (detailMap) { detailMap.remove(); detailMap = null; detailTiles = null; }
+            if (detailMap) {
+                detailMap.remove(); detailMap = null;
+                detailTiles = null;
+            }
             isDetailMapSatellite = false;
 
             const allPts = [...road, ...pins, ...mrf];
@@ -1307,7 +1472,6 @@
                 L.marker([p.lat, p.lng], { icon }).bindPopup(`<b>🏭 MRF Stop</b>`).addTo(detailMap);
             });
 
-            // Reference layer: real, admin-marked MRF facility locations
             renderFacilityReferenceLayer(detailMap, 'detail');
 
             if (allPts.length) detailMap.fitBounds(L.latLngBounds(allPts.map(p => [p.lat, p.lng])).pad(0.25));
@@ -1320,9 +1484,6 @@
             const btn = document.getElementById('detailMapSatBtn');
             if (btn) btn.innerHTML = isDetailMapSatellite ? '🌍 Map' : '🛰️ Satellite';
         }
-
-        function openModal(id) { document.getElementById(id).classList.add('open'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
         function scheduleMapInit(fn) {
             requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(fn, 50)));
@@ -1367,9 +1528,14 @@
 
         function initMarkingMap() {
             if (markingMap) { markingMap.remove(); markingMap = null; }
-            roadPoints = []; roadMarkers = []; ghostMarkers = []; roadPolyline = null;
-            pinPoints = []; pinMarkers = [];
-            mrfPoints = []; mrfMarkers = [];
+            roadPoints = [];
+            roadMarkers = [];
+            ghostMarkers = [];
+            roadPolyline = null;
+            pinPoints = [];
+            pinMarkers = [];
+            mrfPoints = [];
+            mrfMarkers = [];
 
             markingMap = L.map('markingMap', { zoomControl: true }).setView([8.2317, 123.4018], 14);
             markingTiles = makeTiles();
@@ -1433,7 +1599,10 @@
         }
 
         function rebuildRoadPolyline() {
-            if (roadPolyline) { markingMap.removeLayer(roadPolyline); roadPolyline = null; }
+            if (roadPolyline) {
+                markingMap.removeLayer(roadPolyline);
+                roadPolyline = null;
+            }
             if (roadPoints.length > 1)
                 roadPolyline = L.polyline(roadPoints.map(p => [p.lat, p.lng]),
                     { color: '#60a5fa', weight: 4, opacity: 0.9 }).addTo(markingMap);
@@ -1443,8 +1612,10 @@
             ghostMarkers.forEach(m => markingMap.removeLayer(m));
             ghostMarkers = [];
             for (let i = 0; i < roadPoints.length - 1; i++) {
-                const a = roadPoints[i], b = roadPoints[i + 1];
-                const midLat = (a.lat + b.lat) / 2, midLng = (a.lng + b.lng) / 2;
+                const a = roadPoints[i],
+                    b = roadPoints[i + 1];
+                const midLat = (a.lat + b.lat) / 2,
+                    midLng = (a.lng + b.lng) / 2;
                 const insertAfter = i;
                 const icon = L.divIcon({
                     html: `<div class="ghost-handle"></div>`,
@@ -1540,7 +1711,10 @@
                 roadMarkers = [];
                 ghostMarkers.forEach(m => markingMap?.removeLayer(m));
                 ghostMarkers = [];
-                if (roadPolyline) { markingMap?.removeLayer(roadPolyline); roadPolyline = null; }
+                if (roadPolyline) {
+                    markingMap?.removeLayer(roadPolyline);
+                    roadPolyline = null;
+                }
             } else if (activeLayer === 'pin') {
                 pinPoints = [];
                 pinMarkers.forEach(m => markingMap?.removeLayer(m));
@@ -1550,11 +1724,21 @@
         }
 
         function clearAll() {
-            roadPoints = []; roadMarkers.forEach(m => markingMap?.removeLayer(m)); roadMarkers = [];
-            ghostMarkers.forEach(m => markingMap?.removeLayer(m)); ghostMarkers = [];
-            if (roadPolyline) { markingMap?.removeLayer(roadPolyline); roadPolyline = null; }
-            pinPoints = []; pinMarkers.forEach(m => markingMap?.removeLayer(m)); pinMarkers = [];
-            mrfPoints = []; mrfMarkers.forEach(m => markingMap?.removeLayer(m)); mrfMarkers = [];
+            roadPoints = [];
+            roadMarkers.forEach(m => markingMap?.removeLayer(m));
+            roadMarkers = [];
+            ghostMarkers.forEach(m => markingMap?.removeLayer(m));
+            ghostMarkers = [];
+            if (roadPolyline) {
+                markingMap?.removeLayer(roadPolyline);
+                roadPolyline = null;
+            }
+            pinPoints = [];
+            pinMarkers.forEach(m => markingMap?.removeLayer(m));
+            pinMarkers = [];
+            mrfPoints = [];
+            mrfMarkers.forEach(m => markingMap?.removeLayer(m));
+            mrfMarkers = [];
             updateUI();
         }
 
@@ -1580,8 +1764,11 @@
         }
 
         function updateUI() {
-            const roadN = roadPoints.length, pinN = pinPoints.length, mrfN = mrfPoints.length;
-            document.getElementById('wpCountLabel').textContent = `🛣️ ${roadN} road · 📍 ${pinN} stop${pinN !== 1 ? 's' : ''} · 🏭 ${mrfN} MRF`;
+            const roadN = roadPoints.length,
+                pinN = pinPoints.length,
+                mrfN = mrfPoints.length;
+            document.getElementById('wpCountLabel').textContent =
+                `🛣️ ${roadN} road · 📍 ${pinN} stop${pinN !== 1 ? 's' : ''} · 🏭 ${mrfN} MRF`;
             document.getElementById('layerSummary').innerHTML = `
                 <span><span class="dot" style="background:#60a5fa;"></span> ${roadN} road vertex${roadN !== 1 ? 'es' : ''}</span>
                 <span><span class="dot" style="background:var(--gold);"></span> ${pinN} stop${pinN !== 1 ? 's' : ''}</span>
@@ -1590,11 +1777,19 @@
 
             const mini = document.getElementById('wpMiniList');
             let pts, numClass, label;
-            if (activeLayer === 'road') { pts = roadPoints; numClass = 'road-num'; label = 'Vertex'; }
-            else { pts = pinPoints; numClass = 'pin-num'; label = 'Stop'; }
+            if (activeLayer === 'road') {
+                pts = roadPoints;
+                numClass = 'road-num';
+                label = 'Vertex';
+            } else {
+                pts = pinPoints;
+                numClass = 'pin-num';
+                label = 'Stop';
+            }
 
             if (!pts.length && !mrfPoints.length) {
-                mini.innerHTML = `<div class="text-muted" style="padding:6px 0;">${activeLayer === 'road' ? 'Click map to add road vertices · right-click vertex to delete' : 'Click map to drop a stop marker'}</div>`;
+                mini.innerHTML =
+                    `<div class="text-muted" style="padding:6px 0;">${activeLayer === 'road' ? 'Click map to add road vertices · right-click vertex to delete' : 'Click map to drop a stop marker'}</div>`;
                 return;
             }
 
@@ -1683,10 +1878,9 @@
         }
 
         // ═══════════════════════════════════════
-        // MRF FACILITY LOCATIONS - UPDATED
+        // MRF FACILITY LOCATIONS
         // ═══════════════════════════════════════
 
-        // Load MRF locations from API
         async function loadMRFLocations() {
             try {
                 const res = await API.get('/admin/mrf-locations');
@@ -1699,7 +1893,6 @@
             }
         }
 
-        // Draw saved MRF facilities on a map
         function renderFacilityReferenceLayer(map, layerKey, opts = {}) {
             if (!map) return;
             (facilityMarkerLayers[layerKey] || []).forEach(m => map.removeLayer(m));
@@ -1714,8 +1907,10 @@
                 }).addTo(map);
 
                 let popupHtml = `<strong style="color:#14b8a6;">🏭 ${escHtml(f.name)}</strong>`;
-                if (f.address) popupHtml += `<br><span style="color:var(--text2);font-size:.72rem;">${escHtml(f.address)}</span>`;
-                popupHtml += `<br><span class="text-mono" style="font-size:.65rem;color:var(--text3);">${Number(f.latitude).toFixed(5)}, ${Number(f.longitude).toFixed(5)}</span>`;
+                if (f.address) popupHtml +=
+                    `<br><span style="color:var(--text2);font-size:.72rem;">${escHtml(f.address)}</span>`;
+                popupHtml +=
+                    `<br><span class="text-mono" style="font-size:.65rem;color:var(--text3);">${Number(f.latitude).toFixed(5)}, ${Number(f.longitude).toFixed(5)}</span>`;
                 if (opts.allowUse) {
                     popupHtml += `<br><button onclick="addMRFMarker(${f.latitude},${f.longitude}); markingMap.closePopup();"
                         style="margin-top:6px;width:100%;padding:6px;border-radius:6px;border:1px solid #14b8a6;background:rgba(20,184,166,.14);color:#14b8a6;font-weight:700;font-size:.65rem;cursor:pointer;">
@@ -1727,9 +1922,11 @@
             });
         }
 
-        // ---- MRF PICK MAP (the "go to MRF location" map) ----
         function initMRFPickMap() {
-            if (mrfPickMap) { mrfPickMap.remove(); mrfPickMap = null; }
+            if (mrfPickMap) {
+                mrfPickMap.remove();
+                mrfPickMap = null;
+            }
             isMRFPickSatellite = false;
             facilityMarkerLayers.pick = [];
             mrfUserLocationMarker = null;
@@ -1741,16 +1938,13 @@
 
             renderFacilityReferenceLayer(mrfPickMap, 'pick');
 
-            // Click on map to place/update the pin
             mrfPickMap.on('click', e => {
                 placeMRFPendingPin(e.latlng);
             });
 
-            // Add zoom control
             L.control.zoom({ position: 'bottomright' }).addTo(mrfPickMap);
         }
 
-        // Place the pending pin at a location
         function placeMRFPendingPin(latlng) {
             mrfPendingLatLng = latlng;
 
@@ -1758,7 +1952,6 @@
                 mrfPickMap.removeLayer(mrfPendingMarker);
             }
 
-            // Use the same style as resident portal's pending pin
             const icon = L.divIcon({
                 className: "",
                 html: `<div class="mrf-pending-pin"></div>`,
@@ -1784,7 +1977,8 @@
             const hint = document.getElementById('mrfPickHint');
             if (!hint) return;
             if (mrfPendingLatLng) {
-                hint.innerHTML = `📍 Pin at <span class="text-mono" style="color:var(--gold);">${mrfPendingLatLng.lat.toFixed(5)}, ${mrfPendingLatLng.lng.toFixed(5)}</span> — drag to fine-tune, then Save`;
+                hint.innerHTML =
+                    `📍 Pin at <span class="text-mono" style="color:var(--gold);">${mrfPendingLatLng.lat.toFixed(5)}, ${mrfPendingLatLng.lng.toFixed(5)}</span> — drag to fine-tune, then Save`;
                 hint.style.borderColor = 'var(--gold)';
                 hint.style.background = 'rgba(201,146,30,0.06)';
             } else {
@@ -1812,7 +2006,6 @@
             btn.classList.toggle('active', isMRFPickSatellite);
         }
 
-        // ---- "My Location" on MRF pick map ----
         function mrfGotoMyLocation() {
             if (!navigator.geolocation) {
                 showToast('Geolocation not supported', 'error');
@@ -1829,12 +2022,10 @@
                 pos => {
                     const { latitude, longitude, accuracy } = pos.coords;
 
-                    // Center map on user
                     if (mrfPickMap) {
                         mrfPickMap.setView([latitude, longitude], 16, { animate: true });
                     }
 
-                    // Show user location marker
                     if (mrfPickMap) {
                         if (mrfUserLocationMarker) {
                             mrfPickMap.removeLayer(mrfUserLocationMarker);
@@ -1850,7 +2041,6 @@
                             zIndexOffset: 600
                         }).addTo(mrfPickMap);
 
-                        // Also show accuracy circle
                         if (mrfPendingCircle) {
                             mrfPickMap.removeLayer(mrfPendingCircle);
                         }
@@ -1863,7 +2053,6 @@
                         }).addTo(mrfPickMap);
                     }
 
-                    // Place the pin at user's location
                     placeMRFPendingPin({ lat: latitude, lng: longitude });
 
                     showToast(`📍 Location captured ±${Math.round(accuracy || 30)}m`, 'success');
@@ -1886,7 +2075,6 @@
             );
         }
 
-        // ---- Save MRF Location ----
         async function saveMRFLocation() {
             const name = document.getElementById('mrfName').value.trim();
             const address = document.getElementById('mrfAddress').value.trim();
@@ -1920,12 +2108,10 @@
 
                 showToast(`✅ Facility "${name}" saved!`, 'success');
 
-                // Clear the form
                 document.getElementById('mrfName').value = '';
                 document.getElementById('mrfAddress').value = '';
                 clearMRFPick();
 
-                // Remove user location marker
                 if (mrfUserLocationMarker && mrfPickMap) {
                     mrfPickMap.removeLayer(mrfUserLocationMarker);
                     mrfUserLocationMarker = null;
@@ -1935,20 +2121,17 @@
                     mrfPendingCircle = null;
                 }
 
-                // Reload and refresh
                 await loadMRFLocations();
                 renderMRFList();
                 if (mrfPickMap) renderFacilityReferenceLayer(mrfPickMap, 'pick');
                 if (markingMap) renderFacilityReferenceLayer(markingMap, 'marking', { allowUse: true });
                 if (detailMap) renderFacilityReferenceLayer(detailMap, 'detail');
 
-                // Reset button
                 if (btn) {
                     btn.textContent = '💾 Save Facility Location';
                     btn.disabled = false;
                 }
 
-                // Focus the name field for next entry
                 document.getElementById('mrfName').focus();
 
             } catch (err) {
@@ -1961,7 +2144,6 @@
             }
         }
 
-        // ---- Render MRF List ----
         function renderMRFList() {
             const el = document.getElementById('mrfList');
             const countEl = document.getElementById('mrfCount');
@@ -1989,7 +2171,6 @@
             `).join('');
         }
 
-        // ---- Delete MRF Location (two-tap confirmation) ----
         function deleteMRFLocation(id, btn) {
             if (btn.dataset.confirm !== '1') {
                 btn.dataset.confirm = '1';
@@ -2024,10 +2205,8 @@
             })();
         }
 
-        // ---- Open MRF Modal ----
         function openMRFModal() {
             openModal('mrfManageModal');
-            // Reset form
             document.getElementById('mrfName').value = '';
             document.getElementById('mrfAddress').value = '';
 
@@ -2035,12 +2214,10 @@
                 initMRFPickMap();
                 renderMRFList();
                 updateMRFPickHint();
-                // Try to get user location automatically
                 mrfGotoMyLocation();
             });
         }
 
-        // ---- Expose to global scope ----
         Object.assign(window, {
             openAddModal, openEditModal, selectRoute, filterRoutes, openDeleteModal,
             confirmDeleteRoute, closeModal, saveRoute, setActiveLayer, undoLast,
@@ -2050,9 +2227,18 @@
             mrfGotoMyLocation, deleteMRFLocation, addMRFMarker
         });
 
-        // ---- Init ----
         loadAdminProfile();
         loadMRFLocations().then(loadRoutes);
+
+        // ── Hamburger toggle ──
+        document.getElementById('hamburger')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('visible');
+        });
+        document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('visible');
+        });
     </script>
 </body>
 

@@ -245,14 +245,6 @@ exports.createReport = async (req, res) => {
             return res.status(400).json({ error: "Image required" });
         }
 
-        // The old 5MB base64 cap here (and the 2MB cap on the frontend) was
-        // rejecting normal phone camera photos. The frontend now downsizes /
-        // compresses images before upload instead of hard-blocking them, so
-        // this size check has been removed.
-        // If uploads still fail, raise the JSON body limit on the Express app
-        // itself, e.g. in your server entrypoint:
-        //   app.use(express.json({ limit: '15mb' }));
-
         await db.query(`
             INSERT INTO reports (resident_id, type, description, latitude, longitude, image_url)
             VALUES (?, ?, ?, ?, ?, ?)

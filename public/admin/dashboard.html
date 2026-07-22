@@ -8,6 +8,149 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/js/style.js"></script>
+    <style>
+        /* ── Modal fixes ── */
+        .modal-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 99999 !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(4px) !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+        }
+
+        .modal-overlay.open {
+            display: flex !important;
+        }
+
+        .modal {
+            background: var(--panel) !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 16px !important;
+            max-width: 420px !important;
+            width: 100% !important;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
+            animation: modalSlideIn 0.25s ease !important;
+            position: relative !important;
+            z-index: 999999 !important;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px !important;
+            border-bottom: 1px solid var(--border2) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+
+        .modal-title {
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .modal-close {
+            background: none !important;
+            border: none !important;
+            color: var(--text2) !important;
+            font-size: 1.2rem !important;
+            cursor: pointer !important;
+            padding: 4px 8px !important;
+            border-radius: 6px !important;
+            transition: all 0.2s !important;
+        }
+
+        .modal-close:hover {
+            color: var(--red) !important;
+            background: var(--red-dim) !important;
+        }
+
+        .modal-body {
+            padding: 20px 24px !important;
+        }
+
+        .modal-body p {
+            color: var(--text2) !important;
+            font-size: 0.9rem !important;
+            line-height: 1.6 !important;
+            margin: 0 !important;
+        }
+
+        .modal-footer {
+            padding: 16px 24px !important;
+            border-top: 1px solid var(--border2) !important;
+            display: flex !important;
+            gap: 10px !important;
+            justify-content: flex-end !important;
+            flex-wrap: wrap !important;
+        }
+
+        .modal-footer .btn {
+            padding: 10px 24px !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            border-radius: 10px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            border: none !important;
+        }
+
+        .btn-outline {
+            background: transparent !important;
+            border: 1px solid var(--border2) !important;
+            color: var(--text2) !important;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold) !important;
+            color: var(--gold) !important;
+            background: var(--gold-dim) !important;
+        }
+
+        .btn-danger {
+            background: var(--red) !important;
+            color: #fff !important;
+        }
+
+        .btn-danger:hover {
+            background: #e74c3c !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
+        }
+
+        .sidebar {
+            z-index: 1000 !important;
+        }
+
+        .sidebar-overlay {
+            z-index: 999 !important;
+        }
+
+        .topbar {
+            z-index: 100 !important;
+        }
+
+        .toast-container {
+            z-index: 9999999 !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -171,14 +314,15 @@
 
     </main>
 
+    <!-- Logout Confirmation Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
-        <div class="modal" style="max-width:400px;">
+        <div class="modal">
             <div class="modal-header">
                 <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
                 <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
-                <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
+                <p>Are you sure you want to log out of the admin panel?</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
@@ -190,6 +334,18 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        // ── Modal helpers ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
         // ---- API and dashboard logic ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
@@ -240,20 +396,14 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // ---- LOGOUT FUNCTION ----
         function doLogout() {
             localStorage.removeItem('token');
-            // Close modal
             closeModal('logoutConfirmModal');
-            // Show toast message
             showToast('Logged out successfully', 'success');
-            // Redirect to login page after short delay
             setTimeout(() => {
                 window.location.href = '/login.html';
             }, 500);
         }
-
-        // Make doLogout globally available
         window.doLogout = doLogout;
 
         async function loadStats() {
@@ -276,7 +426,6 @@
                 if (!res.ok) throw new Error();
                 const data = await res.json();
 
-                // Extract report data from the response
                 let reportData = [];
                 if (data.type_breakdown && Array.isArray(data.type_breakdown)) {
                     reportData = data.type_breakdown;
@@ -284,11 +433,9 @@
                     reportData = data;
                 }
 
-                // Filter out the 'ALL' type if it exists
                 reportData = reportData.filter(d => d.type !== 'ALL');
 
                 if (reportData.length === 0) {
-                    // Show empty state on chart
                     document.getElementById('reportChart').parentElement.innerHTML =
                         '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">No report data available</div></div>';
                     return;
@@ -336,7 +483,6 @@
                 const data = await res.json();
                 const el = document.getElementById("recentReports");
 
-                // Handle both array and paginated responses
                 let reports = [];
                 if (Array.isArray(data)) {
                     reports = data;
@@ -405,6 +551,16 @@
         loadRecentReports();
         loadPickups();
         loadProfile();
+
+        // ── Hamburger toggle ──
+        document.getElementById('hamburger')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('visible');
+        });
+        document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('visible');
+        });
     </script>
 </body>
 

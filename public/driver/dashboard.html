@@ -2298,10 +2298,6 @@
 
     <!-- Toast -->
     <div id="toast"></div>
-
-    <!-- ======================================== -->
-    <!-- JAVASCRIPT - HYBRID IMPLEMENTATION -->
-    <!-- ======================================== -->
     <script>
         // ── Configuration ──
         const token = localStorage.getItem("token");
@@ -2434,6 +2430,133 @@
         const driverId = getDriverId();
 
         // ═══════════════════════════════════════
+        // PROGRESS PERSISTENCE (localStorage)
+        // ═══════════════════════════════════════
+
+        // Save current progress state to localStorage
+        function saveProgressState() {
+            const assignmentId = currentAssignmentId || document.querySelector('.today-card')?.dataset?.assignmentId;
+            if (!assignmentId) return;
+
+            // Don't save if route is completed or cancelled
+            if (routeStatus === 'completed' || routeStatus === 'cancelled') {
+                localStorage.removeItem(`driver_progress_${assignmentId}`);
+                return;
+            }
+
+            const state = {
+                assignmentId: assignmentId,
+                progressIndex: progressIndex,
+                mrfPassed: Array.from(reachedMrfKeys),
+                stopDone: Array.from(reachedStopKeys),
+                truckLat: lastPos?.lat || null,
+                truckLng: lastPos?.lng || null,
+                lastUpdated: Date.now()
+            };
+            try {
+                localStorage.setItem(`driver_progress_${assignmentId}`, JSON.stringify(state));
+            } catch (e) { /* localStorage full or unavailable */ }
+        }
+
+        // Load progress state from localStorage
+        function loadProgressState(assignmentId) {
+            if (!assignmentId) return null;
+
+            // Don't load if route is completed or cancelled
+            if (routeStatus === 'completed' || routeStatus === 'cancelled') {
+                localStorage.removeItem(`driver_progress_${assignmentId}`);
+                return null;
+            }
+
+            try {
+                const raw = localStorage.getItem(`driver_progress_${assignmentId}`);
+                if (!raw) return null;
+                const state = JSON.parse(raw);
+
+                // Verify assignment ID matches
+                if (state.assignmentId !== assignmentId) {
+                    localStorage.removeItem(`driver_progress_${assignmentId}`);
+                    return null;
+                }
+
+                // 24-hour expiry
+                const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+                if (Date.now() - state.lastUpdated > ONE_DAY_MS) {
+                    localStorage.removeItem(`driver_progress_${assignmentId}`);
+                    return null;
+                }
+
+                return state;
+            } catch (e) {
+                console.warn('Failed to load progress state:', e);
+                return null;
+            }
+        }
+
+        // Restore progress state to the map
+        function restoreProgressState(assignmentId) {
+            const state = loadProgressState(assignmentId);
+            if (!state) return false;
+
+            // Restore reached stop keys
+            if (state.stopDone) {
+                state.stopDone.forEach(key => reachedStopKeys.add(key));
+            }
+
+            // Restore reached MRF keys
+            if (state.mrfPassed) {
+                state.mrfPassed.forEach(key => reachedMrfKeys.add(key));
+            }
+
+            // Restore progress index
+            if (state.progressIndex > 0 && progressPolyline && trailPolyline && drawnCoords.length) {
+                progressIndex = Math.min(state.progressIndex, drawnCoords.length - 1);
+                trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
+                progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+                markMRFPassed(progressIndex);
+            }
+
+            // Restore truck position if available
+            if (state.truckLat && state.truckLng && dMarker) {
+                dMarker.setLatLng([state.truckLat, state.truckLng]);
+                lastPos = { lat: state.truckLat, lng: state.truckLng };
+                updateRouteProgress(state.truckLat, state.truckLng);
+            }
+
+            // Re-apply MRF passed styling
+            mrfStops.forEach((m, i) => {
+                if (reachedMrfKeys.has(m._key)) {
+                    const wrap = document.getElementById(`mrfWrap${i}`);
+                    const pin = document.getElementById(`mrfPin${i}`);
+                    if (wrap) wrap.classList.add('passed');
+                    if (pin) { pin.classList.add('passed'); pin.innerHTML = '<span style="font-size:16px">✓</span>'; }
+                }
+            });
+
+            // Re-apply stop done styling
+            pinStops.forEach((p, i) => {
+                if (reachedStopKeys.has(p._key)) {
+                    const wpNum = document.getElementById(`wpNum${i}`);
+                    const wpItem = document.getElementById(`wpItem${i}`);
+                    const mapPin = document.getElementById(`mapPin${i}`);
+                    if (wpNum) { wpNum.classList.add('done'); wpNum.textContent = '✓'; }
+                    if (wpItem) wpItem.classList.add('reached');
+                    if (mapPin) { mapPin.classList.add('done'); mapPin.textContent = '✓'; }
+                }
+            });
+
+            // Re-apply MRF passed to the waypoint list
+            mrfStops.forEach((m, i) => {
+                if (reachedMrfKeys.has(m._key)) {
+                    const wpNum = document.getElementById(`mrfWpNum${i}`);
+                    if (wpNum) wpNum.classList.add('passed');
+                }
+            });
+
+            return true;
+        }
+
+        // ═══════════════════════════════════════
         // WEBSOCKET SETUP
         // ═══════════════════════════════════════
 
@@ -2441,6 +2564,10 @@
         let socketConnected = false;
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 10;
+
+        // Current assignment tracking for progress persistence
+        let currentAssignmentId = null;
+        let routeStatus = null;
 
         function connectWebSocket() {
             if (socket && socket.connected) return;
@@ -2499,6 +2626,8 @@
             // ── Real-time Updates ──
             socket.on('assignment-update', (assignment) => {
                 console.log('📋 Assignment update received:', assignment);
+                currentAssignmentId = assignment?.id || null;
+                routeStatus = assignment?.status || null;
                 renderAssignment(assignment);
                 if (assignment && assignment.route_id) {
                     loadRouteWaypoints(assignment.route_id);
@@ -2526,8 +2655,15 @@
 
             socket.on('assignment-status-changed', (data) => {
                 console.log('🔄 Status changed:', data);
+                routeStatus = data.status;
                 toast(`Route status: ${data.status}`, 'info');
                 loadToday();
+                // Clear progress on completion/cancellation
+                if (data.status === 'completed' || data.status === 'cancelled') {
+                    if (currentAssignmentId) {
+                        localStorage.removeItem(`driver_progress_${currentAssignmentId}`);
+                    }
+                }
             });
 
             socket.on('new-announcement', (data) => {
@@ -2575,7 +2711,6 @@
                 console.log('👋 Driver disconnected:', data.driverId);
             });
 
-            // A resident/other driver/admin resolved a report — keep the map/list in sync.
             socket.on('report-status-changed', (data) => {
                 if (!data || !data.reportId) return;
                 if (data.status && data.status !== 'pending' && data.status !== 'in_progress') {
@@ -2692,13 +2827,7 @@
         let drawnCoords = [];
         let progressIndex = 0;
         let pinStops = [];
-        // MRF stops the truck has already driven past, keyed by a stable key so
-        // re-renders (route reload, socket reconnect, tab switch) don't reset
-        // the "passed" (greyed out) styling back to fresh.
         let mrfStops = [];
-        // Stops the driver has already reached, keyed by stop number. This lives outside
-        // showRouteFromData so re-renders (socket reconnects, periodic refreshes, tab
-        // switches) don't wipe the checkmarks or reset the progress trail back to start.
         let reachedStopKeys = new Set();
         let reachedMrfKeys = new Set();
         let lastLoadedRouteId = null;
@@ -2855,7 +2984,8 @@
                 const mrfs = (data.mrf_stops || data.mrf || []).map((m, i) => ({
                     lat: parseFloat(m.lat),
                     lng: parseFloat(m.lng),
-                    name: m.name || "MRF Stop"
+                    name: m.name || "MRF Stop",
+                    _key: `mrf_${i}_${m.name || 'MRF'}`
                 }));
                 return { road, pins, mrfs };
             } catch (e) {
@@ -2864,10 +2994,6 @@
             }
         }
 
-        // Finds the closest point on the road polyline to a given lat/lng, expressed
-        // as an index into drawnCoords. Used to know "where along the route" a pin
-        // stop sits, so we don't mark it reached just because it's geographically
-        // close to the truck while the truck hasn't actually driven past it yet.
         function nearestRoadIndex(lat, lng) {
             if (!drawnCoords.length) return -1;
             const pt = L.latLng(lat, lng);
@@ -2879,10 +3005,6 @@
             return best;
         }
 
-        // Marks any pin stop reached, but only if the truck has actually progressed
-        // past that stop's position along the route (routeIdx <= idxLimit + tolerance)
-        // AND it's within range OR was already marked reached before. This is what
-        // stops a far-away-but-geographically-nearby pin from getting a false checkmark.
         function markStopsReachedUpTo(pt, idxLimit) {
             pinStops.forEach((p, i) => {
                 const key = p._key;
@@ -2895,6 +3017,7 @@
                 if (!alreadyDone) {
                     reachedStopKeys.add(key);
                     if (nearEnough) toast(`Stop ${p.num} reached! ✓`, "success");
+                    saveProgressState();
                 }
 
                 const el = document.getElementById(`wpNum${i}`);
@@ -2906,11 +3029,6 @@
             });
         }
 
-        // Marks any MRF stop as "passed" (greyed marker + checkmark) once the truck's
-        // progress along the road has advanced beyond that stop's position — mirrors
-        // markStopsReachedUpTo above, but for MRF drop-off points instead of pickup
-        // pins. Route-order gated the same way, so a nearby-but-not-yet-reached MRF
-        // doesn't flip early.
         function markMRFPassed(idxLimit) {
             mrfStops.forEach((m, i) => {
                 const key = m._key;
@@ -2920,6 +3038,7 @@
 
                 reachedMrfKeys.add(key);
                 toast(`Passed MRF: ${m.name} ✓`, "success");
+                saveProgressState();
 
                 const wrap = document.getElementById(`mrfWrap${i}`);
                 const pin = document.getElementById(`mrfPin${i}`);
@@ -2932,10 +3051,6 @@
             });
         }
 
-        // Recomputes the truck's position along the route from scratch (full scan,
-        // no early-break shortcut) and re-applies it to the trail/progress lines and
-        // stop checkmarks. Called after the map data is rebuilt (route reload, socket
-        // reconnect, tab switch) so progress doesn't visually snap back to the start.
         function resyncRouteProgress(lat, lng) {
             if (!drawnCoords.length || !progressPolyline || !trailPolyline) return;
             const pt = L.latLng(lat, lng);
@@ -2988,8 +3103,6 @@
                 document.getElementById("routeWpCount").textContent = "0";
             }
 
-            // Tag each pin with a stable key + its position along the road, and
-            // restore its checkmark immediately if it was already reached earlier.
             pinStops = pins.map(p => ({
                 ...p,
                 _key: `stop_${p.num}`,
@@ -3011,12 +3124,8 @@
             });
             document.getElementById("routeStops").textContent = pinStops.length;
 
-            // Tag each MRF stop with a stable key + its position along the road,
-            // restoring the "passed" (greyed) style immediately on reload/reconnect
-            // instead of it flashing back to fresh until the next GPS ping.
             mrfStops = mrfs.map((m, i) => ({
                 ...m,
-                _key: `mrf_${i}_${m.name}`,
                 _routeIdx: drawnCoords.length ? nearestRoadIndex(m.lat, m.lng) : null
             }));
 
@@ -3067,8 +3176,12 @@
                 dMap.fitBounds(L.latLngBounds(allPts).pad(0.15));
             }
 
-            // Re-apply the truck's real progress along the route instead of leaving
-            // the trail reset at the start.
+            // Restore saved progress from localStorage (if any)
+            if (currentAssignmentId) {
+                restoreProgressState(currentAssignmentId);
+            }
+
+            // Re-apply the truck's real progress along the route
             if (lastPos) {
                 resyncRouteProgress(lastPos.lat, lastPos.lng);
             }
@@ -3168,10 +3281,8 @@
                 progressIndex = nearest;
                 trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
                 progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+                saveProgressState();
             }
-            // Gated by route order (see markStopsReachedUpTo) so a stop that's merely
-            // geographically close — but further down the route — doesn't get a false
-            // checkmark before the truck has actually driven past it.
             markStopsReachedUpTo(dPt, progressIndex);
             markMRFPassed(progressIndex);
         }
@@ -3444,6 +3555,8 @@
         async function loadToday() {
             try {
                 const assignment = await api("GET", "/today");
+                currentAssignmentId = assignment?.id || null;
+                routeStatus = assignment?.status || null;
                 renderAssignment(assignment);
                 loadStats();
                 if (assignment && assignment.route_id) {
@@ -3531,7 +3644,7 @@
             }
 
             document.getElementById("assignmentCard").innerHTML = `
-                <div class="today-card ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''}">
+                <div class="today-card ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''}" data-assignment-id="${data.id}">
                     <div class="today-inner">
                         <div class="today-route">📍 ${data.zone_name || "Unknown Zone"}</div>
                         ${data.zone_description ? `<div style="font-size:.78rem;color:var(--text2);margin-top:8px;font-weight:400">${data.zone_description}</div>` : ""}
@@ -3750,8 +3863,6 @@
         window.locateIssue = locateIssue;
         window.markIssueResolved = markIssueResolved;
 
-        // A resident just submitted a new report — surface it immediately instead
-        // of waiting up to 30s for the next loadOpenReports() poll.
         (function attachNewReportListener() {
             const tryAttach = () => {
                 if (!socket) { setTimeout(tryAttach, 300); return; }

@@ -9,45 +9,160 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-        /* ---- Fix z-index layering ----
-           Leaflet map uses high z-index values by default.
-           We need to ensure sidebar and overlay are above it.
-        */
+        /* ── Modal fixes ── */
+        .modal-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 99999 !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(4px) !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+        }
 
-        /* Force sidebar to be above map */
+        .modal-overlay.open {
+            display: flex !important;
+        }
+
+        .modal {
+            background: var(--panel) !important;
+            border: 1px solid var(--border2) !important;
+            border-radius: 16px !important;
+            max-width: 420px !important;
+            width: 100% !important;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
+            animation: modalSlideIn 0.25s ease !important;
+            position: relative !important;
+            z-index: 999999 !important;
+        }
+
+        .modal-lg {
+            max-width: 920px !important;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px !important;
+            border-bottom: 1px solid var(--border2) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+
+        .modal-title {
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .modal-close {
+            background: none !important;
+            border: none !important;
+            color: var(--text2) !important;
+            font-size: 1.2rem !important;
+            cursor: pointer !important;
+            padding: 4px 8px !important;
+            border-radius: 6px !important;
+            transition: all 0.2s !important;
+        }
+
+        .modal-close:hover {
+            color: var(--red) !important;
+            background: var(--red-dim) !important;
+        }
+
+        .modal-body {
+            padding: 20px 24px !important;
+        }
+
+        .modal-body p {
+            color: var(--text2) !important;
+            font-size: 0.9rem !important;
+            line-height: 1.6 !important;
+            margin: 0 !important;
+        }
+
+        .modal-body .badge-red {
+            display: block;
+            text-align: center;
+            padding: 10px !important;
+            margin-top: 10px !important;
+        }
+
+        .modal-footer {
+            padding: 16px 24px !important;
+            border-top: 1px solid var(--border2) !important;
+            display: flex !important;
+            gap: 10px !important;
+            justify-content: flex-end !important;
+            flex-wrap: wrap !important;
+        }
+
+        .modal-footer .btn {
+            padding: 10px 24px !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            border-radius: 10px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            border: none !important;
+        }
+
+        .btn-outline {
+            background: transparent !important;
+            border: 1px solid var(--border2) !important;
+            color: var(--text2) !important;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold) !important;
+            color: var(--gold) !important;
+            background: var(--gold-dim) !important;
+        }
+
+        .btn-danger {
+            background: var(--red) !important;
+            color: #fff !important;
+        }
+
+        .btn-danger:hover {
+            background: #e74c3c !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
+        }
+
         .sidebar {
             z-index: 1000 !important;
         }
 
         .sidebar-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
             z-index: 999 !important;
-            transition: background 0.3s ease;
         }
 
-        .sidebar-overlay.active {
-            display: block;
-        }
-
-        /* Ensure modals are above everything */
-        .modal-overlay {
-            z-index: 2000 !important;
-        }
-
-        /* Toast notifications above modals */
-        .toast-container {
-            z-index: 9000 !important;
-        }
-
-        /* Topbar above map but below sidebar */
         .topbar {
-            z-index: 500 !important;
+            z-index: 100 !important;
         }
 
-        /* Override Leaflet's default z-index */
+        .toast-container {
+            z-index: 9999999 !important;
+        }
+
+        /* ---- Fix z-index layering for leaflet ---- */
         .leaflet-control-container,
         .leaflet-pane,
         .leaflet-top,
@@ -186,13 +301,6 @@
             letter-spacing: -0.02em;
         }
 
-        .detail-desc {
-            font-size: 0.83rem;
-            color: var(--text2);
-            margin-top: 6px;
-            line-height: 1.6;
-        }
-
         .detail-stats {
             display: flex;
             gap: 12px;
@@ -277,11 +385,6 @@
             background: var(--gold-dim);
             border-color: var(--gold);
             color: var(--gold);
-        }
-
-        /* ---- Modal ---- */
-        .modal-lg {
-            max-width: 920px !important;
         }
 
         /* ---- Truck marker ---- */
@@ -372,23 +475,6 @@
             }
         }
 
-        .text-mono {
-            font-family: var(--mono);
-        }
-
-        .text-muted {
-            color: var(--text2);
-        }
-
-        .text-gold {
-            color: var(--gold);
-        }
-
-        .text-mono.text-muted {
-            font-size: 0.65rem;
-        }
-
-        /* Detail map container */
         #truckDetailMap {
             height: 240px;
             width: 100%;
@@ -396,7 +482,30 @@
             border-radius: 8px;
         }
 
-        /* ---- Responsive ---- */
+        .delete-confirm-name {
+            font-family: var(--mono);
+            color: var(--gold);
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: var(--bg3);
+            padding: 8px 14px;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 8px 0;
+        }
+
+        .danger-note {
+            font-size: 0.8rem;
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        /* ── Responsive ── */
         @media (max-width: 1024px) {
             .trucks-layout {
                 grid-template-columns: 280px 1fr;
@@ -416,6 +525,7 @@
 
             .modal-lg {
                 max-width: 100% !important;
+                margin: 10px !important;
             }
 
             .detail-stats {
@@ -438,6 +548,12 @@
 
             #detailActions {
                 flex-wrap: wrap;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 16px !important;
             }
         }
 
@@ -468,7 +584,7 @@
             }
 
             .modal-body {
-                padding: 12px 14px;
+                padding: 12px 14px !important;
             }
 
             .form-grid-2 {
@@ -489,6 +605,21 @@
                 align-items: stretch;
                 gap: 10px;
             }
+
+            .modal {
+                margin: 10px !important;
+                border-radius: 14px !important;
+            }
+
+            .modal-overlay {
+                align-items: center !important;
+                padding: 10px !important;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         @media (max-width: 400px) {
@@ -508,6 +639,12 @@
             #detailActions .btn {
                 font-size: 0.68rem;
                 padding: 6px 10px;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 12px !important;
             }
         }
     </style>
@@ -619,7 +756,7 @@
             </div>
         </div>
 
-        <!-- Fleet Map Panel (full width) -->
+        <!-- Fleet Map Panel -->
         <div class="panel reveal section-gap" style="margin-top:24px;">
             <div class="panel-header">
                 <div class="panel-title">
@@ -759,11 +896,8 @@
             <div class="modal-body">
                 <input type="hidden" id="deleteTruckId">
                 <p style="color:var(--text2);font-size:0.88rem">You are about to permanently delete:</p>
-                <div class="delete-confirm-name"
-                    style="font-family:var(--mono);color:var(--gold);font-size:1.1rem;font-weight:700;background:var(--bg3);padding:8px 14px;border-radius:6px;display:inline-block;margin:8px 0;"
-                    id="deleteTruckName">—</div>
-                <div class="danger-note"
-                    style="font-size:0.8rem;color:#f87171;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:6px;padding:10px 14px;margin-top:12px;line-height:1.6;">
+                <div class="delete-confirm-name" id="deleteTruckName">—</div>
+                <div class="danger-note">
                     ⚠️ This action <strong>cannot be undone</strong>. Trucks currently assigned to an
                     <strong>active or pending route cannot be deleted</strong> — complete or cancel
                     those assignments first.
@@ -776,6 +910,7 @@
         </div>
     </div>
 
+    <!-- Logout Confirm Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
@@ -795,132 +930,20 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ---- SIDEBAR TOGGLE ----
-        (function () {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initSidebar);
-            } else {
-                initSidebar();
-            }
+        // ── Modal helpers ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
 
-            function initSidebar() {
-                var hamburger = document.getElementById('hamburger');
-                var sidebar = document.getElementById('sidebar');
-                var overlay = document.getElementById('sidebarOverlay');
-
-                if (!hamburger || !sidebar) return;
-
-                function openSidebar() {
-                    sidebar.classList.add('open');
-                    if (overlay) overlay.classList.add('active');
-                }
-
-                function closeSidebar() {
-                    sidebar.classList.remove('open');
-                    if (overlay) overlay.classList.remove('active');
-                }
-
-                hamburger.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    if (sidebar.classList.contains('open')) {
-                        closeSidebar();
-                    } else {
-                        openSidebar();
-                    }
-                });
-
-                if (overlay) {
-                    overlay.addEventListener('click', closeSidebar);
-                }
-
-                document.querySelectorAll('.sidebar-nav .nav-item').forEach(function (link) {
-                    link.addEventListener('click', function () {
-                        if (window.innerWidth <= 820) {
-                            closeSidebar();
-                        }
-                    });
-                });
-
-                // Close with Escape key too
-                document.addEventListener('keydown', function (e) {
-                    if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-                        closeSidebar();
-                    }
-                });
-            }
-        })();
-
-        // ---- THEME TOGGLE ----
-        (function () {
-            function toggleTheme() {
-                var html = document.documentElement;
-                var currentTheme = html.getAttribute('data-theme');
-                var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                html.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                updateThemeUI(newTheme);
-            }
-
-            function updateThemeUI(theme) {
-                var toggle = document.getElementById('themeToggleBtn');
-                if (!toggle) return;
-                var icon = toggle.querySelector('.theme-icon');
-                var label = toggle.querySelector('.theme-label');
-                if (theme === 'dark') {
-                    if (icon) icon.textContent = '☀️';
-                    if (label) label.textContent = 'Light Mode';
-                    toggle.classList.add('dark');
-                } else {
-                    if (icon) icon.textContent = '🌙';
-                    if (label) label.textContent = 'Dark Mode';
-                    toggle.classList.remove('dark');
-                }
-            }
-
-            var savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function () {
-                    var themeToggle = document.getElementById('themeToggleBtn');
-                    if (themeToggle) {
-                        themeToggle.addEventListener('click', toggleTheme);
-                        updateThemeUI(document.documentElement.getAttribute('data-theme') || 'light');
-                    }
-                });
-            } else {
-                var themeToggle = document.getElementById('themeToggleBtn');
-                if (themeToggle) {
-                    themeToggle.addEventListener('click', toggleTheme);
-                    updateThemeUI(document.documentElement.getAttribute('data-theme') || 'light');
-                }
-            }
-            window.toggleTheme = toggleTheme;
-        })();
-
-        // ---- REVEAL ANIMATIONS ----
-        (function () {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initReveal);
-            } else {
-                initReveal();
-            }
-
-            function initReveal() {
-                var observer = new IntersectionObserver(function (entries) {
-                    entries.forEach(function (entry) {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('visible');
-                        }
-                    });
-                }, { threshold: 0.1 });
-                document.querySelectorAll('.reveal').forEach(function (el) {
-                    observer.observe(el);
-                });
-            }
-        })();
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        window.openModal = openModal;
+        window.closeModal = closeModal;
 
         // ---- API ----
         const API_URL = window.location.origin + '/api';
@@ -998,7 +1021,6 @@
         let isFleetMapSatellite = false;
         let detailMapInstance = null;
 
-        // ---- tile layers ----
         function makeTiles() {
             return {
                 dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -1014,8 +1036,10 @@
 
         function applyTile(map, tiles, isSat) {
             Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
-            if (isSat) { tiles.sat.addTo(map); tiles.label.addTo(map); }
-            else { tiles.dark.addTo(map); }
+            if (isSat) {
+                tiles.sat.addTo(map);
+                tiles.label.addTo(map);
+            } else { tiles.dark.addTo(map); }
         }
 
         function toggleFleetMapSatellite() {
@@ -1044,7 +1068,6 @@
             showToast(`Centered on ${positioned.length} truck${positioned.length !== 1 ? 's' : ''}`, "success");
         }
 
-        // ---- helpers ----
         function escHtml(str) {
             return String(str ?? "").replace(/[&<>"']/g, c =>
                 ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -1094,7 +1117,6 @@
             return "#f87171";
         }
 
-        // ---- load trucks ----
         async function loadTrucks() {
             try {
                 const res = await API.get("/admin/trucks");
@@ -1253,7 +1275,6 @@
             }
         }
 
-        // ---- render fleet map ----
         function renderFleetMap(data) {
             if (!fleetMap) {
                 fleetMap = L.map("fleetMap", { zoomControl: true }).setView([14.5995, 120.9842], 12);
@@ -1300,7 +1321,6 @@
             setTimeout(() => fleetMap.invalidateSize(), 200);
         }
 
-        // ---- CRUD operations ----
         async function addTruck() {
             const plate = document.getElementById("tPlate").value.trim();
             const model = document.getElementById("tModel").value.trim();
@@ -1396,11 +1416,6 @@
             } catch { }
         }
 
-        function openModal(id) { document.getElementById(id).classList.add("open"); }
-        function closeModal(id) { document.getElementById(id).classList.remove("open"); }
-
-        window.openModal = openModal;
-        window.closeModal = closeModal;
         window.addTruck = addTruck;
         window.openEditModal = openEditModal;
         window.saveTruckEdit = saveTruckEdit;
@@ -1413,7 +1428,6 @@
         window.selectTruck = selectTruck;
         window.filterTrucks = filterTrucks;
         window.centerTruckOnMap = centerTruckOnMap;
-        window.doLogout = doLogout;
 
         loadAdminProfile();
         loadTrucks();
@@ -1421,6 +1435,16 @@
         window.addEventListener('resize', () => {
             if (fleetMap) setTimeout(() => fleetMap.invalidateSize(), 100);
             if (detailMapInstance) setTimeout(() => detailMapInstance.invalidateSize(), 100);
+        });
+
+        // ── Hamburger toggle ──
+        document.getElementById('hamburger')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('visible');
+        });
+        document.getElementById('sidebarOverlay')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('visible');
         });
     </script>
 </body>

@@ -738,8 +738,10 @@ exports.getOpenReports = async (req, res) => {
                 r.location_note,
                 r.created_at,
                 r.status,
-                r.resident_id AS user_id
+                r.resident_id AS user_id,
+                u.name AS resident_name
              FROM reports r
+             LEFT JOIN users u ON r.resident_id = u.id
              WHERE r.latitude IS NOT NULL 
                AND r.longitude IS NOT NULL
                AND (r.status IS NULL OR r.status IN ('pending', 'in_progress'))
