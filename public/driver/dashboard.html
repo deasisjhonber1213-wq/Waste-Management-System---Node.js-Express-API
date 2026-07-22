@@ -588,6 +588,22 @@
             padding: 0 6px;
         }
 
+        .nav-badge.pulse {
+            animation: badgePulse 1.4s ease infinite;
+        }
+
+        @keyframes badgePulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.18);
+            }
+        }
+
         /* ── Theme Toggle (nav) ── */
         .theme-toggle {
             display: flex;
@@ -1238,6 +1254,12 @@
             color: var(--green);
         }
 
+        .wp-num.mrf-stop.passed {
+            background: var(--gray-dim);
+            border-color: var(--border2);
+            color: var(--text3);
+        }
+
         .wp-num.done {
             background: var(--green);
             border-color: var(--green);
@@ -1434,6 +1456,20 @@
             object-fit: cover;
             border-radius: 8px;
             margin-top: 8px;
+        }
+
+        .report-card.is-new {
+            animation: newReportFlash 2.2s ease;
+        }
+
+        @keyframes newReportFlash {
+            0% {
+                box-shadow: 0 0 0 2px rgba(245, 166, 35, .55);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 166, 35, 0);
+            }
         }
 
         /* ── Announcements ── */
@@ -1746,6 +1782,17 @@
             justify-content: center;
             position: relative;
             z-index: 2;
+            transition: background .35s, opacity .35s, box-shadow .35s;
+        }
+
+        .mrf-pin.passed {
+            background: linear-gradient(135deg, #64748b, #475569);
+            box-shadow: 0 2px 10px rgba(71, 85, 105, .35);
+            opacity: .65;
+        }
+
+        .mrf-wrap.passed .mrf-pulse-ring {
+            display: none;
         }
 
         .stop-pin {
@@ -2645,10 +2692,15 @@
         let drawnCoords = [];
         let progressIndex = 0;
         let pinStops = [];
+        // MRF stops the truck has already driven past, keyed by a stable key so
+        // re-renders (route reload, socket reconnect, tab switch) don't reset
+        // the "passed" (greyed out) styling back to fresh.
+        let mrfStops = [];
         // Stops the driver has already reached, keyed by stop number. This lives outside
         // showRouteFromData so re-renders (socket reconnects, periodic refreshes, tab
         // switches) don't wipe the checkmarks or reset the progress trail back to start.
         let reachedStopKeys = new Set();
+        let reachedMrfKeys = new Set();
         let lastLoadedRouteId = null;
         let locked = false, currentMapStyle = "light";
         let lastPos = null;
@@ -2854,6 +2906,32 @@
             });
         }
 
+        // Marks any MRF stop as "passed" (greyed marker + checkmark) once the truck's
+        // progress along the road has advanced beyond that stop's position — mirrors
+        // markStopsReachedUpTo above, but for MRF drop-off points instead of pickup
+        // pins. Route-order gated the same way, so a nearby-but-not-yet-reached MRF
+        // doesn't flip early.
+        function markMRFPassed(idxLimit) {
+            mrfStops.forEach((m, i) => {
+                const key = m._key;
+                if (reachedMrfKeys.has(key)) return;
+                if (m._routeIdx == null || drawnCoords.length === 0) return;
+                if (m._routeIdx > idxLimit + 2) return;
+
+                reachedMrfKeys.add(key);
+                toast(`Passed MRF: ${m.name} ✓`, "success");
+
+                const wrap = document.getElementById(`mrfWrap${i}`);
+                const pin = document.getElementById(`mrfPin${i}`);
+                const wpNum = document.getElementById(`mrfWpNum${i}`);
+                if (wrap) wrap.classList.add("passed");
+                if (pin) { pin.classList.add("passed"); pin.innerHTML = '<span style="font-size:16px">✓</span>'; }
+                if (wpNum) wpNum.classList.add("passed");
+                const marker = mrfMarkers[i];
+                if (marker) marker.setPopupContent(`<strong style="color:#94a3b8">🏭 ${m.name}</strong><br><span style="color:#2dd4a0">✓ Already passed</span>`);
+            });
+        }
+
         // Recomputes the truck's position along the route from scratch (full scan,
         // no early-break shortcut) and re-applies it to the trail/progress lines and
         // stop checkmarks. Called after the map data is rebuilt (route reload, socket
@@ -2870,6 +2948,7 @@
             trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
             progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
             markStopsReachedUpTo(pt, progressIndex);
+            markMRFPassed(progressIndex);
         }
 
         function showRouteFromData(routeData) {
@@ -2880,7 +2959,7 @@
             if (roadPolyline) { dMap.removeLayer(roadPolyline); roadPolyline = null; }
             if (progressPolyline) { dMap.removeLayer(progressPolyline); progressPolyline = null; }
             if (trailPolyline) { dMap.removeLayer(trailPolyline); trailPolyline = null; }
-            drawnCoords = []; progressIndex = 0; pinStops = [];
+            drawnCoords = []; progressIndex = 0; pinStops = []; mrfStops = [];
 
             const { road, pins, mrfs } = routeData;
 
@@ -2932,16 +3011,28 @@
             });
             document.getElementById("routeStops").textContent = pinStops.length;
 
-            mrfs.forEach((m, i) => {
+            // Tag each MRF stop with a stable key + its position along the road,
+            // restoring the "passed" (greyed) style immediately on reload/reconnect
+            // instead of it flashing back to fresh until the next GPS ping.
+            mrfStops = mrfs.map((m, i) => ({
+                ...m,
+                _key: `mrf_${i}_${m.name}`,
+                _routeIdx: drawnCoords.length ? nearestRoadIndex(m.lat, m.lng) : null
+            }));
+
+            mrfStops.forEach((m, i) => {
+                const isPassed = reachedMrfKeys.has(m._key);
                 const icon = L.divIcon({
                     className: "",
-                    html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:18px">🏭</span></div></div>`,
+                    html: `<div class="mrf-wrap ${isPassed ? 'passed' : ''}" id="mrfWrap${i}"><div class="mrf-pulse-ring"></div><div class="mrf-pin ${isPassed ? 'passed' : ''}" id="mrfPin${i}"><span style="font-size:${isPassed ? '16px' : '18px'}">${isPassed ? '✓' : '🏭'}</span></div></div>`,
                     iconSize: [42, 42],
                     iconAnchor: [21, 21]
                 });
                 const marker = L.marker([m.lat, m.lng], { icon, zIndexOffset: 600 })
                     .addTo(dMap)
-                    .bindPopup(`<strong style="color:#2dd4a0">🏭 ${m.name}</strong><br><span style="color:#7a8499">MRF Collection Point</span>`);
+                    .bindPopup(isPassed
+                        ? `<strong style="color:#94a3b8">🏭 ${m.name}</strong><br><span style="color:#2dd4a0">✓ Already passed</span>`
+                        : `<strong style="color:#2dd4a0">🏭 ${m.name}</strong><br><span style="color:#7a8499">MRF Collection Point</span>`);
                 mrfMarkers.push(marker);
                 if (fallbackMRF) fallbackMRF.setOpacity(0);
             });
@@ -2955,11 +3046,14 @@
                         <span class="wp-name">${p.name || `Stop ${p.num}`}</span>
                     </div>`;
                 }),
-                ...mrfs.map((m, i) => `
-                    <div class="wp-item">
-                        <div class="wp-num mrf-stop">🏭</div>
-                        <span class="wp-name" style="color:var(--green)">${m.name}</span>
-                    </div>`)
+                ...mrfStops.map((m, i) => {
+                    const isPassed = reachedMrfKeys.has(m._key);
+                    return `
+                    <div class="wp-item ${isPassed ? 'reached' : ''}">
+                        <div class="wp-num mrf-stop ${isPassed ? 'passed' : ''}" id="mrfWpNum${i}">${isPassed ? '✓' : '🏭'}</div>
+                        <span class="wp-name" style="color:${isPassed ? 'var(--text3)' : 'var(--green)'}">${m.name}${isPassed ? ' · passed' : ''}</span>
+                    </div>`;
+                })
             ];
             document.getElementById("wpList").innerHTML = items.length ? items.join("") :
                 `<div class="empty" style="padding:20px"><div class="empty-title">No stops defined</div></div>`;
@@ -2967,7 +3061,7 @@
             const allPts = [
                 ...road.map(v => [v.lat, v.lng]),
                 ...pinStops.map(p => [p.lat, p.lng]),
-                ...mrfs.map(m => [m.lat, m.lng])
+                ...mrfStops.map(m => [m.lat, m.lng])
             ];
             if (allPts.length) {
                 dMap.fitBounds(L.latLngBounds(allPts).pad(0.15));
@@ -3079,6 +3173,7 @@
             // geographically close — but further down the route — doesn't get a false
             // checkmark before the truck has actually driven past it.
             markStopsReachedUpTo(dPt, progressIndex);
+            markMRFPassed(progressIndex);
         }
 
         // ── Residents ──
@@ -3252,7 +3347,8 @@
                 const distText = r._dist != null
                     ? (r._dist < 1 ? `~${Math.round(r._dist * 1000)}m away` : `~${r._dist.toFixed(1)}km away`)
                     : '';
-                return `<div class="report-card">
+                const isNew = r._isNew ? ' is-new' : '';
+                return `<div class="report-card${isNew}" id="reportCard${r.id}">
                     <div class="report-icon" style="background:${color}22;color:${color}">${ISSUE_ICON[r.type] || '⚠️'}</div>
                     <div class="report-body">
                         <span class="badge" style="background:${color}22;border:1px solid ${color}66;color:${color}">${label.toUpperCase()}</span>
@@ -3261,6 +3357,7 @@
                         <div class="report-note">
                             ${r.latitude ? `📍 ${parseFloat(r.latitude).toFixed(5)}, ${parseFloat(r.longitude).toFixed(5)}` : 'No location'}
                             ${distText ? ` · ${distText}` : ''}
+                            ${r.resident_name ? ` · reported by ${r.resident_name}` : ''}
                         </div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch;">
@@ -3366,6 +3463,7 @@
         async function loadRouteWaypoints(routeId) {
             if (routeId !== lastLoadedRouteId) {
                 reachedStopKeys.clear();
+                reachedMrfKeys.clear();
                 lastLoadedRouteId = routeId;
             }
             try {
@@ -3651,6 +3749,31 @@
         window.toggleIssueMarkers = toggleIssueMarkers;
         window.locateIssue = locateIssue;
         window.markIssueResolved = markIssueResolved;
+
+        // A resident just submitted a new report — surface it immediately instead
+        // of waiting up to 30s for the next loadOpenReports() poll.
+        (function attachNewReportListener() {
+            const tryAttach = () => {
+                if (!socket) { setTimeout(tryAttach, 300); return; }
+                socket.on('new-resident-report', (report) => {
+                    if (!report || !report.id) return;
+                    if (allIssues.some(r => r.id === report.id)) return;
+                    report._isNew = true;
+                    allIssues.unshift(report);
+                    renderIssueMarkers();
+                    renderIssuesListPanel();
+                    updateIssuesBadge();
+                    const badge = document.getElementById('issuesBadge');
+                    if (badge) {
+                        badge.classList.add('pulse');
+                        setTimeout(() => badge.classList.remove('pulse'), 4000);
+                    }
+                    toast(`🚨 New report: ${ISSUE_LABELS[report.type] || 'Issue'}`, 'info');
+                    setTimeout(() => { report._isNew = false; }, 3000);
+                });
+            };
+            tryAttach();
+        })();
 
         console.log('🚀 Hybrid Driver Portal initialized');
         console.log(`📡 WebSocket: ${WS_URL}`);

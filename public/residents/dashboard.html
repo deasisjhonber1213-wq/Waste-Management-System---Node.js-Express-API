@@ -3689,33 +3689,36 @@
         async function pollTruckLocation() {
             if (!currentTruckId || routeStatus !== 'in_progress') return;
             try {
+                console.log(`Polling truck ${currentTruckId} location...`);
                 const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
-                if (logs?.length > 0 && logs[0].latitude && logs[0].longitude) {
+                if (logs && logs.length > 0 && logs[0].latitude && logs[0].longitude) {
                     hasLiveTruckLocation = true;
                     placeTruckMarker(logs[0].latitude, logs[0].longitude, true);
                     const statusEl = document.getElementById('todayTruck');
                     if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
-                        statusEl.innerHTML = statusEl.innerHTML.replace(
-                            /<span style="color:var\(--amber\)">· Waiting for GPS…<\/span>/,
-                            ''
-                        );
+                        // Force a full refresh
+                        loadTodayTruck();
                     }
                 }
-            } catch (e) { console.warn('Truck poll failed', e); }
+            } catch (e) {
+                console.warn('Truck poll failed:', e);
+            }
         }
 
-        /* ── Real-time push updates (Socket.IO) ──
-           Backs up / speeds up the 10s REST poll above with instant pushes from
-           the driver's GPS stream and status changes, so the resident sees smooth
-           movement and immediate "route started / completed" updates instead of
-           waiting on the next poll cycle. Falls back gracefully to REST polling
-           if the socket can't connect. */
         let residentSocket = null;
 
         function connectResidentSocket() {
-            if (!window.io) return; // socket.io client script didn't load
-            if (residentSocket && residentSocket.connected) return;
+            if (!window.io) {
+                console.warn('Socket.IO not loaded, using polling fallback');
+                return;
+            }
 
+            if (residentSocket && residentSocket.connected) {
+                console.log('Socket already connected');
+                return;
+            }
+
+            console.log('Connecting resident socket...');
             residentSocket = window.io(window.location.origin, {
                 transports: ['websocket', 'polling'],
                 auth: { token },
@@ -3725,28 +3728,44 @@
                 reconnectionDelayMax: 5000
             });
 
+            residentSocket.on('connect', () => {
+                console.log('✅ Resident socket connected successfully');
+                showToast('Live updates connected!');
+            });
+
             residentSocket.on('connect_error', (err) => {
-                console.warn('Resident live-update socket unavailable, using polling fallback:', err.message);
+                console.warn('Resident socket connection error:', err.message);
+                // Don't show toast for socket errors - they're expected if socket isn't available
             });
 
             residentSocket.on('truck-location', (data) => {
+                console.log('📍 Truck location update received:', data);
                 if (!currentTruckId || !data || String(data.truckId) !== String(currentTruckId)) return;
                 if (routeStatus !== 'in_progress') return;
+
                 hasLiveTruckLocation = true;
                 placeTruckMarker(data.latitude, data.longitude, true);
+
                 const statusEl = document.getElementById('todayTruck');
                 if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
+                    // Refresh the truck info to update the status text
                     loadTodayTruck();
                 }
             });
 
             residentSocket.on('assignment-public-status', (data) => {
+                console.log('📢 Assignment status update:', data);
                 if (!currentAssignmentId || !data || String(data.assignmentId) !== String(currentAssignmentId)) return;
+
                 const prevStatus = routeStatus;
                 applyStatusToUI(data.status);
+
                 if (data.status === 'in_progress' && prevStatus !== 'in_progress') {
                     routeStarted = true;
                     showToast('🚛 Your collection truck is on the way!');
+                    // Immediately refresh to get the truck's location
+                    loadTodayTruck();
+                    // Also start polling as backup
                     pollTruckLocation();
                 } else if (data.status === 'completed') {
                     showToast('✅ Today\'s pickup is complete!');
@@ -3755,7 +3774,6 @@
                 }
             });
         }
-
         /* ── PROFILE ── */
         async function loadProfile() {
             try {

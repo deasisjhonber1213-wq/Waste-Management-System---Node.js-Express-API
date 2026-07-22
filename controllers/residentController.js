@@ -62,10 +62,6 @@ exports.getTodayTruck = async (req, res) => {
     try {
         const today = manilaToday();
 
-        // Previously this picked "any" assignment for today with no ordering,
-        // which could surface a cancelled/older row ahead of the actual active
-        // one if more than one assignment existed for the same date. Ordering
-        // by status prioritizes an in-progress route, then a pending one.
         const [assignment] = await db.query(`
             SELECT ra.*, t.plate_number, t.model,
                    t.latitude AS truck_lat, t.longitude AS truck_lng,
@@ -95,13 +91,13 @@ exports.getTodayTruck = async (req, res) => {
         route.latitude = null;
         route.longitude = null;
 
-        // Live location now comes straight from the trucks table, which is the
-        // row both the driver's socket updates (server.js `driver-location`)
-        // and the driver's REST fallback (driverController.updateMyLocation)
-        // actually write to. The old code queried a `gps_logs` table that
-        // nothing in the app inserts into, so this was always empty.
+        // Check if truck has a recent location update
         if (route.route_started && route.truck_lat != null && route.truck_lng != null && route.truck_loc_updated_at) {
-            const isFresh = (Date.now() - new Date(route.truck_loc_updated_at).getTime()) < LIVE_LOCATION_FRESHNESS_MS;
+            const timeSinceUpdate = Date.now() - new Date(route.truck_loc_updated_at).getTime();
+            const isFresh = timeSinceUpdate < LIVE_LOCATION_FRESHNESS_MS;
+
+            console.log(`Truck location: ${route.plate_number}, last update ${Math.round(timeSinceUpdate / 1000)}s ago, fresh: ${isFresh}`);
+
             if (isFresh) {
                 route.has_live_location = true;
                 route.latitude = route.truck_lat;
