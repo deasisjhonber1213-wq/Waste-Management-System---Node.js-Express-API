@@ -488,19 +488,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ── Modal helpers ──
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
         // ── API ──
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
@@ -526,15 +513,6 @@
                 });
             }
         };
-
-        function showToast(msg, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span>${msg}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
 
         const PALETTE = ["#ffc13c", "#3ddc84", "#ff5c5c", "#60a5fa", "#a78bfa", "#fb923c"];
 
@@ -750,7 +728,6 @@
         loadDashStats();
         loadAnalytics();
         loadScheduleStats();
-
     </script>
 
 </body>

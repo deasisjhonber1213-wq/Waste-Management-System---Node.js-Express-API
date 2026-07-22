@@ -455,19 +455,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ── Modal helpers ──
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
         // ── Delete with confirmation modal ──
         let pendingDeleteId = null;
 
@@ -533,15 +520,6 @@
             if (!date) return '—';
             const d = new Date(date);
             return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-
-        function showToast(msg, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span>${msg}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
         }
 
         function checkAuth() {
@@ -628,7 +606,6 @@
 
         loadAdminProfile();
         loadAnnouncements();
-
     </script>
 
 </body>

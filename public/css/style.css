@@ -1,17 +1,8 @@
 /* ============================================================
-   Z-INDEX STACK
-   ============================================================ */
-.sidebar          { z-index: 1000; }   /* was 100 */
-.sidebar-overlay  { z-index: 999;  }   /* was 99 */
-.topbar           { z-index: 100;  }   /* was 50 */
-.modal-overlay    { z-index: 99999; }  /* was 500 */
-.toast-container  { z-index: 999999; } /* was 9000 */
-
-/* ============================================================
    SMARTWASTE ADMIN — SHARED DESIGN SYSTEM
    Theme: Light/Dark Mode Toggle
    Fonts: Space Mono (data) + Outfit (UI)
-   ============================================================ */
+============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
@@ -51,6 +42,14 @@
     --topbar-h: 60px;
     --radius: 10px;
     --transition: 0.3s ease;
+
+    /* ── Unified z-index scale (used across every page) ──
+       toast > modal > sidebar > sidebar-overlay > topbar > content */
+    --z-topbar: 100;
+    --z-sidebar-overlay: 999;
+    --z-sidebar: 1000;
+    --z-modal: 99999;
+    --z-toast: 999999;
 }
 
 /* Dark mode */
@@ -142,7 +141,7 @@ body {
     border-right: 1px solid var(--sidebar-border);
     display: flex;
     flex-direction: column;
-    z-index: 100;
+    z-index: var(--z-sidebar);
     transition: transform 0.3s ease, background var(--transition), border-color var(--transition);
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
 }
@@ -522,7 +521,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 28px;
-    z-index: 50;
+    z-index: var(--z-topbar);
 }
 
 .topbar-left {
@@ -1063,7 +1062,7 @@ select.form-control {
     background: var(--modal-overlay);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    z-index: 500;
+    z-index: var(--z-modal);
     display: none;
     align-items: center;
     justify-content: center;
@@ -1084,6 +1083,8 @@ select.form-control {
     overflow-y: auto;
     animation: modalIn 0.25s ease;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: calc(var(--z-modal) + 1);
 }
 
 @keyframes modalIn {
@@ -1147,7 +1148,7 @@ select.form-control {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    z-index: 9000;
+    z-index: var(--z-toast);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1298,7 +1299,7 @@ select.form-control {
     position: fixed;
     inset: 0;
     background: var(--modal-overlay);
-    z-index: 99;
+    z-index: var(--z-sidebar-overlay);
     transition: background var(--transition);
 }
 

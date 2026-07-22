@@ -1,6 +1,8 @@
 /* ============================================================
    SMARTWASTE ADMIN — SHARED JS UTILITIES
    Includes: Theme toggle, toast, modals, sidebar, reveal, etc.
+   This is the ONLY place sidebar/hamburger behavior should live.
+   Do not add a second hamburger listener in a page's own <script>.
 ============================================================ */
 
 /* ── THEME TOGGLE ── */
@@ -23,8 +25,6 @@ function updateThemeIcon(theme) {
     if (toggle) {
         const icon = toggle.querySelector('.theme-icon');
         const label = toggle.querySelector('.theme-label');
-        const knob = toggle.querySelector('.theme-knob');
-        const switchEl = toggle.querySelector('.theme-switch');
 
         if (theme === 'dark') {
             if (icon) icon.textContent = '☀️';
@@ -91,73 +91,98 @@ window.showToast = showToast;
 function openModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.add("open");
+    document.body.style.overflow = "hidden";
 }
 
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.remove("open");
+    document.body.style.overflow = "";
 }
 
 // Make modal functions globally available
 window.openModal = openModal;
 window.closeModal = closeModal;
 
-/* ── SIDEBAR MOBILE + REVEAL + ACTIVE NAV ── */
-document.addEventListener("DOMContentLoaded", () => {
-    const hamburger = document.getElementById("hamburger");
-    const sidebar = document.querySelector(".sidebar");
-    const overlay = document.getElementById("sidebarOverlay");
+/* ── SIDEBAR MOBILE + REVEAL + ACTIVE NAV ──
+   Guarded so this never double-binds even if a page's own script
+   (accidentally) also calls initSidebar-style code. */
+if (!window.__smartwasteSidebarInit) {
+    window.__smartwasteSidebarInit = true;
 
-    // Mobile sidebar toggle
-    if (hamburger && sidebar) {
-        hamburger.addEventListener("click", () => {
-            sidebar.classList.toggle("open");
-            if (overlay) overlay.classList.toggle("active");
-        });
-        if (overlay) {
-            overlay.addEventListener("click", () => {
-                sidebar.classList.remove("open");
-                overlay.classList.remove("active");
+    document.addEventListener("DOMContentLoaded", () => {
+        const hamburger = document.getElementById("hamburger");
+        const sidebar = document.querySelector(".sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        function openSidebar() {
+            if (sidebar) sidebar.classList.add("open");
+            if (overlay) overlay.classList.add("active");
+        }
+
+        function closeSidebar() {
+            if (sidebar) sidebar.classList.remove("open");
+            if (overlay) overlay.classList.remove("active");
+        }
+
+        // Mobile sidebar toggle
+        if (hamburger && sidebar) {
+            hamburger.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (sidebar.classList.contains("open")) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
             });
+            if (overlay) {
+                overlay.addEventListener("click", closeSidebar);
+            }
         }
-    }
 
-    // Close sidebar on nav item click (mobile)
-    document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
-        link.addEventListener("click", () => {
-            if (window.innerWidth <= 820) {
-                if (sidebar) sidebar.classList.remove("open");
-                if (overlay) overlay.classList.remove("active");
+        // Close sidebar on nav item click (mobile)
+        document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
+            link.addEventListener("click", () => {
+                if (window.innerWidth <= 820) {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Close sidebar with Escape
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && sidebar && sidebar.classList.contains("open")) {
+                closeSidebar();
             }
         });
-    });
 
-    // Reveal animations
-    const obs = new IntersectionObserver(entries => {
-        entries.forEach(e => {
-            if (e.isIntersecting) {
-                e.target.classList.add("visible");
-                obs.unobserve(e.target);
+        // Reveal animations
+        const obs = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add("visible");
+                    obs.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.08 });
+        document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+
+        // Active nav state (optional - relies on href matching current path)
+        const currentPath = window.location.pathname.split("/").pop() || "dashboard";
+        document.querySelectorAll(".nav-item").forEach(a => {
+            const href = a.getAttribute("href");
+            if (href === currentPath || (currentPath === "" && href === "dashboard")) {
+                a.classList.add("active");
             }
         });
-    }, { threshold: 0.08 });
-    document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
 
-    // Active nav state (optional - relies on href matching current path)
-    const currentPath = window.location.pathname.split("/").pop() || "dashboard";
-    document.querySelectorAll(".nav-item").forEach(a => {
-        const href = a.getAttribute("href");
-        if (href === currentPath || (currentPath === "" && href === "dashboard")) {
-            a.classList.add("active");
+        // Theme toggle button event listener
+        const themeToggleBtn = document.getElementById("themeToggleBtn");
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener("click", toggleTheme);
         }
     });
-
-    // Theme toggle button event listener
-    const themeToggleBtn = document.getElementById("themeToggleBtn");
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener("click", toggleTheme);
-    }
-});
+}
 
 /* ── CONFIRM DELETE ── */
 function confirmDelete(message, onConfirm) {
