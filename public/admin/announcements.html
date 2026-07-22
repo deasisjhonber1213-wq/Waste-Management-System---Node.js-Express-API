@@ -268,6 +268,72 @@
             font-size: 0.72rem;
         }
 
+        /* ── Image upload styling ── */
+        .image-upload-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .image-upload-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px dashed var(--border2);
+            display: none;
+            background: var(--bg3);
+        }
+
+        .image-upload-preview.visible {
+            display: block;
+        }
+
+        .image-upload-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .image-upload-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .image-upload-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: var(--gold-dim);
+        }
+
+        .image-upload-btn.remove {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .image-upload-btn.remove:hover {
+            background: var(--red-dim);
+        }
+
+        .image-upload-input {
+            display: none;
+        }
+
+        .image-upload-filename {
+            font-size: 0.75rem;
+            color: var(--text2);
+            padding: 4px 0;
+        }
+
         @media (max-width: 768px) {
             .ann-grid {
                 grid-template-columns: 1fr;
@@ -310,6 +376,14 @@
             .modal-body,
             .modal-footer {
                 padding: 16px !important;
+            }
+
+            .image-upload-actions {
+                flex-direction: column;
+            }
+
+            .image-upload-btn {
+                justify-content: center;
             }
         }
     </style>
@@ -389,8 +463,26 @@
                             id="annTitle" placeholder="Announcement title…"></div>
                     <div class="form-group"><label class="form-label">Pickup Date (optional)</label><input
                             class="form-control" type="date" id="annDate"></div>
-                    <div class="form-group"><label class="form-label">Image URL (optional)</label><input
-                            class="form-control" id="annImg" placeholder="https://…"></div>
+                    <div class="form-group">
+                        <label class="form-label">Image (optional)</label>
+                        <div class="image-upload-area">
+                            <img id="imagePreview" class="image-upload-preview" alt="Preview">
+                            <div class="image-upload-actions">
+                                <button class="image-upload-btn"
+                                    onclick="document.getElementById('imageInput').click()">
+                                    📷 Upload Image
+                                </button>
+                                <button class="image-upload-btn remove" id="removeImageBtn" onclick="removeImage()"
+                                    style="display:none;">
+                                    ✕ Remove
+                                </button>
+                            </div>
+                            <input type="file" id="imageInput" class="image-upload-input" accept="image/*"
+                                onchange="handleImageUpload(event)">
+                            <div class="image-upload-filename" id="fileNameDisplay"></div>
+                            <input type="hidden" id="annImg" value="">
+                        </div>
+                    </div>
                     <div class="form-group" style="grid-column:1/-1"><label class="form-label">Message</label><textarea
                             class="form-control" id="annMsg" placeholder="Write your message to residents…"
                             style="min-height:80px"></textarea></div>
@@ -455,6 +547,62 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        // ── Image upload handling ──
+        let uploadedImageData = null;
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("Image too large. Max 5MB.", "error");
+                event.target.value = '';
+                return;
+            }
+
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                showToast("Please select an image file.", "error");
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const imageData = e.target.result;
+                uploadedImageData = imageData;
+
+                // Show preview
+                const preview = document.getElementById('imagePreview');
+                preview.src = imageData;
+                preview.classList.add('visible');
+
+                // Store base64 in hidden input (or you could upload to server here)
+                document.getElementById('annImg').value = imageData;
+
+                // Show remove button
+                document.getElementById('removeImageBtn').style.display = 'inline-flex';
+
+                // Show filename
+                document.getElementById('fileNameDisplay').textContent = `📎 ${file.name}`;
+
+                showToast("Image uploaded successfully", "success");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            uploadedImageData = null;
+            document.getElementById('imagePreview').src = '';
+            document.getElementById('imagePreview').classList.remove('visible');
+            document.getElementById('annImg').value = '';
+            document.getElementById('imageInput').value = '';
+            document.getElementById('removeImageBtn').style.display = 'none';
+            document.getElementById('fileNameDisplay').textContent = '';
+            showToast("Image removed", "info");
+        }
+
         // ── Delete with confirmation modal ──
         let pendingDeleteId = null;
 
@@ -580,18 +728,33 @@
             const title = document.getElementById("annTitle").value.trim();
             const msg = document.getElementById("annMsg").value.trim();
             const date = document.getElementById("annDate").value;
-            const imgUrl = document.getElementById("annImg").value.trim();
+            const imgData = document.getElementById("annImg").value;
+
             if (!title || !msg) { showToast("Title and message required", "error"); return; }
+
             try {
-                const res = await API.post("/admin/announcements", { title, message: msg, pickup_date: date || null, image_url: imgUrl || null });
+                // If image is base64, send it as-is (server should handle it)
+                // Or you could upload to a storage service first
+                const res = await API.post("/admin/announcements", {
+                    title,
+                    message: msg,
+                    pickup_date: date || null,
+                    image_url: imgData || null
+                });
+
                 if (!res.ok) throw new Error();
+
+                // Reset form
                 document.getElementById("annTitle").value = "";
                 document.getElementById("annMsg").value = "";
                 document.getElementById("annDate").value = "";
-                document.getElementById("annImg").value = "";
+                removeImage();
+
                 showToast("Announcement published!", "success");
                 loadAnnouncements();
-            } catch { showToast("Failed to create announcement", "error"); }
+            } catch {
+                showToast("Failed to create announcement", "error");
+            }
         }
 
         async function loadAdminProfile() {
@@ -603,6 +766,45 @@
                 }
             } catch { }
         }
+
+        // ── Sidebar toggle (from style.js) ──
+        // The style.js should handle this, but we ensure it works
+        document.addEventListener('DOMContentLoaded', function () {
+            const hamburger = document.getElementById('hamburger');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (hamburger && sidebar) {
+                hamburger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('open');
+                    if (overlay) overlay.classList.toggle('active');
+                });
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function () {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                });
+            }
+        });
+
+        // ── Modal helpers (if not in style.js) ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        window.openModal = openModal;
+        window.closeModal = closeModal;
 
         loadAdminProfile();
         loadAnnouncements();

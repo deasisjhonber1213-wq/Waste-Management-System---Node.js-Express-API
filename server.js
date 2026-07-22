@@ -449,7 +449,33 @@ io.on('connection', (socket) => {
         console.log('🔌 Client disconnected:', socket.id);
     });
 });
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true
+}));
 
+
+app.get('/uploads/announcements/:filename', (req, res) => {
+    const filePath = path.join(__dirname, 'public/uploads/announcements', req.params.filename);
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ error: 'Image not found' });
+    }
+});
+
+const uploadDirs = [
+    path.join(__dirname, 'public/uploads'),
+    path.join(__dirname, 'public/uploads/announcements')
+];
+
+uploadDirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`📁 Created directory: ${dir}`);
+    }
+});
 const cron = require("node-cron");
 cron.schedule("0 0 * * 1", async () => {
     try {

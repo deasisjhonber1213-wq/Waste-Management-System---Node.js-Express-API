@@ -2,6 +2,7 @@ const path = require("path");
 const db = require("../config/db");
 const ExcelJS = require("exceljs");
 const bcrypt = require("bcrypt");
+const fs = require("fs");
 
 exports.dashboardStats = async (req, res) => {
     try {
@@ -907,6 +908,41 @@ exports.createAnnouncement = async (req, res) => {
             return res.status(400).json({ error: "Title and message required" });
         }
 
+        let finalImageUrl = image_url || null;
+
+        // Handle base64 image upload
+        if (image_url && image_url.startsWith('data:image')) {
+            try {
+                // Extract the base64 data
+                const matches = image_url.match(/^data:image\/([A-Za-z-+\/]+);base64,(.+)$/);
+                if (matches && matches.length === 3) {
+                    const imageBuffer = Buffer.from(matches[2], 'base64');
+                    const extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+
+                    // Generate unique filename
+                    const filename = `announcements/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${extension}`;
+
+                    // Ensure directory exists
+                    const fs = require('fs');
+                    const uploadDir = path.join(__dirname, '../public/uploads/announcements');
+                    if (!fs.existsSync(uploadDir)) {
+                        fs.mkdirSync(uploadDir, { recursive: true });
+                    }
+
+                    // Save file
+                    const filePath = path.join(uploadDir, path.basename(filename));
+                    fs.writeFileSync(filePath, imageBuffer);
+
+                    // Return URL path (adjust based on your static file serving)
+                    finalImageUrl = `/uploads/announcements/${path.basename(filename)}`;
+                }
+            } catch (err) {
+                console.error('Error saving image:', err);
+                // Continue without image if save fails
+                finalImageUrl = null;
+            }
+        }
+
         const [cols] = await db.query(
             `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'announcements'`
@@ -916,15 +952,28 @@ exports.createAnnouncement = async (req, res) => {
         const fields = ["title", "message"];
         const values = [title, message];
 
-        if (colNames.includes("pickup_date")) { fields.push("pickup_date"); values.push(pickup_date || null); }
-        if (colNames.includes("image_url")) { fields.push("image_url"); values.push(image_url || null); }
-        if (colNames.includes("created_by")) { fields.push("created_by"); values.push(req.user.id); }
+        if (colNames.includes("pickup_date")) {
+            fields.push("pickup_date");
+            values.push(pickup_date || null);
+        }
+        if (colNames.includes("image_url")) {
+            fields.push("image_url");
+            values.push(finalImageUrl);
+        }
+        if (colNames.includes("created_by")) {
+            fields.push("created_by");
+            values.push(req.user.id);
+        }
 
         await db.query(
             `INSERT INTO announcements (${fields.join(", ")}) VALUES (${fields.map(() => "?").join(", ")})`,
             values
         );
-        res.json({ message: "Announcement created successfully" });
+
+        res.json({
+            message: "Announcement created successfully",
+            image_url: finalImageUrl
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
