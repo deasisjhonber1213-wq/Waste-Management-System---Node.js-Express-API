@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
     <title>Schedules · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="../js/style.js"></script>
     <style>
         /* ── Modal fixes ── */
         .modal-overlay {
@@ -91,13 +92,6 @@
             margin: 0 !important;
         }
 
-        .modal-body .badge-red {
-            display: block;
-            text-align: center;
-            padding: 10px !important;
-            margin-top: 10px !important;
-        }
-
         .modal-footer {
             padding: 16px 24px !important;
             border-top: 1px solid var(--border2) !important;
@@ -156,7 +150,6 @@
             z-index: 9999999 !important;
         }
 
-        /* ── Prevent table from stretching page ── */
         html {
             overflow-x: hidden;
             width: 100%;
@@ -187,6 +180,36 @@
             display: block;
         }
 
+        .confirm-delete-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--input-bg);
+            border: 2px solid var(--border2);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 1rem;
+            letter-spacing: 0.1em;
+            outline: none;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .confirm-delete-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--gold-dim);
+        }
+
+        .confirm-delete-input.success {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px var(--green-dim);
+        }
+
+        .confirm-delete-input.error {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px var(--red-dim);
+        }
+
         @media (max-width: 820px) {
             .panel-header {
                 flex-direction: column;
@@ -197,6 +220,7 @@
             .panel-header .flex-row {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 8px;
             }
 
             .panel-header .search-bar {
@@ -208,10 +232,6 @@
                 width: 100%;
             }
 
-            .stat-grid {
-                grid-template-columns: 1fr 1fr 1fr;
-            }
-
             .data-table {
                 font-size: 0.7rem;
                 min-width: 700px;
@@ -220,6 +240,19 @@
             .data-table th,
             .data-table td {
                 padding: 6px 8px;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+            .modal {
+                max-width: 95%;
+                margin: 10px;
+            }
+
+            .form-grid-2 {
+                grid-template-columns: 1fr;
             }
 
             .table-responsive {
@@ -238,10 +271,6 @@
 
             .sidebar-overlay.active {
                 display: block;
-            }
-
-            .modal {
-                margin: 10px !important;
             }
 
             .modal-header,
@@ -271,7 +300,7 @@
 
             .data-table {
                 font-size: 0.65rem;
-                min-width: 460px;
+                min-width: 480px;
             }
 
             .data-table th,
@@ -284,10 +313,6 @@
             .data-table th:nth-child(6),
             .data-table td:nth-child(6) {
                 display: none;
-            }
-
-            .panel-body-flush {
-                overflow-x: auto;
             }
 
             .btn-sm {
@@ -312,8 +337,22 @@
                 padding: 0 !important;
             }
 
-            .form-grid-2 {
-                grid-template-columns: 1fr;
+            .modal-body {
+                padding: 12px 14px !important;
+            }
+
+            .modal-header {
+                padding: 14px 16px !important;
+            }
+
+            .modal-footer {
+                padding: 12px 16px !important;
+                flex-direction: column !important;
+            }
+
+            .modal-footer .btn {
+                width: 100% !important;
+                justify-content: center !important;
             }
 
             .topbar-btn {
@@ -321,14 +360,12 @@
                 padding: 5px 12px;
             }
 
-            .table-responsive {
-                padding: 0 8px 8px 8px;
+            .panel-body-flush {
+                overflow-x: auto;
             }
 
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 14px !important;
+            .table-responsive {
+                padding: 0 8px 8px 8px;
             }
         }
 
@@ -376,11 +413,23 @@
             .modal-header,
             .modal-body,
             .modal-footer {
-                padding: 12px !important;
+                padding: 10px !important;
             }
+        }
 
-            .modal-title {
-                font-size: 0.9rem !important;
+        .modal {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #deleteScheduleModal .modal {
+            max-width: 450px;
+        }
+
+        @media (max-width: 550px) {
+            #deleteScheduleModal .modal {
+                max-width: 100%;
+                border-radius: 14px 14px 0 0;
             }
         }
     </style>
@@ -408,15 +457,12 @@
             <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
-
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
             <button class="theme-toggle" id="themeToggleBtn">
                 <span class="theme-icon">🌙</span>
                 <span class="theme-label">Dark Mode</span>
-                <span class="theme-switch">
-                    <span class="theme-knob"></span>
-                </span>
+                <span class="theme-switch"><span class="theme-knob"></span></span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -446,7 +492,6 @@
     </div>
 
     <main class="main">
-
         <div class="stat-grid reveal">
             <div class="stat-card" data-icon="📅">
                 <div class="stat-label">Total Schedules</div>
@@ -505,128 +550,121 @@
                 </div>
             </div>
         </div>
-
     </main>
 
-    <!-- Assign Route Modal -->
+    <!-- Modals -->
     <div class="modal-overlay" id="assignModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">📅 Assign Route</div>
-                <button class="modal-close" onclick="closeModal('assignModal')">✕</button>
+                <div class="modal-title">📅 Assign Route</div><button class="modal-close"
+                    onclick="closeModal('assignModal')">✕</button>
             </div>
             <div class="modal-body">
                 <div class="form-grid form-grid-2">
-                    <div class="form-group"><label class="form-label">Driver</label>
-                        <select class="form-control" id="aDriver">
+                    <div class="form-group"><label class="form-label">Driver</label><select class="form-control"
+                            id="aDriver">
                             <option value="">Select driver…</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label class="form-label">Truck</label>
-                        <select class="form-control" id="aTruck">
+                        </select></div>
+                    <div class="form-group"><label class="form-label">Truck</label><select class="form-control"
+                            id="aTruck">
                             <option value="">Select truck…</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label class="form-label">Route / Zone</label>
-                        <select class="form-control" id="aRoute">
+                        </select></div>
+                    <div class="form-group"><label class="form-label">Route / Zone</label><select class="form-control"
+                            id="aRoute">
                             <option value="">Select route…</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label class="form-label">Date</label>
-                        <input class="form-control" type="date" id="aDate">
-                    </div>
-                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Pickup Type</label>
-                        <select class="form-control" id="aType">
+                        </select></div>
+                    <div class="form-group"><label class="form-label">Date</label><input class="form-control"
+                            type="date" id="aDate"></div>
+                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Pickup
+                            Type</label><select class="form-control" id="aType">
                             <option value="regular">Regular</option>
                             <option value="special">Special</option>
                             <option value="recyclable">Recyclable</option>
                             <option value="hazardous">Hazardous</option>
-                        </select>
-                    </div>
+                        </select></div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('assignModal')">Cancel</button>
-                <button class="btn btn-gold" onclick="assignRoute()">Assign</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('assignModal')">Cancel</button><button class="btn btn-gold"
+                    onclick="assignRoute()">Assign</button></div>
         </div>
     </div>
 
-    <!-- Edit Schedule Modal -->
     <div class="modal-overlay" id="editModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">✏️ Update Schedule</div>
-                <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+                <div class="modal-title">✏️ Update Schedule</div><button class="modal-close"
+                    onclick="closeModal('editModal')">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editId">
                 <div class="form-grid form-grid-2">
-                    <div class="form-group"><label class="form-label">Status</label>
-                        <select class="form-control" id="editStatus">
+                    <div class="form-group"><label class="form-label">Status</label><select class="form-control"
+                            id="editStatus">
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label class="form-label">Date</label>
-                        <input class="form-control" type="date" id="editDate">
-                    </div>
-                    <div class="form-group" style="grid-column:1/-1">
-                        <label class="form-label">Pickup Type</label>
-                        <select class="form-control" id="editType">
+                        </select></div>
+                    <div class="form-group"><label class="form-label">Date</label><input class="form-control"
+                            type="date" id="editDate"></div>
+                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Pickup
+                            Type</label><select class="form-control" id="editType">
                             <option value="regular">Regular</option>
                             <option value="special">Special</option>
                             <option value="recyclable">Recyclable</option>
                             <option value="hazardous">Hazardous</option>
-                        </select>
-                    </div>
+                        </select></div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
-                <button class="btn btn-gold" onclick="updateSchedule()">Save Changes</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('editModal')">Cancel</button><button class="btn btn-gold"
+                    onclick="updateSchedule()">Save Changes</button></div>
         </div>
     </div>
 
-    <!-- Delete Schedule Modal -->
     <div class="modal-overlay" id="deleteScheduleModal">
-        <div class="modal">
-            <div class="modal-header">
+        <div class="modal" style="max-width:450px;">
+            <div class="modal-header" style="border-bottom-color:var(--red);">
                 <div class="modal-title" style="color:var(--red);">🗑️ Delete Schedule</div>
                 <button class="modal-close" onclick="closeModal('deleteScheduleModal')">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="deleteScheduleId">
-                <p style="color:var(--text2);">You are about to permanently delete this schedule:</p>
+                <p style="color:var(--text2);margin-bottom:8px;">You are about to permanently delete:</p>
                 <div style="font-weight:700;color:var(--gold);margin:10px 0;font-family:var(--mono);font-size:1rem;"
                     id="deleteScheduleInfo">—</div>
-                <div class="badge badge-red" style="display:block;text-align:center;padding:10px;">⚠️ This cannot be
-                    undone.</div>
+                <p style="color:var(--text3);font-size:0.85rem;margin-bottom:12px;">This action <strong
+                        style="color:var(--red);">cannot be undone</strong>.</p>
+                <div
+                    style="background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.15);border-radius:8px;padding:12px;">
+                    <label class="form-label" style="color:var(--red);">Type <span
+                            style="font-weight:800;font-size:1rem;">DELETE</span> to confirm</label>
+                    <input type="text" id="deleteConfirmInput" class="confirm-delete-input"
+                        placeholder="Type DELETE here..." oninput="onDeleteConfirmInput()">
+                    <div id="deleteConfirmError"
+                        style="color:var(--red);font-size:0.75rem;margin-top:6px;display:none;">⚠️ Please type "DELETE"
+                        exactly as shown</div>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('deleteScheduleModal')">Cancel</button>
-                <button class="btn btn-danger" onclick="confirmDeleteSchedule()">Yes, Delete</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('deleteScheduleModal')">Cancel</button><button class="btn btn-danger"
+                    id="deleteConfirmBtn" disabled onclick="confirmDeleteSchedule()">🗑 Delete Schedule</button></div>
         </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
-                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div><button class="modal-close"
+                    onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
-                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('logoutConfirmModal')">Cancel</button><button class="btn btn-danger"
+                    onclick="doLogout()">Yes, Logout</button></div>
         </div>
     </div>
 
@@ -634,91 +672,44 @@
 
     <script>
         // ── Modal helpers ──
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('open');
-            document.body.style.overflow = 'hidden';
+        function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('open'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); document.body.style.overflow = ''; }
+        window.openModal = openModal; window.closeModal = closeModal;
+
+        // ── Theme Toggle ──
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateThemeUI(next);
         }
-
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('open');
-            document.body.style.overflow = '';
+        function updateThemeUI(theme) {
+            const toggle = document.getElementById('themeToggleBtn');
+            if (!toggle) return;
+            const icon = toggle.querySelector('.theme-icon');
+            const label = toggle.querySelector('.theme-label');
+            if (theme === 'dark') { if (icon) icon.textContent = '☀️'; if (label) label.textContent = 'Light Mode'; toggle.classList.add('dark'); }
+            else { if (icon) icon.textContent = '🌙'; if (label) label.textContent = 'Dark Mode'; toggle.classList.remove('dark'); }
         }
-        window.openModal = openModal;
-        window.closeModal = closeModal;
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeUI(savedTheme);
+            const themeToggle = document.getElementById('themeToggleBtn');
+            if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+        });
+        window.toggleTheme = toggleTheme;
 
-        // ── Delete Schedule helpers ──
-        let pendingDeleteId = null;
-
-        function openDeleteSchedule(id, driver, zone, date) {
-            pendingDeleteId = id;
-            document.getElementById('deleteScheduleId').value = id;
-            document.getElementById('deleteScheduleInfo').textContent =
-                `${driver || 'Unknown Driver'} · ${zone || 'Unknown Zone'} · ${date ? fmtDate(date) : 'No Date'}`;
-            openModal('deleteScheduleModal');
-        }
-
-        async function confirmDeleteSchedule() {
-            const id = document.getElementById('deleteScheduleId').value;
-            if (!id) return;
-            try {
-                const res = await API.del(`/admin/pickups/${id}`);
-                if (!res.ok) {
-                    const err = await res.text();
-                    throw new Error(err);
-                }
-                closeModal('deleteScheduleModal');
-                showToast("Schedule deleted successfully", "success");
-                loadSchedules();
-            } catch (err) {
-                console.error('Delete failed:', err);
-                closeModal('deleteScheduleModal');
-                showToast("Delete failed: " + err.message, "error");
-            }
-            pendingDeleteId = null;
-        }
-
-        // ---- API ----
+        // ── API ──
         const API_URL = window.location.origin + '/api';
-        console.log('📡 API URL:', API_URL);
-
-        function getToken() {
-            return localStorage.getItem('token');
-        }
-
+        function getToken() { return localStorage.getItem('token'); }
         const API = {
-            get: async (endpoint) => {
-                return fetch(API_URL + endpoint, {
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-            },
-            post: async (endpoint, data) => {
-                return fetch(API_URL + endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getToken()}`
-                    },
-                    body: JSON.stringify(data)
-                });
-            },
-            put: async (endpoint, data) => {
-                return fetch(API_URL + endpoint, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getToken()}`
-                    },
-                    body: JSON.stringify(data)
-                });
-            },
-            del: async (endpoint) => {
-                return fetch(API_URL + endpoint, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-            }
+            get: async (endpoint) => fetch(API_URL + endpoint, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
+            post: async (endpoint, data) => fetch(API_URL + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(data) }),
+            put: async (endpoint, data) => fetch(API_URL + endpoint, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(data) }),
+            del: async (endpoint) => fetch(API_URL + endpoint, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
         };
 
         function showToast(msg, type = 'info') {
@@ -730,50 +721,31 @@
             setTimeout(() => toast.remove(), 3500);
         }
 
-        function checkAuth() {
-            const token = getToken();
-            if (!token) {
-                window.location.href = '/login.html';
-            }
-        }
+        function checkAuth() { if (!getToken()) window.location.href = '/login.html'; }
         checkAuth();
 
         function doLogout() {
             localStorage.removeItem('token');
             closeModal('logoutConfirmModal');
             showToast('Logged out successfully', 'success');
-            setTimeout(() => {
-                window.location.href = '/login.html';
-            }, 500);
+            setTimeout(() => { window.location.href = '/login.html'; }, 500);
         }
         window.doLogout = doLogout;
 
-        function fmtDate(d) {
-            if (!d) return '—';
-            return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-
+        function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
         function statusBadge(status) {
-            const map = {
-                'pending': 'badge-warning',
-                'in_progress': 'badge-info',
-                'completed': 'badge-success',
-                'cancelled': 'badge-danger'
-            };
+            const map = { 'pending': 'badge-warning', 'in_progress': 'badge-info', 'completed': 'badge-success', 'cancelled': 'badge-danger' };
             return `<span class="badge ${map[status] || 'badge-gray'}">${(status || 'pending').replace('_', ' ').toUpperCase()}</span>`;
         }
 
         let allSchedules = [];
+        let pendingDeleteId = null;
 
         async function loadSchedules() {
             try {
                 const res = await API.get("/admin/pickups");
-                if (!res.ok) {
-                    console.error('Failed to load schedules:', res.status);
-                    throw new Error(`HTTP ${res.status}`);
-                }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 allSchedules = await res.json();
-                console.log('📊 Schedules loaded:', allSchedules.length);
                 renderSchedules(allSchedules);
                 document.getElementById("totalSched").textContent = allSchedules.length;
                 document.getElementById("pendingSched").textContent = allSchedules.filter(s => s.status === "pending" || s.status === "in_progress").length;
@@ -800,12 +772,10 @@
                     <td>${s.zone_name || "—"}</td>
                     <td><span class="badge badge-gray">${s.pickup_type || "regular"}</span></td>
                     <td>${statusBadge(s.status)}</td>
-                    <td>
-                        <div class="flex-row" style="gap:6px;flex-wrap:nowrap;">
-                            <button class="btn btn-outline btn-sm btn-icon" title="Edit" onclick="openEdit(${s.id},'${s.status || 'pending'}','${s.assigned_date?.slice(0, 10) || ''}','${s.pickup_type || 'regular'}')">✏️</button>
-                            <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="openDeleteSchedule(${s.id},'${s.driver_name || 'Unknown'}','${s.zone_name || 'Unknown'}','${s.assigned_date}')">🗑</button>
-                        </div>
-                    </td>
+                    <td><div class="flex-row" style="gap:6px;flex-wrap:nowrap;">
+                        <button class="btn btn-outline btn-sm btn-icon" title="Edit" onclick="openEdit(${s.id},'${s.status || 'pending'}','${s.assigned_date?.slice(0, 10) || ''}','${s.pickup_type || 'regular'}')">✏️</button>
+                        <button class="btn btn-danger btn-sm btn-icon" title="Delete" onclick="openDeleteSchedule(${s.id},'${s.driver_name || 'Unknown'}','${s.zone_name || 'Unknown'}','${s.assigned_date}')">🗑</button>
+                    </div></td>
                 </tr>`).join("");
         }
 
@@ -835,9 +805,7 @@
                     (Array.isArray(trucks) ? trucks.map(t => `<option value="${t.id}">${t.plate_number}</option>`).join("") : '');
                 document.getElementById("aRoute").innerHTML = '<option value="">Select route…</option>' +
                     (Array.isArray(routes) ? routes.map(r => `<option value="${r.id}">${r.zone_name}</option>`).join("") : '');
-            } catch (err) {
-                console.error('Load form data error:', err);
-            }
+            } catch (err) { console.error('Load form data error:', err); }
         }
 
         async function assignRoute() {
@@ -854,18 +822,11 @@
             }
             try {
                 const res = await API.post("/admin/assign-route", body);
-                if (!res.ok) {
-                    const err = await res.text();
-                    console.error('Assign error:', err);
-                    throw new Error(err);
-                }
+                if (!res.ok) { const err = await res.text(); throw new Error(err); }
                 closeModal("assignModal");
                 showToast("Route assigned successfully", "success");
                 loadSchedules();
-            } catch (err) {
-                console.error('Assign failed:', err);
-                showToast("Assignment failed: " + err.message, "error");
-            }
+            } catch (err) { showToast("Assignment failed: " + err.message, "error"); }
         }
 
         function openEdit(id, status, date, type) {
@@ -881,41 +842,70 @@
             const status = document.getElementById("editStatus").value;
             const date = document.getElementById("editDate").value;
             const pickup_type = document.getElementById("editType").value;
-
             try {
                 const payload = {};
                 if (status) payload.status = status;
                 if (date) payload.assigned_date = date;
                 if (pickup_type) payload.pickup_type = pickup_type;
-
-                console.log('Updating schedule:', id, payload);
-
                 const res = await API.put(`/admin/pickups/${id}`, payload);
-                if (!res.ok) {
-                    const err = await res.text();
-                    console.error('Update error:', err);
-                    throw new Error(err);
-                }
+                if (!res.ok) { const err = await res.text(); throw new Error(err); }
                 closeModal("editModal");
                 showToast("Schedule updated successfully", "success");
                 loadSchedules();
-            } catch (err) {
-                console.error('Update failed:', err);
-                showToast("Update failed: " + err.message, "error");
-            }
+            } catch (err) { showToast("Update failed: " + err.message, "error"); }
+        }
+
+        // ── Delete Schedule with Confirmation ──
+        function openDeleteSchedule(id, driver, zone, date) {
+            pendingDeleteId = id;
+            document.getElementById("deleteScheduleId").value = id;
+            document.getElementById("deleteScheduleInfo").textContent = `${driver || 'Unknown'} · ${zone || 'Unknown'} · ${date ? fmtDate(date) : 'No Date'}`;
+            document.getElementById("deleteConfirmInput").value = '';
+            document.getElementById("deleteConfirmInput").className = 'confirm-delete-input';
+            document.getElementById("deleteConfirmError").style.display = 'none';
+            document.getElementById("deleteConfirmBtn").disabled = true;
+            openModal("deleteScheduleModal");
+            setTimeout(() => { document.getElementById("deleteConfirmInput").focus(); }, 300);
+        }
+
+        function onDeleteConfirmInput() {
+            const input = document.getElementById("deleteConfirmInput");
+            const btn = document.getElementById("deleteConfirmBtn");
+            const error = document.getElementById("deleteConfirmError");
+            const value = input.value.trim();
+            if (value === "DELETE") { input.className = 'confirm-delete-input success'; error.style.display = 'none'; btn.disabled = false; }
+            else if (value && value !== "DELETE") { input.className = 'confirm-delete-input error'; error.style.display = 'block'; btn.disabled = true; }
+            else { input.className = 'confirm-delete-input'; error.style.display = 'none'; btn.disabled = true; }
+        }
+
+        async function confirmDeleteSchedule() {
+            const input = document.getElementById("deleteConfirmInput");
+            const value = input.value.trim();
+            if (value !== "DELETE") { showToast('Please type "DELETE" to confirm', "error"); return; }
+            const id = document.getElementById("deleteScheduleId").value;
+            if (!id) return;
+            try {
+                const res = await API.del(`/admin/pickups/${id}`);
+                if (!res.ok) { const err = await res.text(); throw new Error(err); }
+                closeModal("deleteScheduleModal");
+                showToast("Schedule deleted successfully", "success");
+                loadSchedules();
+            } catch (err) { showToast("Delete failed: " + err.message, "error"); }
         }
 
         async function loadAdminProfile() {
             try {
                 const res = await API.get("/admin/profile");
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById("adminName").textContent = data.name || "Admin";
-                }
+                if (res.ok) { const data = await res.json(); document.getElementById("adminName").textContent = data.name || "Admin"; }
             } catch { }
         }
 
         document.getElementById("aDate").value = new Date().toISOString().slice(0, 10);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { const dm = document.getElementById('deleteScheduleModal'); if (dm && dm.classList.contains('open')) closeModal('deleteScheduleModal'); }
+            if (e.key === 'Enter') { const di = document.getElementById('deleteConfirmInput'); if (di && document.getElementById('deleteScheduleModal').classList.contains('open')) { const btn = document.getElementById('deleteConfirmBtn'); if (!btn.disabled) confirmDeleteSchedule(); } }
+        });
 
         window.assignRoute = assignRoute;
         window.openEdit = openEdit;
@@ -923,12 +913,12 @@
         window.filterSchedules = filterSchedules;
         window.openDeleteSchedule = openDeleteSchedule;
         window.confirmDeleteSchedule = confirmDeleteSchedule;
+        window.onDeleteConfirmInput = onDeleteConfirmInput;
 
         loadAdminProfile();
         loadSchedules();
         loadFormData();
 
-        // ── Hamburger toggle ──
         document.getElementById('hamburger')?.addEventListener('click', function () {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('visible');
