@@ -506,6 +506,51 @@
             line-height: 1.6;
         }
 
+        /* ── Fix for logout modal buttons to be side by side ── */
+        #logoutConfirmModal .modal-footer {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+            justify-content: flex-end !important;
+        }
+
+        #logoutConfirmModal .modal-footer .btn {
+            width: auto !important;
+            min-width: 100px !important;
+            flex: 0 1 auto !important;
+            padding: 10px 24px !important;
+        }
+
+        /* For mobile - keep side by side unless very small */
+        @media (max-width: 550px) {
+            #logoutConfirmModal .modal-footer {
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+                justify-content: flex-end !important;
+            }
+
+            #logoutConfirmModal .modal-footer .btn {
+                width: auto !important;
+                min-width: 80px !important;
+                flex: 0 1 auto !important;
+                padding: 10px 20px !important;
+            }
+        }
+
+        /* Only stack on very tiny screens */
+        @media (max-width: 380px) {
+            #logoutConfirmModal .modal-footer {
+                flex-direction: column !important;
+            }
+
+            #logoutConfirmModal .modal-footer .btn {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+        }
+
         /* ── Responsive ── */
         @media (max-width: 1024px) {
             .trucks-layout {
@@ -531,6 +576,20 @@
 
             .detail-stats {
                 flex-wrap: wrap;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1000 !important;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
             }
 
             #detailActions {
@@ -897,7 +956,7 @@
         </div>
     </div>
 
-    <!-- Logout Confirm Modal -->
+    <!-- Logout Confirmation Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
@@ -905,7 +964,7 @@
                 <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
-                <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
+                <p>Are you sure you want to log out of the admin panel?</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
@@ -917,6 +976,21 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        // ── Modal helpers ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
         // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
@@ -1407,36 +1481,6 @@
         window.addEventListener('resize', () => {
             if (fleetMap) setTimeout(() => fleetMap.invalidateSize(), 100);
             if (detailMapInstance) setTimeout(() => detailMapInstance.invalidateSize(), 100);
-        });
-
-        // ── Initialization from style.js ──
-        document.addEventListener("DOMContentLoaded", () => {
-            // Sync theme with saved preference
-            const savedTheme = localStorage.getItem("theme") || "light";
-            document.documentElement.setAttribute("data-theme", savedTheme);
-
-            // Update toggle icon if style.js loaded first
-            if (typeof updateThemeIcon === "function") {
-                updateThemeIcon(savedTheme);
-            }
-
-            // Resize maps after sidebar animation
-            const hamburger = document.getElementById("hamburger");
-            if (hamburger) {
-                hamburger.addEventListener("click", () => {
-                    setTimeout(() => {
-                        if (fleetMap) fleetMap.invalidateSize();
-                        if (detailMapInstance) detailMapInstance.invalidateSize();
-                    }, 320);
-                });
-            }
-
-            window.addEventListener("themeChanged", () => {
-                setTimeout(() => {
-                    if (fleetMap) fleetMap.invalidateSize();
-                    if (detailMapInstance) detailMapInstance.invalidateSize();
-                }, 100);
-            });
         });
 
     </script>

@@ -523,6 +523,51 @@
         #deleteConfirmModal .modal {
             max-width: 450px;
         }
+
+        /* ── Fix for logout modal buttons to be side by side ── */
+        #logoutConfirmModal .modal-footer {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+            justify-content: flex-end !important;
+        }
+
+        #logoutConfirmModal .modal-footer .btn {
+            width: auto !important;
+            min-width: 100px !important;
+            flex: 0 1 auto !important;
+            padding: 10px 24px !important;
+        }
+
+        /* For mobile - keep side by side unless very small */
+        @media (max-width: 550px) {
+            #logoutConfirmModal .modal-footer {
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+                justify-content: flex-end !important;
+            }
+
+            #logoutConfirmModal .modal-footer .btn {
+                width: auto !important;
+                min-width: 80px !important;
+                flex: 0 1 auto !important;
+                padding: 10px 20px !important;
+            }
+        }
+
+        /* Only stack on very tiny screens */
+        @media (max-width: 380px) {
+            #logoutConfirmModal .modal-footer {
+                flex-direction: column !important;
+            }
+
+            #logoutConfirmModal .modal-footer .btn {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+        }
     </style>
 </head>
 
