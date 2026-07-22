@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="../js/style.js"></script>
     <style>
         /* ── Modal fixes ── */
         .modal-overlay {
@@ -532,20 +533,6 @@
                 flex-wrap: wrap;
             }
 
-            .sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                z-index: 1000 !important;
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .sidebar-overlay.active {
-                display: block;
-            }
-
             #detailActions {
                 flex-wrap: wrap;
             }
@@ -930,21 +917,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ── Modal helpers ──
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-        window.openModal = openModal;
-        window.closeModal = closeModal;
-
         // ---- API ----
         const API_URL = window.location.origin + '/api';
         console.log('📡 API URL:', API_URL);
@@ -1435,6 +1407,36 @@
         window.addEventListener('resize', () => {
             if (fleetMap) setTimeout(() => fleetMap.invalidateSize(), 100);
             if (detailMapInstance) setTimeout(() => detailMapInstance.invalidateSize(), 100);
+        });
+
+        // ── Initialization from style.js ──
+        document.addEventListener("DOMContentLoaded", () => {
+            // Sync theme with saved preference
+            const savedTheme = localStorage.getItem("theme") || "light";
+            document.documentElement.setAttribute("data-theme", savedTheme);
+
+            // Update toggle icon if style.js loaded first
+            if (typeof updateThemeIcon === "function") {
+                updateThemeIcon(savedTheme);
+            }
+
+            // Resize maps after sidebar animation
+            const hamburger = document.getElementById("hamburger");
+            if (hamburger) {
+                hamburger.addEventListener("click", () => {
+                    setTimeout(() => {
+                        if (fleetMap) fleetMap.invalidateSize();
+                        if (detailMapInstance) detailMapInstance.invalidateSize();
+                    }, 320);
+                });
+            }
+
+            window.addEventListener("themeChanged", () => {
+                setTimeout(() => {
+                    if (fleetMap) fleetMap.invalidateSize();
+                    if (detailMapInstance) detailMapInstance.invalidateSize();
+                }, 100);
+            });
         });
 
     </script>
