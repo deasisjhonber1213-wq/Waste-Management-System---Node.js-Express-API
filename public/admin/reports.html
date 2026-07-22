@@ -24,6 +24,7 @@
             }
         }
 
+        /* ── type bar ── */
         .report-type-bar {
             height: 4px;
             border-radius: 2px;
@@ -31,6 +32,7 @@
             transition: width 0.6s ease;
         }
 
+        /* ── date filter pills ── */
         .date-pills {
             display: flex;
             gap: 6px;
@@ -63,6 +65,7 @@
             background: var(--gold-dim);
         }
 
+        /* ── map panel - LARGER ── */
         #reportMap {
             height: 550px;
             width: 100%;
@@ -80,6 +83,7 @@
             z-index: 400 !important;
         }
 
+        /* ── report popup inside leaflet ── */
         .leaflet-popup-content-wrapper {
             background: var(--panel) !important;
             border: 1px solid var(--border2) !important;
@@ -149,6 +153,7 @@
             color: var(--gold);
         }
 
+        /* custom map marker dots */
         .rp-dot {
             width: 14px;
             height: 14px;
@@ -165,6 +170,7 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
         }
 
+        /* ── image lightbox ── */
         .lightbox-overlay {
             display: none;
             position: fixed;
@@ -203,6 +209,7 @@
             opacity: 1;
         }
 
+        /* ── map toolbar ── */
         .map-toolbar {
             display: flex;
             gap: 8px;
@@ -258,6 +265,7 @@
             display: inline-block;
         }
 
+        /* Resident cards */
         .resident-card {
             display: flex;
             align-items: center;
@@ -307,6 +315,7 @@
             overflow-y: auto;
         }
 
+        /* ── table tweaks ── */
         .row-has-location {
             cursor: pointer;
         }
@@ -503,48 +512,16 @@
             box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
         }
 
-        /* ── Sidebar Fix ── */
         .sidebar {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            bottom: 0 !important;
-            width: var(--sidebar-w, 280px) !important;
-            z-index: 9999 !important;
-            background: var(--panel) !important;
-            border-right: 1px solid var(--border2) !important;
-            transform: translateX(-100%) !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            overflow-y: auto !important;
-        }
-
-        .sidebar.open {
-            transform: translateX(0) !important;
+            z-index: 1000 !important;
         }
 
         .sidebar-overlay {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 9998 !important;
-            background: rgba(0, 0, 0, 0.5) !important;
-            display: none !important;
-            backdrop-filter: blur(2px) !important;
-        }
-
-        .sidebar-overlay.active {
-            display: block !important;
-        }
-
-        .main,
-        .topbar {
-            position: relative !important;
-            z-index: 1 !important;
+            z-index: 999 !important;
         }
 
         .topbar {
             z-index: 100 !important;
-            position: sticky !important;
-            top: 0 !important;
         }
 
         .toast-container {
@@ -678,16 +655,6 @@
                 align-items: stretch;
                 gap: 8px;
             }
-
-            .modal {
-                margin: 10px !important;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 16px !important;
-            }
         }
 
         @media (max-width: 400px) {
@@ -738,12 +705,6 @@
             .date-pill {
                 font-size: 0.55rem;
                 padding: 3px 8px;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 12px !important;
             }
         }
 

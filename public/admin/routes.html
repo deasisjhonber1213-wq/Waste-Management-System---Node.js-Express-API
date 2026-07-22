@@ -98,13 +98,6 @@
             margin: 0 !important;
         }
 
-        .modal-body .badge-red {
-            display: block;
-            text-align: center;
-            padding: 10px !important;
-            margin-top: 10px !important;
-        }
-
         .modal-footer {
             padding: 16px 24px !important;
             border-top: 1px solid var(--border2) !important;
@@ -147,65 +140,20 @@
             box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
         }
 
-        /* ── Sidebar Fix ── */
         .sidebar {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            bottom: 0 !important;
-            width: var(--sidebar-w, 280px) !important;
-            z-index: 9999 !important;
-            background: var(--panel) !important;
-            border-right: 1px solid var(--border2) !important;
-            transform: translateX(-100%) !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            overflow-y: auto !important;
-        }
-
-        .sidebar.open {
-            transform: translateX(0) !important;
+            z-index: 1000 !important;
         }
 
         .sidebar-overlay {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 9998 !important;
-            background: rgba(0, 0, 0, 0.5) !important;
-            display: none !important;
-            backdrop-filter: blur(2px) !important;
-        }
-
-        .sidebar-overlay.active {
-            display: block !important;
-        }
-
-        .main,
-        .topbar {
-            position: relative !important;
-            z-index: 1 !important;
+            z-index: 999 !important;
         }
 
         .topbar {
             z-index: 100 !important;
-            position: sticky !important;
-            top: 0 !important;
         }
 
         .toast-container {
             z-index: 9999999 !important;
-        }
-
-        /* Ensure leaflet stays below sidebar */
-        .leaflet-control-container,
-        .leaflet-pane,
-        .leaflet-top,
-        .leaflet-bottom,
-        .leaflet-control {
-            z-index: 400 !important;
-        }
-
-        .leaflet-map-pane {
-            z-index: 100 !important;
         }
 
         /* ── Layout ── */
@@ -473,7 +421,7 @@
             color: var(--text);
         }
 
-        /* ── Markers ── */
+        /* ── Markers (matching resident portal) ── */
         .mrf-wrap {
             position: relative;
             width: 36px;
@@ -617,6 +565,14 @@
         .wp-mini-num.mrf-num {
             background: #fbbf24;
             color: #1a1a1a;
+        }
+
+        .leaflet-container {
+            background: var(--bg2) !important;
+        }
+
+        .route-map-wrap {
+            isolation: isolate;
         }
 
         .route-map-wrap .leaflet-control-container {
@@ -866,22 +822,6 @@
             .modal {
                 margin: 10px !important;
                 border-radius: 14px !important;
-            }
-
-            .modal-overlay {
-                align-items: center !important;
-                padding: 10px !important;
-            }
-
-            .modal-footer .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 14px !important;
             }
         }
 

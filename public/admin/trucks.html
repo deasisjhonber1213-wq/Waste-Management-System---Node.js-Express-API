@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="../js/style.js"></script>
     <style>
         /* ── Modal fixes ── */
         .modal-overlay {
@@ -37,6 +36,10 @@
             animation: modalSlideIn 0.25s ease !important;
             position: relative !important;
             z-index: 999999 !important;
+        }
+
+        .modal-lg {
+            max-width: 920px !important;
         }
 
         @keyframes modalSlideIn {
@@ -92,6 +95,13 @@
             font-size: 0.9rem !important;
             line-height: 1.6 !important;
             margin: 0 !important;
+        }
+
+        .modal-body .badge-red {
+            display: block;
+            text-align: center;
+            padding: 10px !important;
+            margin-top: 10px !important;
         }
 
         .modal-footer {
@@ -152,6 +162,7 @@
             z-index: 9999999 !important;
         }
 
+        /* ---- Fix z-index layering for leaflet ---- */
         .leaflet-control-container,
         .leaflet-pane,
         .leaflet-top,
@@ -164,6 +175,7 @@
             z-index: 100 !important;
         }
 
+        /* ---- Layout ---- */
         .trucks-layout {
             display: grid;
             grid-template-columns: 340px 1fr;
@@ -280,6 +292,7 @@
             background: currentColor;
         }
 
+        /* ---- Detail Panel ---- */
         .detail-zone-name {
             font-size: 1.4rem;
             font-weight: 700;
@@ -324,6 +337,7 @@
             color: #f87171;
         }
 
+        /* ---- Map ---- */
         .route-map-wrap {
             border-radius: 12px;
             overflow: hidden;
@@ -373,6 +387,7 @@
             color: var(--gold);
         }
 
+        /* ---- Truck marker ---- */
         .truck-marker {
             width: 30px;
             height: 30px;
@@ -490,6 +505,7 @@
             line-height: 1.6;
         }
 
+        /* ── Responsive ── */
         @media (max-width: 1024px) {
             .trucks-layout {
                 grid-template-columns: 280px 1fr;
@@ -512,63 +528,26 @@
                 margin: 10px !important;
             }
 
-            /* ── Sidebar Fix ── */
+            .detail-stats {
+                flex-wrap: wrap;
+            }
+
             .sidebar {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                bottom: 0 !important;
-                width: var(--sidebar-w, 280px) !important;
-                z-index: 9999 !important;
-                background: var(--panel) !important;
-                border-right: 1px solid var(--border2) !important;
-                transform: translateX(-100%) !important;
-                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                overflow-y: auto !important;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1000 !important;
             }
 
             .sidebar.open {
-                transform: translateX(0) !important;
-            }
-
-            .sidebar-overlay {
-                position: fixed !important;
-                inset: 0 !important;
-                z-index: 9998 !important;
-                background: rgba(0, 0, 0, 0.5) !important;
-                display: none !important;
-                backdrop-filter: blur(2px) !important;
+                transform: translateX(0);
             }
 
             .sidebar-overlay.active {
-                display: block !important;
+                display: block;
             }
 
-            .layout,
-            .main,
-            .content,
-            .topbar {
-                position: relative !important;
-                z-index: 1 !important;
-            }
-
-            .topbar {
-                z-index: 100 !important;
-                position: sticky !important;
-                top: 0 !important;
-            }
-
-            .modal-overlay {
-                z-index: 99999 !important;
-            }
-
-            /* Keep leaflet below sidebar */
-            .leaflet-control-container,
-            .leaflet-pane,
-            .leaflet-top,
-            .leaflet-bottom,
-            .leaflet-control {
-                z-index: 400 !important;
+            #detailActions {
+                flex-wrap: wrap;
             }
 
             .modal-header,
@@ -612,11 +591,30 @@
                 grid-template-columns: 1fr;
             }
 
+            #detailActions {
+                width: 100%;
+            }
+
+            #detailActions .btn {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            .panel-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
             .modal {
                 margin: 10px !important;
                 border-radius: 14px !important;
             }
 
+            .modal-overlay {
+                align-items: center !important;
+                padding: 10px !important;
+            }
 
             .modal-footer .btn {
                 width: 100%;
@@ -632,6 +630,15 @@
             .detail-stats {
                 flex-direction: column;
                 gap: 6px;
+            }
+
+            .truck-meta .badge {
+                font-size: 0.55rem;
+            }
+
+            #detailActions .btn {
+                font-size: 0.68rem;
+                padding: 6px 10px;
             }
 
             .modal-header,
@@ -665,12 +672,15 @@
             <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
             <button class="theme-toggle" id="themeToggleBtn">
                 <span class="theme-icon">🌙</span>
                 <span class="theme-label">Dark Mode</span>
-                <span class="theme-switch"><span class="theme-knob"></span></span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -702,6 +712,7 @@
     <main class="main">
 
         <div class="trucks-layout">
+            <!-- Left: Truck List -->
             <div>
                 <div class="panel">
                     <div class="panel-header">
@@ -711,8 +722,9 @@
                         <span class="badge badge-gold" id="truckCount">0</span>
                     </div>
                     <div style="padding:0 14px 12px;">
-                        <div class="search-bar"><input type="text" placeholder="Search trucks..." id="searchInput"
-                                oninput="filterTrucks()"></div>
+                        <div class="search-bar">
+                            <input type="text" placeholder="Search trucks..." id="searchInput" oninput="filterTrucks()">
+                        </div>
                     </div>
                     <div style="padding:0 14px 14px;" id="truckList">
                         <div class="empty-state">
@@ -722,6 +734,8 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Right: Truck Detail -->
             <div>
                 <div class="panel">
                     <div class="panel-header">
@@ -742,19 +756,22 @@
             </div>
         </div>
 
+        <!-- Fleet Map Panel -->
         <div class="panel reveal section-gap" style="margin-top:24px;">
             <div class="panel-header">
                 <div class="panel-title">
                     <div class="panel-title-icon">🗺️</div>Fleet Map
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;font-size:0.72rem;color:var(--text2)"><span
-                        class="pulse-dot"></span>Live tracking positions</div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:0.72rem;color:var(--text2)">
+                    <span class="pulse-dot"></span>Live tracking positions
+                </div>
             </div>
             <div class="panel-body">
                 <div class="info-box">
                     <strong>📍 GPS Coordinates &amp; Location Timestamps</strong>
                     <p>Each truck stores a <strong>latitude</strong>, <strong>longitude</strong>, and a
-                        <strong>location_updated_at</strong> timestamp.
+                        <strong>location_updated_at</strong> timestamp. The coordinates pin the truck on the
+                        map below and on the resident's live tracking view.
                     </p>
                     <div class="legend">
                         <div class="legend-item"><span style="color:#4ade80;font-size:1rem">●</span> <strong
@@ -771,8 +788,9 @@
                         <button class="map-tool-btn" id="fleetSatBtn" onclick="toggleFleetMapSatellite()">🛰️
                             Satellite</button>
                     </div>
-                    <div style="font-size:0.7rem;color:var(--text2);font-family:var(--mono)" id="mapTruckCount">📍 0
-                        trucks on map</div>
+                    <div style="font-size:0.7rem;color:var(--text2);font-family:var(--mono)" id="mapTruckCount">
+                        📍 0 trucks on map
+                    </div>
                 </div>
                 <div id="fleetMap"></div>
             </div>
@@ -780,103 +798,132 @@
 
     </main>
 
-    <!-- Modals -->
+    <!-- Add Truck Modal -->
     <div class="modal-overlay" id="addTruckModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">🚛 Add New Truck</div><button class="modal-close"
-                    onclick="closeModal('addTruckModal')">✕</button>
+                <div class="modal-title">🚛 Add New Truck</div>
+                <button class="modal-close" onclick="closeModal('addTruckModal')">✕</button>
             </div>
             <div class="modal-body">
                 <div class="form-grid form-grid-2">
-                    <div class="form-group"><label class="form-label">Plate Number <span
-                                style="color:var(--red)">*</span></label><input class="form-control" id="tPlate"
-                            placeholder="e.g. ABC-1234"></div>
-                    <div class="form-group"><label class="form-label">Model</label><input class="form-control"
-                            id="tModel" placeholder="e.g. Isuzu NMR 71"></div>
+                    <div class="form-group">
+                        <label class="form-label">Plate Number <span style="color:var(--red)">*</span></label>
+                        <input class="form-control" id="tPlate" placeholder="e.g. ABC-1234">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model</label>
+                        <input class="form-control" id="tModel" placeholder="e.g. Isuzu NMR 71">
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('addTruckModal')">Cancel</button><button class="btn btn-gold"
-                    onclick="addTruck()">Add Truck</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addTruckModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="addTruck()">Add Truck</button>
+            </div>
         </div>
     </div>
 
+    <!-- Edit Truck Modal -->
     <div class="modal-overlay" id="editTruckModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">✏️ Edit Truck</div><button class="modal-close"
-                    onclick="closeModal('editTruckModal')">✕</button>
+                <div class="modal-title">✏️ Edit Truck</div>
+                <button class="modal-close" onclick="closeModal('editTruckModal')">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editTruckId">
                 <div class="form-grid form-grid-2">
-                    <div class="form-group"><label class="form-label">Plate Number <span
-                                style="color:var(--red)">*</span></label><input class="form-control" id="editPlate"
-                            placeholder="e.g. ABC-1234"></div>
-                    <div class="form-group"><label class="form-label">Model</label><input class="form-control"
-                            id="editModel" placeholder="e.g. Isuzu NMR 71"></div>
+                    <div class="form-group">
+                        <label class="form-label">Plate Number <span style="color:var(--red)">*</span></label>
+                        <input class="form-control" id="editPlate" placeholder="e.g. ABC-1234">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model</label>
+                        <input class="form-control" id="editModel" placeholder="e.g. Isuzu NMR 71">
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('editTruckModal')">Cancel</button><button class="btn btn-gold"
-                    onclick="saveTruckEdit()">Save Changes</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editTruckModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="saveTruckEdit()">Save Changes</button>
+            </div>
         </div>
     </div>
 
+    <!-- Update Location Modal -->
     <div class="modal-overlay" id="updateLocModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">📍 Update Location</div><button class="modal-close"
-                    onclick="closeModal('updateLocModal')">✕</button>
+                <div class="modal-title">📍 Update Location</div>
+                <button class="modal-close" onclick="closeModal('updateLocModal')">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="locTruckId">
-                <div class="info-box" style="margin-bottom:16px"><strong>ℹ️ Manual location entry</strong>Use this when
-                    a driver reports their position verbally.</div>
+                <div class="info-box" style="margin-bottom:16px">
+                    <strong>ℹ️ Manual location entry</strong>
+                    Use this when a driver reports their position verbally. The server will stamp the current time on
+                    save.
+                    <br><br>
+                    <span style="color:var(--text2);font-size:0.72rem">Tip: Right-click any spot on Google Maps →
+                        "What's here?" to copy coordinates.</span>
+                </div>
                 <div class="form-grid form-grid-2">
-                    <div class="form-group"><label class="form-label">Latitude</label><input class="form-control"
-                            id="locLat" placeholder="14.5995" type="number" step="any"></div>
-                    <div class="form-group"><label class="form-label">Longitude</label><input class="form-control"
-                            id="locLng" placeholder="120.9842" type="number" step="any"></div>
+                    <div class="form-group">
+                        <label class="form-label">Latitude</label>
+                        <input class="form-control" id="locLat" placeholder="14.5995" type="number" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Longitude</label>
+                        <input class="form-control" id="locLng" placeholder="120.9842" type="number" step="any">
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('updateLocModal')">Cancel</button><button class="btn btn-gold"
-                    onclick="updateLocation()">Update Location</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('updateLocModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="updateLocation()">Update Location</button>
+            </div>
         </div>
     </div>
 
+    <!-- Delete Truck Modal -->
     <div class="modal-overlay" id="deleteTruckModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🗑️ Delete Truck</div><button class="modal-close"
-                    onclick="closeModal('deleteTruckModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🗑️ Delete Truck</div>
+                <button class="modal-close" onclick="closeModal('deleteTruckModal')">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="deleteTruckId">
                 <p style="color:var(--text2);font-size:0.88rem">You are about to permanently delete:</p>
                 <div class="delete-confirm-name" id="deleteTruckName">—</div>
-                <div class="danger-note">⚠️ This action <strong>cannot be undone</strong>.</div>
+                <div class="danger-note">
+                    ⚠️ This action <strong>cannot be undone</strong>. Trucks currently assigned to an
+                    <strong>active or pending route cannot be deleted</strong> — complete or cancel
+                    those assignments first.
+                </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('deleteTruckModal')">Cancel</button><button class="btn btn-danger"
-                    onclick="confirmDeleteTruck()">Yes, Delete Permanently</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteTruckModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteTruck()">Yes, Delete Permanently</button>
+            </div>
         </div>
     </div>
 
+    <!-- Logout Confirm Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div><button class="modal-close"
-                    onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('logoutConfirmModal')">Cancel</button><button class="btn btn-danger"
-                    onclick="doLogout()">Yes, Logout</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
+            </div>
         </div>
     </div>
 
@@ -884,44 +931,60 @@
 
     <script>
         // ── Modal helpers ──
-        function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('open'); document.body.style.overflow = 'hidden'; }
-        function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); document.body.style.overflow = ''; }
-        window.openModal = openModal; window.closeModal = closeModal;
-
-        // ── Theme Toggle ──
-        function toggleTheme() {
-            const html = document.documentElement;
-            const current = html.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
-            updateThemeUI(next);
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
         }
-        function updateThemeUI(theme) {
-            const toggle = document.getElementById('themeToggleBtn');
-            if (!toggle) return;
-            const icon = toggle.querySelector('.theme-icon');
-            const label = toggle.querySelector('.theme-label');
-            if (theme === 'dark') { if (icon) icon.textContent = '☀️'; if (label) label.textContent = 'Light Mode'; toggle.classList.add('dark'); }
-            else { if (icon) icon.textContent = '🌙'; if (label) label.textContent = 'Dark Mode'; toggle.classList.remove('dark'); }
-        }
-        document.addEventListener('DOMContentLoaded', function () {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeUI(savedTheme);
-            const themeToggle = document.getElementById('themeToggleBtn');
-            if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
-        });
-        window.toggleTheme = toggleTheme;
 
-        // ── API ──
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
+        // ---- API ----
         const API_URL = window.location.origin + '/api';
-        function getToken() { return localStorage.getItem('token'); }
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
         const API = {
-            get: async (endpoint) => fetch(API_URL + endpoint, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
-            post: async (endpoint, data) => fetch(API_URL + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(data) }),
-            put: async (endpoint, data) => fetch(API_URL + endpoint, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(data) }),
-            del: async (endpoint) => fetch(API_URL + endpoint, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
         };
 
         function showToast(msg, type = 'info') {
@@ -933,14 +996,21 @@
             setTimeout(() => toast.remove(), 3500);
         }
 
-        function checkAuth() { if (!getToken()) window.location.href = '/login.html'; }
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
         checkAuth();
 
         function doLogout() {
             localStorage.removeItem('token');
             closeModal('logoutConfirmModal');
             showToast('Logged out successfully', 'success');
-            setTimeout(() => { window.location.href = '/login.html'; }, 500);
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
         }
         window.doLogout = doLogout;
 
@@ -953,16 +1023,23 @@
 
         function makeTiles() {
             return {
-                dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM & CARTO', subdomains: 'abcd', maxZoom: 20 }),
-                sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 19 }),
-                label: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, opacity: 0.85, pane: 'overlayPane' })
+                dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                    { attribution: '&copy; OSM & CARTO', subdomains: 'abcd', maxZoom: 20 }),
+                sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                    { attribution: '&copy; Esri', maxZoom: 19 }),
+                label: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+                    { subdomains: 'abcd', maxZoom: 20, opacity: 0.85, pane: 'overlayPane' })
             };
         }
+
         let fleetTiles = null;
 
         function applyTile(map, tiles, isSat) {
             Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
-            if (isSat) { tiles.sat.addTo(map); tiles.label.addTo(map); } else { tiles.dark.addTo(map); }
+            if (isSat) {
+                tiles.sat.addTo(map);
+                tiles.label.addTo(map);
+            } else { tiles.dark.addTo(map); }
         }
 
         function toggleFleetMapSatellite() {
@@ -972,57 +1049,133 @@
             const btn = document.getElementById('fleetSatBtn');
             btn.innerHTML = isFleetMapSatellite ? '🌍 Map' : '🛰️ Satellite';
             btn.classList.toggle('active', isFleetMapSatellite);
+            showToast(isFleetMapSatellite ? "Satellite view" : "Dark map view", "info");
         }
 
         function centerMapOnTrucks() {
             if (!fleetMap) return;
             const positioned = allTrucks.filter(t => t.latitude != null && t.longitude != null);
-            if (positioned.length === 0) { showToast("No trucks with location data", "info"); return; }
-            if (positioned.length === 1) { fleetMap.setView([positioned[0].latitude, positioned[0].longitude], 13); }
-            else { const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude])); fleetMap.fitBounds(bounds.pad(0.2)); }
+            if (positioned.length === 0) {
+                showToast("No trucks with location data to center on", "info");
+                return;
+            }
+            if (positioned.length === 1) {
+                fleetMap.setView([positioned[0].latitude, positioned[0].longitude], 13);
+            } else {
+                const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
+                fleetMap.fitBounds(bounds.pad(0.2));
+            }
+            showToast(`Centered on ${positioned.length} truck${positioned.length !== 1 ? 's' : ''}`, "success");
         }
 
-        function escHtml(str) { return String(str ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-        function fmtDateTime(d) { if (!d) return "—"; return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
-        function fmtDate(d) { if (!d) return "—"; return new Date(d).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }); }
-        function hoursAgo(d) { if (!d) return null; return (Date.now() - new Date(d).getTime()) / 36e5; }
-        function freshnessClass(d) { const h = hoursAgo(d); if (h === null) return ""; if (h < 1) return "fresh"; if (h < 12) return "stale"; return "old"; }
-        function freshnessLabel(d) { const h = hoursAgo(d); if (h === null) return "No position recorded"; if (h < 1) return `Updated ${Math.round(h * 60)}m ago`; if (h < 24) return `Updated ${Math.round(h)}h ago`; return `Updated ${Math.round(h / 24)}d ago`; }
-        function dotColor(d) { const h = hoursAgo(d); if (h === null) return "#555"; if (h < 1) return "#4ade80"; if (h < 12) return "#fbb034"; return "#f87171"; }
+        function escHtml(str) {
+            return String(str ?? "").replace(/[&<>"']/g, c =>
+                ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+
+        function fmtDateTime(d) {
+            if (!d) return "—";
+            return new Date(d).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+
+        function fmtDate(d) {
+            if (!d) return "—";
+            return new Date(d).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function hoursAgo(d) {
+            if (!d) return null;
+            return (Date.now() - new Date(d).getTime()) / 36e5;
+        }
+
+        function freshnessClass(d) {
+            const h = hoursAgo(d);
+            if (h === null) return "";
+            if (h < 1) return "fresh";
+            if (h < 12) return "stale";
+            return "old";
+        }
+
+        function freshnessLabel(d) {
+            const h = hoursAgo(d);
+            if (h === null) return "No position recorded";
+            if (h < 1) return `Updated ${Math.round(h * 60)}m ago`;
+            if (h < 24) return `Updated ${Math.round(h)}h ago`;
+            return `Updated ${Math.round(h / 24)}d ago — likely stale`;
+        }
+
+        function dotColor(d) {
+            const h = hoursAgo(d);
+            if (h === null) return "#555";
+            if (h < 1) return "#4ade80";
+            if (h < 12) return "#fbb034";
+            return "#f87171";
+        }
 
         async function loadTrucks() {
             try {
                 const res = await API.get("/admin/trucks");
                 if (!res.ok) throw new Error();
                 allTrucks = await res.json();
-                document.getElementById("truckCount").textContent = `${allTrucks.length} truck${allTrucks.length !== 1 ? "s" : ""}`;
-                document.getElementById("mapTruckCount").textContent = `📍 ${allTrucks.filter(t => t.latitude != null && t.longitude != null).length} trucks on map`;
+                document.getElementById("truckCount").textContent =
+                    `${allTrucks.length} truck${allTrucks.length !== 1 ? "s" : ""}`;
+                document.getElementById("mapTruckCount").textContent =
+                    `📍 ${allTrucks.filter(t => t.latitude != null && t.longitude != null).length} trucks on map`;
                 renderTruckList(allTrucks);
                 renderFleetMap(allTrucks);
-                if (selectedTruck) { const fresh = allTrucks.find(t => t.id === selectedTruck.id); if (fresh) selectedTruck = fresh; renderDetail(selectedTruck); }
-            } catch (e) { console.error('Load trucks error:', e); showToast("Failed to load trucks", "error"); }
+                if (selectedTruck) {
+                    const fresh = allTrucks.find(t => t.id === selectedTruck.id);
+                    if (fresh) selectedTruck = fresh;
+                    renderDetail(selectedTruck);
+                }
+            } catch (e) {
+                console.error('Load trucks error:', e);
+                showToast("Failed to load trucks", "error");
+            }
         }
 
         function renderTruckList(data) {
             const c = document.getElementById('truckList');
-            if (!data.length) { c.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🚛</div><div class="empty-state-text">No trucks added yet</div><button class="btn btn-gold btn-sm" onclick="openModal('addTruckModal')" style="margin-top:12px;">+ Add First Truck</button></div>`; return; }
+            if (!data.length) {
+                c.innerHTML = `<div class="empty-state">
+                    <div class="empty-state-icon">🚛</div>
+                    <div class="empty-state-text">No trucks added yet</div>
+                    <button class="btn btn-gold btn-sm" onclick="openModal('addTruckModal')" style="margin-top:12px;">+ Add First Truck</button>
+                </div>`;
+                return;
+            }
             c.innerHTML = data.map(t => {
                 const isActive = selectedTruck?.id === t.id;
                 return `<div class="truck-card ${isActive ? 'active' : ''}" onclick="selectTruck(${t.id})">
                     <div class="truck-plate">🚛 ${escHtml(t.plate_number)}</div>
                     <div class="truck-model">${escHtml(t.model || "Unknown model")}</div>
                     <div class="truck-coords">
-                        <div class="truck-coords-row"><span>LAT: ${t.latitude != null ? Number(t.latitude).toFixed(5) : "—"}</span><span>LNG: ${t.longitude != null ? Number(t.longitude).toFixed(5) : "—"}</span></div>
-                        <div class="location-time ${freshnessClass(t.location_updated_at)}"><div class="location-time-dot"></div>${freshnessLabel(t.location_updated_at)}</div>
+                        <div class="truck-coords-row">
+                            <span>LAT: ${t.latitude != null ? Number(t.latitude).toFixed(5) : "—"}</span>
+                            <span>LNG: ${t.longitude != null ? Number(t.longitude).toFixed(5) : "—"}</span>
+                        </div>
+                        <div class="location-time ${freshnessClass(t.location_updated_at)}">
+                            <div class="location-time-dot"></div>
+                            ${freshnessLabel(t.location_updated_at)}
+                        </div>
                     </div>
-                    <div class="truck-meta"><span class="badge badge-gray">📅 ${fmtDate(t.created_at)}</span><span class="badge badge-gold">🆔 #${t.id}</span></div>
+                    <div class="truck-meta">
+                        <span class="badge badge-gray">📅 ${fmtDate(t.created_at)}</span>
+                        <span class="badge badge-gold">🆔 #${t.id}</span>
+                    </div>
                 </div>`;
             }).join('');
         }
 
         function filterTrucks() {
             const q = document.getElementById('searchInput').value.toLowerCase();
-            renderTruckList(allTrucks.filter(t => t.plate_number.toLowerCase().includes(q) || (t.model && t.model.toLowerCase().includes(q))));
+            renderTruckList(allTrucks.filter(t => t.plate_number.toLowerCase().includes(q) ||
+                (t.model && t.model.toLowerCase().includes(q))));
         }
 
         function selectTruck(id) {
@@ -1030,7 +1183,9 @@
             if (!selectedTruck) return;
             renderTruckList(allTrucks);
             renderDetail(selectedTruck);
-            if (fleetMap && selectedTruck.latitude != null && selectedTruck.longitude != null) { fleetMap.setView([selectedTruck.latitude, selectedTruck.longitude], 15); }
+            if (fleetMap && selectedTruck.latitude != null && selectedTruck.longitude != null) {
+                fleetMap.setView([selectedTruck.latitude, selectedTruck.longitude], 15);
+            }
         }
 
         function renderDetail(truck) {
@@ -1039,6 +1194,7 @@
                 <button class="btn btn-outline btn-sm" onclick="openLocModal(${truck.id})">📍 Location</button>
                 <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${truck.id},'${escHtml(truck.plate_number)}')">🗑️ Delete</button>
             `;
+
             const freshness = freshnessClass(truck.location_updated_at);
             const detailMapHtml = (truck.latitude != null && truck.longitude != null) ? `
                 <div style="margin-top:12px;">
@@ -1049,6 +1205,7 @@
                     <div id="truckDetailMap"></div>
                 </div>
             ` : `<div style="margin-top:12px;color:var(--text2);font-size:0.8rem;padding:12px;background:var(--bg3);border-radius:8px;text-align:center;">📍 No location data for this truck</div>`;
+
             document.getElementById('truckDetailBody').innerHTML = `
                 <div>
                     <div class="detail-zone-name">🚛 ${escHtml(truck.plate_number)}</div>
@@ -1062,47 +1219,105 @@
                     ${detailMapHtml}
                 </div>
             `;
-            if (truck.latitude != null && truck.longitude != null) { setTimeout(() => initTruckDetailMap(truck), 100); }
+
+            if (truck.latitude != null && truck.longitude != null) {
+                setTimeout(() => initTruckDetailMap(truck), 100);
+            }
         }
 
         function initTruckDetailMap(truck) {
             const container = document.getElementById('truckDetailMap');
             if (!container) return;
-            if (detailMapInstance) { detailMapInstance.remove(); detailMapInstance = null; }
-            detailMapInstance = L.map(container, { zoomControl: true }).setView([truck.latitude, truck.longitude], 14);
-            const tiles = makeTiles(); applyTile(detailMapInstance, tiles, false);
+
+            if (detailMapInstance) {
+                detailMapInstance.remove();
+                detailMapInstance = null;
+            }
+
+            detailMapInstance = L.map(container, { zoomControl: true }).setView(
+                [truck.latitude, truck.longitude], 14
+            );
+
+            const tiles = makeTiles();
+            applyTile(detailMapInstance, tiles, false);
             detailMapInstance.invalidateSize();
+
             if (truck.latitude != null && truck.longitude != null) {
                 const color = dotColor(truck.location_updated_at);
-                const icon = L.divIcon({ className: "", html: `<div class="truck-marker" style="border-color:#fff;box-shadow:0 0 0 3px ${color}, 0 0 14px ${color};"><span>🚛</span></div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
-                L.marker([truck.latitude, truck.longitude], { icon }).addTo(detailMapInstance).bindPopup(`<strong style="font-family:monospace">${escHtml(truck.plate_number)}</strong><br>${escHtml(truck.model || "")}<br><span style="font-size:11px;color:#888">Last update: ${fmtDateTime(truck.location_updated_at)}</span>`);
+                const icon = L.divIcon({
+                    className: "",
+                    html: `<div class="truck-marker" style="border-color:#fff;box-shadow:0 0 0 3px ${color}, 0 0 14px ${color};"><span>🚛</span></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                L.marker([truck.latitude, truck.longitude], { icon })
+                    .addTo(detailMapInstance)
+                    .bindPopup(`
+                        <strong style="font-family:monospace">${escHtml(truck.plate_number)}</strong><br>
+                        ${escHtml(truck.model || "")}<br>
+                        <span style="font-size:11px;color:#888">
+                            Last update: ${fmtDateTime(truck.location_updated_at)}
+                        </span>
+                    `);
             }
             setTimeout(() => detailMapInstance.invalidateSize(), 200);
         }
 
         function centerTruckOnMap(id) {
             const truck = allTrucks.find(t => t.id === id);
-            if (!truck || truck.latitude == null || truck.longitude == null) { showToast("Truck has no location data", "info"); return; }
-            if (fleetMap) { fleetMap.setView([truck.latitude, truck.longitude], 15); showToast(`Centered on ${truck.plate_number}`, "success"); }
+            if (!truck || truck.latitude == null || truck.longitude == null) {
+                showToast("Truck has no location data", "info");
+                return;
+            }
+            if (fleetMap) {
+                fleetMap.setView([truck.latitude, truck.longitude], 15);
+                showToast(`Centered on ${truck.plate_number}`, "success");
+            }
         }
 
         function renderFleetMap(data) {
             if (!fleetMap) {
-                fleetMap = L.map("fleetMap", { zoomControl: true }).setView([8.2317, 123.4018], 12);
+                fleetMap = L.map("fleetMap", { zoomControl: true }).setView([14.5995, 120.9842], 12);
                 fleetTiles = makeTiles();
                 applyTile(fleetMap, fleetTiles, false);
                 setTimeout(() => fleetMap.invalidateSize(), 100);
             }
-            mapMarkers.forEach(m => { if (fleetMap.hasLayer(m)) fleetMap.removeLayer(m); });
+
+            mapMarkers.forEach(m => {
+                if (fleetMap.hasLayer(m)) fleetMap.removeLayer(m);
+            });
             mapMarkers = [];
+
             const positioned = data.filter(t => t.latitude != null && t.longitude != null);
             positioned.forEach(t => {
                 const color = dotColor(t.location_updated_at);
-                const icon = L.divIcon({ className: "", html: `<div class="truck-marker" style="border-color:#fff;box-shadow:0 0 0 3px ${color}, 0 0 14px ${color};"><span>🚛</span></div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
-                const m = L.marker([t.latitude, t.longitude], { icon }).addTo(fleetMap).bindPopup(`<strong style="font-family:monospace">${escHtml(t.plate_number)}</strong><br>${escHtml(t.model || "")}<br><span style="font-size:11px;color:#888">Last update: ${fmtDateTime(t.location_updated_at)}</span><br><button class="btn btn-outline btn-sm" onclick="selectTruck(${t.id})" style="margin-top:6px;">View Details</button>`);
+                const icon = L.divIcon({
+                    className: "",
+                    html: `<div class="truck-marker" style="border-color:#fff;box-shadow:0 0 0 3px ${color}, 0 0 14px ${color};"><span>🚛</span></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                const m = L.marker([t.latitude, t.longitude], { icon })
+                    .addTo(fleetMap)
+                    .bindPopup(`
+                        <strong style="font-family:monospace">${escHtml(t.plate_number)}</strong><br>
+                        ${escHtml(t.model || "")}<br>
+                        <span style="font-size:11px;color:#888">
+                            Last update: ${fmtDateTime(t.location_updated_at)}
+                        </span><br>
+                        <button class="btn btn-outline btn-sm" onclick="selectTruck(${t.id})" style="margin-top:6px;">View Details</button>
+                    `);
                 mapMarkers.push(m);
             });
-            if (positioned.length > 0) { const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude])); fleetMap.fitBounds(bounds.pad(0.2)); }
+
+            if (positioned.length > 0 && positioned.length <= 3) {
+                const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
+                fleetMap.fitBounds(bounds.pad(0.3));
+            } else if (positioned.length > 3) {
+                const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
+                fleetMap.fitBounds(bounds.pad(0.15));
+            }
+
             setTimeout(() => fleetMap.invalidateSize(), 200);
         }
 
@@ -1114,7 +1329,8 @@
                 const res = await API.post("/admin/trucks", { plate_number: plate, model });
                 if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
                 closeModal("addTruckModal");
-                document.getElementById("tPlate").value = ""; document.getElementById("tModel").value = "";
+                document.getElementById("tPlate").value = "";
+                document.getElementById("tModel").value = "";
                 showToast("Truck added successfully", "success");
                 loadTrucks();
             } catch (e) { showToast(e.message || "Failed to add truck", "error"); }
@@ -1157,7 +1373,11 @@
                 closeModal("deleteTruckModal");
                 showToast("Truck deleted", "success");
                 selectedTruck = null;
-                document.getElementById('truckDetailBody').innerHTML = `<div class="empty-state"><div class="empty-state-icon">🚛</div><div class="empty-state-text">Select a truck</div></div>`;
+                document.getElementById('truckDetailBody').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🚛</div>
+                        <div class="empty-state-text">Select a truck</div>
+                    </div>`;
                 document.getElementById('detailActions').innerHTML = '';
                 loadTrucks();
             } catch (e) { showToast(e.message || "Delete failed", "error"); }
@@ -1175,11 +1395,13 @@
             const lat = parseFloat(document.getElementById("locLat").value);
             const lng = parseFloat(document.getElementById("locLng").value);
             if (isNaN(lat) || isNaN(lng)) { showToast("Both fields are required", "error"); return; }
+            if (lat < -90 || lat > 90) { showToast("Latitude must be -90 to 90", "error"); return; }
+            if (lng < -180 || lng > 180) { showToast("Longitude must be -180 to 180", "error"); return; }
             try {
                 const res = await API.put(`/admin/trucks/${id}/location`, { latitude: lat, longitude: lng });
                 if (!res.ok) { const e = await res.json(); throw new Error(e.error); }
                 closeModal("updateLocModal");
-                showToast("Location updated", "success");
+                showToast("Location updated — timestamp recorded", "success");
                 loadTrucks();
             } catch (e) { showToast(e.message || "Update failed", "error"); }
         }
@@ -1187,15 +1409,25 @@
         async function loadAdminProfile() {
             try {
                 const res = await API.get("/admin/profile");
-                if (res.ok) { const data = await res.json(); document.getElementById("adminName").textContent = data.name || "Admin"; }
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("adminName").textContent = data.name || "Admin";
+                }
             } catch { }
         }
 
-        window.addTruck = addTruck; window.openEditModal = openEditModal; window.saveTruckEdit = saveTruckEdit;
-        window.openLocModal = openLocModal; window.updateLocation = updateLocation;
-        window.openDeleteModal = openDeleteModal; window.confirmDeleteTruck = confirmDeleteTruck;
-        window.centerMapOnTrucks = centerMapOnTrucks; window.toggleFleetMapSatellite = toggleFleetMapSatellite;
-        window.selectTruck = selectTruck; window.filterTrucks = filterTrucks; window.centerTruckOnMap = centerTruckOnMap;
+        window.addTruck = addTruck;
+        window.openEditModal = openEditModal;
+        window.saveTruckEdit = saveTruckEdit;
+        window.openLocModal = openLocModal;
+        window.updateLocation = updateLocation;
+        window.openDeleteModal = openDeleteModal;
+        window.confirmDeleteTruck = confirmDeleteTruck;
+        window.centerMapOnTrucks = centerMapOnTrucks;
+        window.toggleFleetMapSatellite = toggleFleetMapSatellite;
+        window.selectTruck = selectTruck;
+        window.filterTrucks = filterTrucks;
+        window.centerTruckOnMap = centerTruckOnMap;
 
         loadAdminProfile();
         loadTrucks();
@@ -1205,6 +1437,7 @@
             if (detailMapInstance) setTimeout(() => detailMapInstance.invalidateSize(), 100);
         });
 
+        // ── Hamburger toggle ──
         document.getElementById('hamburger')?.addEventListener('click', function () {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('visible');

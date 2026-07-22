@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
     <title>Users · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="../js/style.js"></script>
     <style>
         /* ── Modal fixes ── */
         .modal-overlay {
@@ -96,6 +95,13 @@
             margin: 0 !important;
         }
 
+        .modal-body .badge-red {
+            display: block;
+            text-align: center;
+            padding: 10px !important;
+            margin-top: 10px !important;
+        }
+
         .modal-footer {
             padding: 16px 24px !important;
             border-top: 1px solid var(--border2) !important;
@@ -138,57 +144,23 @@
             box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
         }
 
-        /* ── Sidebar Fix ── */
         .sidebar {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            bottom: 0 !important;
-            width: var(--sidebar-w, 280px) !important;
-            z-index: 9999 !important;
-            background: var(--panel) !important;
-            border-right: 1px solid var(--border2) !important;
-            transform: translateX(-100%) !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            overflow-y: auto !important;
-        }
-
-        .sidebar.open {
-            transform: translateX(0) !important;
+            z-index: 1000 !important;
         }
 
         .sidebar-overlay {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 9998 !important;
-            background: rgba(0, 0, 0, 0.5) !important;
-            display: none !important;
-            backdrop-filter: blur(2px) !important;
-        }
-
-        .sidebar-overlay.active {
-            display: block !important;
-        }
-
-        .layout,
-        .main,
-        .content,
-        .topbar {
-            position: relative !important;
-            z-index: 1 !important;
+            z-index: 999 !important;
         }
 
         .topbar {
             z-index: 100 !important;
-            position: sticky !important;
-            top: 0 !important;
         }
-
 
         .toast-container {
             z-index: 9999999 !important;
         }
 
+        /* ── Prevent table from stretching page ── */
         html {
             overflow-x: hidden;
             width: 100%;
@@ -291,6 +263,7 @@
             box-shadow: 0 0 0 3px var(--red-dim);
         }
 
+        /* ── Responsive ── */
         @media (max-width: 820px) {
             .panel-header {
                 flex-direction: column;
@@ -447,6 +420,24 @@
                 overflow-x: auto;
             }
 
+            .section-title-sm {
+                font-size: 0.68rem;
+            }
+
+            .confirm-delete-input {
+                font-size: 0.85rem;
+                padding: 8px 12px;
+            }
+
+            .password-toggle .toggle-btn {
+                font-size: 0.85rem;
+                padding: 2px 6px;
+            }
+
+            .flex-row {
+                gap: 4px;
+            }
+
             .table-responsive {
                 padding: 0 8px 8px 8px;
             }
@@ -501,6 +492,20 @@
                 font-size: 0.85rem;
             }
 
+            .topbar-breadcrumb {
+                font-size: 0.6rem;
+            }
+
+            #usersBody td {
+                font-size: 0.6rem;
+            }
+
+            .btn-icon.btn-sm {
+                width: 22px;
+                height: 22px;
+                font-size: 0.55rem;
+            }
+
             .table-responsive {
                 padding: 0 4px 4px 4px;
             }
@@ -552,12 +557,15 @@
             <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
             <button class="theme-toggle" id="themeToggleBtn">
                 <span class="theme-icon">🌙</span>
                 <span class="theme-label">Dark Mode</span>
-                <span class="theme-switch"><span class="theme-knob"></span></span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -587,6 +595,7 @@
     </div>
 
     <main class="main">
+
         <div class="stat-grid reveal" id="userStats">
             <div class="stat-card" data-icon="👥">
                 <div class="stat-label">Total Users</div>
@@ -643,14 +652,15 @@
                 </div>
             </div>
         </div>
+
     </main>
 
-    <!-- Modals -->
+    <!-- Add User Modal -->
     <div class="modal-overlay" id="addUserModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">👤 Add New User</div><button class="modal-close"
-                    onclick="closeModal('addUserModal')">✕</button>
+                <div class="modal-title">👤 Add New User</div>
+                <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
             </div>
             <div class="modal-body">
                 <div class="form-grid form-grid-2">
@@ -660,29 +670,32 @@
                             id="uEmail" type="email" placeholder="john@example.com"></div>
                     <div class="form-group"><label class="form-label">Password</label><input class="form-control"
                             id="uPass" type="password" placeholder="••••••••"></div>
-                    <div class="form-group"><label class="form-label">Role</label><select class="form-control"
-                            id="uRole">
+                    <div class="form-group"><label class="form-label">Role</label>
+                        <select class="form-control" id="uRole">
                             <option value="resident">Resident</option>
                             <option value="driver">Driver</option>
                             <option value="admin">Admin</option>
-                        </select></div>
+                        </select>
+                    </div>
                     <div class="form-group"><label class="form-label">Phone</label><input class="form-control"
                             id="uPhone" placeholder="+1 555 0000"></div>
                     <div class="form-group"><label class="form-label">Address</label><input class="form-control"
                             id="uAddress" placeholder="123 Main St"></div>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('addUserModal')">Cancel</button><button class="btn btn-gold"
-                    onclick="addUser()">Create User</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="addUser()">Create User</button>
+            </div>
         </div>
     </div>
 
+    <!-- Edit User Modal -->
     <div class="modal-overlay" id="editUserModal">
         <div class="modal" style="max-width:550px;">
             <div class="modal-header">
-                <div class="modal-title">✏️ Edit User</div><button class="modal-close"
-                    onclick="closeModal('editUserModal')">✕</button>
+                <div class="modal-title">✏️ Edit User</div>
+                <button class="modal-close" onclick="closeModal('editUserModal')">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editUserId">
@@ -697,12 +710,13 @@
                                 id="editPhone" placeholder="+1 555 0000"></div>
                         <div class="form-group"><label class="form-label">Address</label><input class="form-control"
                                 id="editAddress" placeholder="123 Main St"></div>
-                        <div class="form-group"><label class="form-label">Role</label><select class="form-control"
-                                id="editRole">
+                        <div class="form-group"><label class="form-label">Role</label>
+                            <select class="form-control" id="editRole">
                                 <option value="resident">Resident</option>
                                 <option value="driver">Driver</option>
                                 <option value="admin">Admin</option>
-                            </select></div>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="user-edit-section">
@@ -731,25 +745,29 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('editUserModal')">Cancel</button><button class="btn btn-gold"
-                    onclick="updateUser()">💾 Save Changes</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editUserModal')">Cancel</button>
+                <button class="btn btn-gold" onclick="updateUser()">💾 Save Changes</button>
+            </div>
         </div>
     </div>
 
+    <!-- View User Modal -->
     <div class="modal-overlay" id="viewUserModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">👤 User Details</div><button class="modal-close"
-                    onclick="closeModal('viewUserModal')">✕</button>
+                <div class="modal-title">👤 User Details</div>
+                <button class="modal-close" onclick="closeModal('viewUserModal')">✕</button>
             </div>
             <div class="modal-body" id="viewUserBody"></div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('viewUserModal')">Close</button><button class="btn btn-gold"
-                    onclick="openEditFromView()">✏️ Edit User</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('viewUserModal')">Close</button>
+                <button class="btn btn-gold" onclick="openEditFromView()">✏️ Edit User</button>
+            </div>
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="deleteConfirmModal">
         <div class="modal" style="max-width:450px;">
             <div class="modal-header" style="border-bottom-color:var(--red);">
@@ -757,11 +775,13 @@
                 <button class="modal-close" onclick="closeModal('deleteConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
-                <p style="color:var(--text2);margin-bottom:8px;">You are about to delete <strong id="deleteUserName"
-                        style="color:var(--text);"></strong>.</p>
-                <p style="color:var(--text3);font-size:0.85rem;margin-bottom:16px;">This action <strong
-                        style="color:var(--red);">cannot be undone</strong>. All data associated with this user will be
-                    permanently removed.</p>
+                <p style="color:var(--text2);margin-bottom:8px;">
+                    You are about to delete <strong id="deleteUserName" style="color:var(--text);"></strong>.
+                </p>
+                <p style="color:var(--text3);font-size:0.85rem;margin-bottom:16px;">
+                    This action <strong style="color:var(--red);">cannot be undone</strong>. All data associated with
+                    this user will be permanently removed.
+                </p>
                 <div
                     style="background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.15);border-radius:8px;padding:12px;">
                     <label class="form-label" style="color:var(--red);">Type <span
@@ -769,28 +789,33 @@
                     <input type="text" id="deleteConfirmInput" class="confirm-delete-input"
                         placeholder="Type DELETE here..." oninput="onDeleteConfirmInput()">
                     <div id="deleteConfirmError"
-                        style="color:var(--red);font-size:0.75rem;margin-top:6px;display:none;">⚠️ Please type "DELETE"
-                        exactly as shown</div>
+                        style="color:var(--red);font-size:0.75rem;margin-top:6px;display:none;">
+                        ⚠️ Please type "DELETE" exactly as shown
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('deleteConfirmModal')">Cancel</button><button class="btn btn-danger"
-                    id="deleteConfirmBtn" disabled onclick="confirmDeleteUser()">🗑 Delete User</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" id="deleteConfirmBtn" disabled onclick="confirmDeleteUser()">🗑 Delete
+                    User</button>
+            </div>
         </div>
     </div>
 
+    <!-- Logout Confirm Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div><button class="modal-close"
-                    onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('logoutConfirmModal')">Cancel</button><button class="btn btn-danger"
-                    onclick="doLogout()">Yes, Logout</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
+            </div>
         </div>
     </div>
 
@@ -798,44 +823,60 @@
 
     <script>
         // ── Modal helpers ──
-        function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('open'); document.body.style.overflow = 'hidden'; }
-        function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); document.body.style.overflow = ''; }
-        window.openModal = openModal; window.closeModal = closeModal;
-
-        // ── Theme Toggle ──
-        function toggleTheme() {
-            const html = document.documentElement;
-            const current = html.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
-            updateThemeUI(next);
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+            document.body.style.overflow = 'hidden';
         }
-        function updateThemeUI(theme) {
-            const toggle = document.getElementById('themeToggleBtn');
-            if (!toggle) return;
-            const icon = toggle.querySelector('.theme-icon');
-            const label = toggle.querySelector('.theme-label');
-            if (theme === 'dark') { if (icon) icon.textContent = '☀️'; if (label) label.textContent = 'Light Mode'; toggle.classList.add('dark'); }
-            else { if (icon) icon.textContent = '🌙'; if (label) label.textContent = 'Dark Mode'; toggle.classList.remove('dark'); }
-        }
-        document.addEventListener('DOMContentLoaded', function () {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeUI(savedTheme);
-            const themeToggle = document.getElementById('themeToggleBtn');
-            if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
-        });
-        window.toggleTheme = toggleTheme;
 
-        // ── API ──
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
+        // ---- API ----
         const API_URL = window.location.origin + '/api';
-        function getToken() { return localStorage.getItem('token'); }
+        console.log('📡 API URL:', API_URL);
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
         const API = {
-            get: async (endpoint) => fetch(API_URL + endpoint, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
-            post: async (endpoint, data) => fetch(API_URL + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(data) }),
-            put: async (endpoint, data) => fetch(API_URL + endpoint, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(data) }),
-            del: async (endpoint) => fetch(API_URL + endpoint, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
+            get: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            },
+            post: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            put: async (endpoint, data) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            },
+            del: async (endpoint) => {
+                return fetch(API_URL + endpoint, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+            }
         };
 
         function showToast(msg, type = 'info') {
@@ -847,19 +888,30 @@
             setTimeout(() => toast.remove(), 3500);
         }
 
-        function checkAuth() { if (!getToken()) window.location.href = '/login.html'; }
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        }
         checkAuth();
 
         function doLogout() {
             localStorage.removeItem('token');
             closeModal('logoutConfirmModal');
             showToast('Logged out successfully', 'success');
-            setTimeout(() => { window.location.href = '/login.html'; }, 500);
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 500);
         }
         window.doLogout = doLogout;
 
         function statusBadge(role) {
-            const map = { 'admin': 'badge-gold', 'driver': 'badge-blue', 'resident': 'badge-green' };
+            const map = {
+                'admin': 'badge-gold',
+                'driver': 'badge-blue',
+                'resident': 'badge-green'
+            };
             return `<span class="badge ${map[role] || 'badge-gray'}">${role.toUpperCase()}</span>`;
         }
 
@@ -868,7 +920,10 @@
         let pendingDeleteId = null;
         let pendingDeleteName = null;
 
-        function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        function escHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
 
         async function loadUsers() {
             try {
@@ -876,6 +931,7 @@
                 if (!res.ok) throw new Error();
                 allUsers = await res.json();
                 renderUsers(allUsers);
+
                 document.getElementById("totalUsers").textContent = allUsers.length;
                 document.getElementById("totalDrivers").textContent = allUsers.filter(u => u.role === "driver").length;
                 document.getElementById("totalResidents").textContent = allUsers.filter(u => u.role === "resident").length;
@@ -899,18 +955,23 @@
                     <td>${statusBadge(u.role)}</td>
                     <td class="table-muted">${escHtml(u.phone || "—")}</td>
                     <td class="table-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(u.address || "—")}</td>
-                    <td><div class="flex-row" style="gap:6px;flex-wrap:nowrap;">
-                        <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${u.id})">👁</button>
-                        <button class="btn btn-gold btn-icon btn-sm" title="Edit" onclick="openEditUser(${u.id})">✏️</button>
-                        <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="openDeleteConfirm(${u.id},'${escHtml(u.name)}')">🗑</button>
-                    </div></td>
+                    <td>
+                        <div class="flex-row" style="gap:6px;flex-wrap:nowrap;">
+                            <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${u.id})">👁</button>
+                            <button class="btn btn-gold btn-icon btn-sm" title="Edit" onclick="openEditUser(${u.id})">✏️</button>
+                            <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="openDeleteConfirm(${u.id},'${escHtml(u.name)}')">🗑</button>
+                        </div>
+                    </td>
                 </tr>`).join("");
         }
 
         function filterUsers() {
             const q = document.getElementById("searchInput").value.toLowerCase();
             const role = document.getElementById("roleFilter").value;
-            const filtered = allUsers.filter(u => (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) && (!role || u.role === role));
+            const filtered = allUsers.filter(u =>
+                (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
+                (!role || u.role === role)
+            );
             renderUsers(filtered);
         }
 
@@ -923,21 +984,35 @@
                 phone: document.getElementById("uPhone").value.trim(),
                 address: document.getElementById("uAddress").value.trim(),
             };
-            if (!body.name || !body.email || !body.password) { showToast("Name, email and password required", "error"); return; }
+            if (!body.name || !body.email || !body.password) {
+                showToast("Name, email and password required", "error");
+                return;
+            }
             try {
                 const res = await API.post("/auth/register", body);
-                if (!res.ok) { const err = await res.text(); throw new Error(err); }
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
                 closeModal("addUserModal");
                 showToast("User created successfully", "success");
                 loadUsers();
-                document.getElementById("uName").value = ''; document.getElementById("uEmail").value = ''; document.getElementById("uPass").value = '';
-                document.getElementById("uPhone").value = ''; document.getElementById("uAddress").value = '';
-            } catch (err) { showToast("Failed to create user: " + err.message, "error"); }
+                document.getElementById("uName").value = '';
+                document.getElementById("uEmail").value = '';
+                document.getElementById("uPass").value = '';
+                document.getElementById("uPhone").value = '';
+                document.getElementById("uAddress").value = '';
+            } catch (err) {
+                showToast("Failed to create user: " + err.message, "error");
+            }
         }
 
         function openEditUser(id) {
             const user = allUsers.find(u => u.id === id);
-            if (!user) { showToast("User not found", "error"); return; }
+            if (!user) {
+                showToast("User not found", "error");
+                return;
+            }
             document.getElementById("editUserId").value = user.id;
             document.getElementById("editName").value = user.name || '';
             document.getElementById("editEmail").value = user.email || '';
@@ -959,31 +1034,54 @@
             const password = document.getElementById("editPassword").value;
             const passwordConfirm = document.getElementById("editPasswordConfirm").value;
 
-            if (!name || !email) { showToast("Name and email are required", "error"); return; }
-            if (password || passwordConfirm) {
-                if (password !== passwordConfirm) { showToast("Passwords do not match", "error"); return; }
-                if (password.length < 6) { showToast("Password must be at least 6 characters", "error"); return; }
+            if (!name || !email) {
+                showToast("Name and email are required", "error");
+                return;
             }
+
+            if (password || passwordConfirm) {
+                if (password !== passwordConfirm) {
+                    showToast("Passwords do not match", "error");
+                    return;
+                }
+                if (password.length < 6) {
+                    showToast("Password must be at least 6 characters", "error");
+                    return;
+                }
+            }
+
             const payload = { name, email, phone, address, role };
             if (password) payload.password = password;
+
             try {
                 const res = await API.put(`/admin/users/${id}`, payload);
-                if (!res.ok) { const err = await res.text(); throw new Error(err); }
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
                 closeModal("editUserModal");
                 showToast("User updated successfully", "success");
                 loadUsers();
-            } catch (err) { showToast("Failed to update user: " + err.message, "error"); }
+            } catch (err) {
+                showToast("Failed to update user: " + err.message, "error");
+            }
         }
 
         async function viewUser(id) {
             try {
                 const user = allUsers.find(u => u.id === id);
-                if (user) { showUserDetails(user); return; }
+                if (user) {
+                    showUserDetails(user);
+                    return;
+                }
                 const res = await API.get(`/admin/users/${id}`);
                 if (!res.ok) throw new Error();
                 const u = await res.json();
                 showUserDetails(u);
-            } catch (err) { console.error('View user error:', err); showToast("Failed to load user details", "error"); }
+            } catch (err) {
+                console.error('View user error:', err);
+                showToast("Failed to load user details", "error");
+            }
         }
 
         function showUserDetails(u) {
@@ -999,17 +1097,25 @@
             openModal("viewUserModal");
         }
 
-        function openEditFromView() { if (currentViewUser) { closeModal("viewUserModal"); openEditUser(currentViewUser.id); } }
+        function openEditFromView() {
+            if (currentViewUser) {
+                closeModal("viewUserModal");
+                openEditUser(currentViewUser.id);
+            }
+        }
 
         function openDeleteConfirm(id, name) {
-            pendingDeleteId = id; pendingDeleteName = name;
+            pendingDeleteId = id;
+            pendingDeleteName = name;
             document.getElementById("deleteUserName").textContent = name;
             document.getElementById("deleteConfirmInput").value = '';
             document.getElementById("deleteConfirmInput").className = 'confirm-delete-input';
             document.getElementById("deleteConfirmError").style.display = 'none';
             document.getElementById("deleteConfirmBtn").disabled = true;
             openModal("deleteConfirmModal");
-            setTimeout(() => { document.getElementById("deleteConfirmInput").focus(); }, 300);
+            setTimeout(() => {
+                document.getElementById("deleteConfirmInput").focus();
+            }, 300);
         }
 
         function onDeleteConfirmInput() {
@@ -1017,48 +1123,98 @@
             const btn = document.getElementById("deleteConfirmBtn");
             const error = document.getElementById("deleteConfirmError");
             const value = input.value.trim();
-            if (value === "DELETE") { input.className = 'confirm-delete-input success'; error.style.display = 'none'; btn.disabled = false; }
-            else if (value && value !== "DELETE") { input.className = 'confirm-delete-input error'; error.style.display = 'block'; btn.disabled = true; }
-            else { input.className = 'confirm-delete-input'; error.style.display = 'none'; btn.disabled = true; }
+
+            if (value === "DELETE") {
+                input.className = 'confirm-delete-input success';
+                error.style.display = 'none';
+                btn.disabled = false;
+            } else if (value && value !== "DELETE") {
+                input.className = 'confirm-delete-input error';
+                error.style.display = 'block';
+                btn.disabled = true;
+            } else {
+                input.className = 'confirm-delete-input';
+                error.style.display = 'none';
+                btn.disabled = true;
+            }
         }
 
         async function confirmDeleteUser() {
             const input = document.getElementById("deleteConfirmInput");
             const value = input.value.trim();
-            if (value !== "DELETE") { showToast('Please type "DELETE" to confirm', "error"); return; }
+
+            if (value !== "DELETE") {
+                showToast('Please type "DELETE" to confirm', "error");
+                return;
+            }
+
             if (!pendingDeleteId) return;
+
             try {
                 const res = await API.del(`/admin/users/${pendingDeleteId}`);
-                if (!res.ok) { const err = await res.text(); throw new Error(err); }
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
                 closeModal("deleteConfirmModal");
                 showToast(`User "${pendingDeleteName}" deleted successfully`, "success");
-                pendingDeleteId = null; pendingDeleteName = null;
+                pendingDeleteId = null;
+                pendingDeleteName = null;
                 loadUsers();
-            } catch (err) { showToast("Failed to delete user: " + err.message, "error"); }
+            } catch (err) {
+                showToast("Failed to delete user: " + err.message, "error");
+            }
         }
 
         function togglePasswordVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
-            if (input.type === "password") { input.type = "text"; btn.textContent = "🙈"; }
-            else { input.type = "password"; btn.textContent = "👁"; }
+            if (input.type === "password") {
+                input.type = "text";
+                btn.textContent = "🙈";
+            } else {
+                input.type = "password";
+                btn.textContent = "👁";
+            }
         }
 
         async function loadAdminProfile() {
             try {
                 const res = await API.get("/admin/profile");
-                if (res.ok) { const data = await res.json(); document.getElementById("adminName").textContent = data.name || "Admin"; }
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("adminName").textContent = data.name || "Admin";
+                }
             } catch { }
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { const dm = document.getElementById('deleteConfirmModal'); if (dm && dm.classList.contains('open')) closeModal('deleteConfirmModal'); }
-            if (e.key === 'Enter') { const di = document.getElementById('deleteConfirmInput'); if (di && document.getElementById('deleteConfirmModal').classList.contains('open')) { const btn = document.getElementById('deleteConfirmBtn'); if (!btn.disabled) confirmDeleteUser(); } }
+            if (e.key === 'Escape') {
+                const deleteModal = document.getElementById('deleteConfirmModal');
+                if (deleteModal && deleteModal.classList.contains('open')) {
+                    closeModal('deleteConfirmModal');
+                }
+            }
+            if (e.key === 'Enter') {
+                const deleteInput = document.getElementById('deleteConfirmInput');
+                if (deleteInput && document.getElementById('deleteConfirmModal').classList.contains('open')) {
+                    const btn = document.getElementById('deleteConfirmBtn');
+                    if (!btn.disabled) {
+                        confirmDeleteUser();
+                    }
+                }
+            }
         });
 
-        window.addUser = addUser; window.viewUser = viewUser; window.filterUsers = filterUsers;
-        window.openEditUser = openEditUser; window.updateUser = updateUser; window.openEditFromView = openEditFromView;
-        window.openDeleteConfirm = openDeleteConfirm; window.confirmDeleteUser = confirmDeleteUser;
-        window.onDeleteConfirmInput = onDeleteConfirmInput; window.togglePasswordVisibility = togglePasswordVisibility;
+        window.addUser = addUser;
+        window.viewUser = viewUser;
+        window.filterUsers = filterUsers;
+        window.openEditUser = openEditUser;
+        window.updateUser = updateUser;
+        window.openEditFromView = openEditFromView;
+        window.openDeleteConfirm = openDeleteConfirm;
+        window.confirmDeleteUser = confirmDeleteUser;
+        window.onDeleteConfirmInput = onDeleteConfirmInput;
+        window.togglePasswordVisibility = togglePasswordVisibility;
 
         loadAdminProfile();
         loadUsers();
