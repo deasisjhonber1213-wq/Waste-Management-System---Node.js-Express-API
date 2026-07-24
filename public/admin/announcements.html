@@ -3,14 +3,504 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Announcements · SmartWaste Admin</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <!-- consolidated styles: sidebar + announcements + modals + toasts -->
     <style>
-        /* ── Enhanced announcement grid styles ── */
+        /* ── reset / base (light/dark via data-theme) ── */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.2s, color 0.2s;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        :root,
+        [data-theme="light"] {
+            --bg: #f5f7fa;
+            --bg2: #edf0f5;
+            --bg3: #e9ecf2;
+            --panel: #ffffff;
+            --text: #1e293b;
+            --text2: #475569;
+            --border2: #d1d9e6;
+            --gold: #b8860b;
+            --gold-mid: #c9940a;
+            --gold-dim: #fbf0db;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.10);
+            --red: #b91c1c;
+            --red-dim: #fee2e2;
+            --mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --bg2: #1e293b;
+            --bg3: #2d3a4f;
+            --panel: #1e293b;
+            --text: #f1f5f9;
+            --text2: #94a3b8;
+            --border2: #334155;
+            --gold: #fbbf24;
+            --gold-mid: #f59e0b;
+            --gold-dim: #3b2e1a;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.8);
+            --red: #f87171;
+            --red-dim: #4c1d1d;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background: var(--panel);
+            border-right: 1px solid var(--border2);
+            padding: 20px 16px;
+            overflow-y: auto;
+            transition: left 0.25s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border2);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo-icon {
+            font-size: 2rem;
+        }
+
+        .sidebar-logo-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            line-height: 1.3;
+        }
+
+        .sidebar-logo-text span {
+            display: block;
+            font-weight: 400;
+            font-size: 0.7rem;
+            color: var(--text2);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+        }
+
+        .nav-section-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text2);
+            margin: 16px 0 6px 4px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+            margin: 2px 0;
+        }
+
+        .nav-item:hover {
+            background: var(--bg2);
+        }
+
+        .nav-item.active {
+            background: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border2);
+            padding-top: 16px;
+            margin-top: 8px;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-avatar {
+            font-size: 1.8rem;
+        }
+
+        .sidebar-user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-user-role {
+            font-size: 0.7rem;
+            color: var(--text2);
+        }
+
+        .sidebar-logout {
+            background: transparent;
+            border: 1px solid var(--border2);
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: 100%;
+            justify-content: center;
+            transition: 0.15s;
+        }
+
+        .sidebar-logout:hover {
+            background: var(--red-dim);
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        /* theme toggle inside sidebar */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg2);
+            border: none;
+            border-radius: 30px;
+            padding: 6px 12px 6px 14px;
+            width: 100%;
+            cursor: pointer;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 0.85rem;
+            margin-top: 4px;
+            transition: background 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border2);
+        }
+
+        .theme-switch {
+            margin-left: auto;
+            width: 34px;
+            height: 18px;
+            background: var(--border2);
+            border-radius: 30px;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .theme-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            position: sticky;
+            top: 0;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border2);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+            height: 70px;
+            backdrop-filter: blur(6px);
+        }
+
+        .topbar-hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .topbar-hamburger span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--text);
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        .topbar-hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(4px, 4px);
+        }
+
+        .topbar-hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .topbar-hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(4px, -4px);
+        }
+
+        .topbar-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .topbar-breadcrumb {
+            font-size: 0.7rem;
+            color: var(--text2);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ── MAIN ── */
+        .main {
+            margin-left: 0;
+            flex: 1;
+            padding: 20px 24px 40px;
+            transition: margin 0.2s;
+            max-width: 1400px;
+        }
+
+        @media (min-width: 769px) {
+            .sidebar {
+                left: 0;
+            }
+
+            .topbar-hamburger {
+                display: none;
+            }
+
+            .main {
+                margin-left: 280px;
+            }
+
+            .sidebar-overlay {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                left: -280px;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+        }
+
+        /* ── PANELS ── */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border2);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title-icon {
+            font-size: 1.3rem;
+        }
+
+        .panel-body {
+            padding: 20px;
+        }
+
+        .section-gap {
+            margin-top: 12px;
+        }
+
+        /* ── FORM ── */
+        .form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .form-grid-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        @media (max-width: 700px) {
+            .form-grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text2);
+        }
+
+        .form-control {
+            padding: 10px 12px;
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: border 0.2s;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .btn {
+            padding: 8px 18px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            color: #fff;
+        }
+
+        .btn-gold:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            filter: brightness(1.1);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border2);
+            color: var(--text2);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--bg2);
+        }
+
+        .badge-gold {
+            background: var(--gold-dim);
+            color: var(--gold);
+        }
+
+        /* ── ANNOUNCEMENT GRID ── */
         .ann-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
         }
 
@@ -19,7 +509,7 @@
             border: 1px solid var(--border2);
             border-radius: 12px;
             overflow: hidden;
-            transition: all 0.3s ease;
+            transition: all 0.25s;
             display: flex;
             flex-direction: column;
             box-shadow: var(--shadow);
@@ -33,26 +523,24 @@
 
         .ann-card-img {
             width: 100%;
-            height: 180px;
+            height: 170px;
             object-fit: cover;
-            display: block;
             background: var(--bg2);
         }
 
         .ann-card-img-placeholder {
-            width: 100%;
-            height: 80px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             background: var(--gold-dim);
             color: var(--gold);
             border-bottom: 1px solid var(--border2);
         }
 
         .ann-card-body {
-            padding: 16px 18px;
+            padding: 14px 16px;
             flex: 1;
         }
 
@@ -60,27 +548,15 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-bottom: 8px;
             font-size: 0.7rem;
             color: var(--text2);
-        }
-
-        .ann-card-date {
-            font-family: var(--mono);
-            font-size: 0.68rem;
-        }
-
-        .ann-card-author {
-            font-weight: 500;
-            color: var(--text2);
+            margin-bottom: 6px;
         }
 
         .ann-card-title {
-            font-size: 1rem;
             font-weight: 700;
-            color: var(--text);
-            margin-bottom: 6px;
-            line-height: 1.3;
+            font-size: 1rem;
+            margin-bottom: 4px;
         }
 
         .ann-card-msg {
@@ -94,36 +570,30 @@
         }
 
         .ann-card-pickup {
-            margin-top: 10px;
-            font-size: 0.74rem;
+            margin-top: 8px;
+            font-size: 0.7rem;
             color: var(--gold);
-            font-family: var(--mono);
             background: var(--gold-dim);
-            padding: 4px 12px;
-            border-radius: 6px;
+            padding: 2px 12px;
+            border-radius: 20px;
             display: inline-block;
         }
 
         .ann-card-footer {
-            padding: 12px 18px;
+            padding: 10px 16px;
             border-top: 1px solid var(--border2);
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--bg3);
-            transition: background 0.3s ease;
         }
 
-        .ann-card:hover .ann-card-footer {
-            background: var(--bg2);
-        }
-
-        .ann-card-footer .btn-danger {
+        .ann-card-footer .btn {
             padding: 4px 12px;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
         }
 
-        /* ── Image upload styling ── */
+        /* ── IMAGE UPLOAD ── */
         .image-upload-area {
             display: flex;
             flex-direction: column;
@@ -132,7 +602,7 @@
 
         .image-upload-preview {
             width: 100%;
-            max-height: 200px;
+            max-height: 160px;
             object-fit: cover;
             border-radius: 8px;
             border: 2px dashed var(--border2);
@@ -146,22 +616,22 @@
 
         .image-upload-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
         .image-upload-btn {
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 8px;
             border: 1px solid var(--border2);
             background: var(--bg3);
             color: var(--text2);
             cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
+            font-size: 0.8rem;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: 0.15s;
         }
 
         .image-upload-btn:hover {
@@ -186,15 +656,14 @@
         .image-upload-filename {
             font-size: 0.75rem;
             color: var(--text2);
-            padding: 4px 0;
         }
 
-        /* ── Modal fixes ── */
+        /* ── MODALS ── */
         .modal-overlay {
             position: fixed !important;
             inset: 0 !important;
             z-index: 99999 !important;
-            background: rgba(0, 0, 0, 0.6) !important;
+            background: rgba(0, 0, 0, 0.5) !important;
             backdrop-filter: blur(4px) !important;
             display: none !important;
             align-items: center !important;
@@ -212,16 +681,14 @@
             border-radius: 16px !important;
             max-width: 420px !important;
             width: 100% !important;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
-            animation: modalSlideIn 0.25s ease !important;
-            position: relative !important;
-            z-index: 999999 !important;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5) !important;
+            animation: modalSlideIn 0.2s ease !important;
         }
 
         @keyframes modalSlideIn {
             from {
                 opacity: 0;
-                transform: scale(0.96) translateY(20px);
+                transform: scale(0.96) translateY(10px);
             }
 
             to {
@@ -231,115 +698,76 @@
         }
 
         .modal-header {
-            padding: 20px 24px 16px !important;
+            padding: 16px 20px !important;
             border-bottom: 1px solid var(--border2) !important;
             display: flex !important;
-            align-items: center !important;
             justify-content: space-between !important;
+            align-items: center !important;
         }
 
         .modal-title {
-            font-size: 1rem !important;
-            font-weight: 700 !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px !important;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .modal-close {
-            background: none !important;
-            border: none !important;
-            color: var(--text2) !important;
-            font-size: 1.2rem !important;
-            cursor: pointer !important;
-            padding: 4px 8px !important;
-            border-radius: 6px !important;
-            transition: all 0.2s !important;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--text2);
+            cursor: pointer;
+            padding: 0 4px;
         }
 
         .modal-close:hover {
-            color: var(--red) !important;
-            background: var(--red-dim) !important;
+            color: var(--red);
         }
 
         .modal-body {
-            padding: 20px 24px !important;
+            padding: 16px 20px !important;
         }
 
         .modal-body p {
-            color: var(--text2) !important;
-            font-size: 0.9rem !important;
-            line-height: 1.6 !important;
-            margin: 0 !important;
+            color: var(--text2);
+            line-height: 1.5;
         }
 
         .modal-footer {
-            padding: 16px 24px !important;
-            border-top: 1px solid var(--border2) !important;
+            padding: 12px 20px !important;
+            border-top: 1px solid var(--border2);
             display: flex !important;
-            gap: 10px !important;
-            justify-content: flex-end !important;
-            flex-wrap: wrap !important;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
         }
 
-        .modal-footer .btn {
-            padding: 10px 24px !important;
-            font-size: 0.8rem !important;
-            font-weight: 600 !important;
-            border-radius: 10px !important;
-            cursor: pointer !important;
-            transition: all 0.2s !important;
-            border: none !important;
-        }
-
-        .btn-outline {
-            background: transparent !important;
-            border: 1px solid var(--border2) !important;
-            color: var(--text2) !important;
-        }
-
-        .btn-outline:hover {
-            border-color: var(--gold) !important;
-            color: var(--gold) !important;
-            background: var(--gold-dim) !important;
-        }
-
-        .btn-danger {
-            background: var(--red) !important;
-            color: #fff !important;
-        }
-
-        .btn-danger:hover {
-            background: #e74c3c !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
-        }
-
-        /* ── Toast container ── */
+        /* ── TOAST ── */
         .toast-container {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 20px;
+            right: 20px;
             display: flex;
             flex-direction: column;
             gap: 10px;
             z-index: 9999999 !important;
-            max-width: 380px;
+            max-width: 360px;
             width: 100%;
         }
 
         .toast {
-            padding: 14px 18px;
+            padding: 12px 16px;
             border-radius: 10px;
             background: var(--panel);
             border: 1px solid var(--border2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            color: var(--text);
-            font-size: 0.85rem;
-            animation: toastIn 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 0.85rem;
+            animation: toastIn 0.25s ease;
         }
 
         .toast.success {
@@ -364,8 +792,6 @@
             border: none;
             color: var(--text2);
             cursor: pointer;
-            font-size: 1rem;
-            padding: 0 4px;
         }
 
         @keyframes toastIn {
@@ -380,76 +806,45 @@
             }
         }
 
-        /* ── Sidebar z-index fixes ── */
-        .sidebar {
-            z-index: 1000 !important;
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text2);
         }
 
-        .sidebar-overlay {
-            z-index: 999 !important;
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
         }
 
-        .topbar {
-            z-index: 100 !important;
-        }
-
-        /* ── Responsive ── */
-        @media (max-width: 768px) {
-            .ann-grid {
-                grid-template-columns: 1fr;
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
             }
         }
 
-        @media (max-width: 550px) {
-            .ann-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
+        /* responsive extras */
+        @media (max-width:550px) {
+            .topbar {
+                padding: 10px 16px;
             }
 
-            .ann-card-img {
-                height: 140px;
+            .main {
+                padding: 16px;
             }
 
-            .ann-card-body {
+            .panel-body {
                 padding: 14px;
             }
 
-            .ann-card-title {
-                font-size: 0.95rem;
-            }
-
-            .ann-card-msg {
-                font-size: 0.8rem;
-            }
-
-            .ann-card-footer {
-                padding: 10px 14px;
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-
-            .modal {
-                margin: 10px !important;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 16px !important;
-            }
-
-            .image-upload-actions {
-                flex-direction: column;
-            }
-
-            .image-upload-btn {
-                justify-content: center;
-            }
-
-            .toast-container {
-                bottom: 12px;
-                right: 12px;
-                max-width: calc(100% - 24px);
+            .ann-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
             }
         }
     </style>
@@ -457,8 +852,10 @@
 
 <body>
 
+    <!-- SIDEBAR OVERLAY -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
@@ -477,15 +874,12 @@
             <a href="/announcements" class="nav-item active"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
-
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
             <button class="theme-toggle" id="themeToggleBtn">
                 <span class="theme-icon">🌙</span>
                 <span class="theme-label">Dark Mode</span>
-                <span class="theme-switch">
-                    <span class="theme-knob"></span>
-                </span>
+                <span class="theme-switch"><span class="theme-knob"></span></span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -496,11 +890,12 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
-            <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
-                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
+            <button type="button" class="sidebar-logout" onclick="openModal('logoutConfirmModal')">⎋
+                &nbsp;Logout</button>
         </div>
     </aside>
 
+    <!-- TOPBAR -->
     <div class="topbar">
         <div style="display:flex;align-items:center;gap:14px;">
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
@@ -509,18 +904,16 @@
                 <div class="topbar-breadcrumb">Jose Dalman WM / Community / <span>Announcements</span></div>
             </div>
         </div>
-        <div class="topbar-right">
-            <!-- Removed duplicate "New Announcement" button -->
-        </div>
+        <div class="topbar-right"></div>
     </div>
 
+    <!-- MAIN -->
     <main class="main">
 
+        <!-- compose panel -->
         <div class="panel reveal section-gap">
             <div class="panel-header">
-                <div class="panel-title">
-                    <div class="panel-title-icon">✍️</div>Compose Announcement
-                </div>
+                <div class="panel-title"><span class="panel-title-icon">✍️</span>Compose Announcement</div>
                 <button class="btn btn-gold" onclick="createAnnouncement()">Publish →</button>
             </div>
             <div class="panel-body">
@@ -535,13 +928,9 @@
                             <img id="imagePreview" class="image-upload-preview" alt="Preview">
                             <div class="image-upload-actions">
                                 <button class="image-upload-btn"
-                                    onclick="document.getElementById('imageInput').click()">
-                                    📷 Upload Image
-                                </button>
+                                    onclick="document.getElementById('imageInput').click()">📷 Upload Image</button>
                                 <button class="image-upload-btn remove" id="removeImageBtn" onclick="removeImage()"
-                                    style="display:none;">
-                                    ✕ Remove
-                                </button>
+                                    style="display:none;">✕ Remove</button>
                             </div>
                             <input type="file" id="imageInput" class="image-upload-input" accept="image/*"
                                 onchange="handleImageUpload(event)">
@@ -556,11 +945,10 @@
             </div>
         </div>
 
+        <!-- announcements list -->
         <div class="panel reveal">
             <div class="panel-header">
-                <div class="panel-title">
-                    <div class="panel-title-icon">📢</div>Published Announcements
-                </div>
+                <div class="panel-title"><span class="panel-title-icon">📢</span>Published Announcements</div>
                 <span class="badge badge-gold" id="annCount">0</span>
             </div>
             <div style="padding:20px">
@@ -573,66 +961,56 @@
 
     </main>
 
-    <!-- ── MODALS ── -->
-
-    <!-- Logout Confirmation Modal -->
+    <!-- MODALS -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
-                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div><button class="modal-close"
+                    onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to log out of the admin panel?</p>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
-                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('logoutConfirmModal')">Cancel</button><button class="btn btn-danger"
+                    onclick="doLogout()">Yes, Logout</button></div>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="deleteConfirmModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🗑️ Confirm Delete</div>
-                <button class="modal-close" onclick="closeModal('deleteConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🗑️ Confirm Delete</div><button class="modal-close"
+                    onclick="closeModal('deleteConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p id="deleteModalMessage">Are you sure you want to delete this announcement? This action cannot be
                     undone.</p>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('deleteConfirmModal')">Cancel</button>
-                <button class="btn btn-danger" id="deleteConfirmBtn">Yes, Delete</button>
-            </div>
+            <div class="modal-footer"><button class="btn btn-outline"
+                    onclick="closeModal('deleteConfirmModal')">Cancel</button><button class="btn btn-danger"
+                    id="deleteConfirmBtn">Yes, Delete</button></div>
         </div>
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ── SIDEBAR TOGGLE (Self-contained) ──
-        document.addEventListener('DOMContentLoaded', function () {
+        (function () {
+            "use strict";
+
+            // ── SIDEBAR TOGGLE ──
             const hamburger = document.getElementById('hamburger');
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-
             if (hamburger && sidebar) {
-                // Toggle sidebar on hamburger click
                 hamburger.addEventListener('click', function (e) {
                     e.stopPropagation();
                     sidebar.classList.toggle('open');
-                    if (overlay) {
-                        overlay.classList.toggle('active');
-                    }
-                    // Toggle hamburger active state
+                    if (overlay) overlay.classList.toggle('active');
                     hamburger.classList.toggle('active');
                 });
             }
-
-            // Close sidebar when clicking overlay
             if (overlay) {
                 overlay.addEventListener('click', function () {
                     sidebar.classList.remove('open');
@@ -640,8 +1018,6 @@
                     if (hamburger) hamburger.classList.remove('active');
                 });
             }
-
-            // Close sidebar when clicking a nav link (on mobile)
             document.querySelectorAll('.nav-item').forEach(link => {
                 link.addEventListener('click', function () {
                     if (window.innerWidth <= 768) {
@@ -651,8 +1027,6 @@
                     }
                 });
             });
-
-            // Close sidebar with Escape key
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') {
                     sidebar.classList.remove('open');
@@ -660,314 +1034,210 @@
                     if (hamburger) hamburger.classList.remove('active');
                 }
             });
-        });
 
-        // ── TOAST SYSTEM ──
-        function showToast(message, type) {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-
-            const icons = {
-                success: '✅',
-                error: '❌',
-                info: 'ℹ️'
-            };
-
-            const toast = document.createElement('div');
-            toast.className = `toast ${type || 'info'}`;
-            toast.innerHTML = `
-                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
-                <span>${message}</span>
-                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-            `;
-
-            container.appendChild(toast);
-
-            // Auto-remove after 4 seconds
-            setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateX(20px)';
-                    setTimeout(() => {
-                        if (toast.parentElement) toast.remove();
-                    }, 300);
-                }
-            }, 4000);
-        }
-
-        // ── MODAL HELPERS ──
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.classList.add('open');
-                document.body.style.overflow = 'hidden';
-            }
-        }
-
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.classList.remove('open');
-                document.body.style.overflow = '';
-            }
-        }
-
-        window.openModal = openModal;
-        window.closeModal = closeModal;
-
-        // ── IMAGE UPLOAD ──
-        let uploadedImageData = null;
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (file.size > 5 * 1024 * 1024) {
-                showToast("Image too large. Max 5MB.", "error");
-                event.target.value = '';
-                return;
-            }
-
-            if (!file.type.startsWith('image/')) {
-                showToast("Please select an image file.", "error");
-                event.target.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const imageData = e.target.result;
-                uploadedImageData = imageData;
-
-                const preview = document.getElementById('imagePreview');
-                preview.src = imageData;
-                preview.classList.add('visible');
-
-                document.getElementById('annImg').value = imageData;
-                document.getElementById('removeImageBtn').style.display = 'inline-flex';
-                document.getElementById('fileNameDisplay').textContent = `📎 ${file.name}`;
-
-                showToast("Image uploaded successfully", "success");
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function removeImage() {
-            uploadedImageData = null;
-            document.getElementById('imagePreview').src = '';
-            document.getElementById('imagePreview').classList.remove('visible');
-            document.getElementById('annImg').value = '';
-            document.getElementById('imageInput').value = '';
-            document.getElementById('removeImageBtn').style.display = 'none';
-            document.getElementById('fileNameDisplay').textContent = '';
-            showToast("Image removed", "info");
-        }
-
-        // ── DELETE WITH CONFIRMATION ──
-        let pendingDeleteId = null;
-
-        function confirmDelete(id, name) {
-            pendingDeleteId = id;
-            const msg = document.getElementById('deleteModalMessage');
-            if (msg) {
-                msg.textContent = `Are you sure you want to delete "${name || 'this announcement'}"? This action cannot be undone.`;
-            }
-            document.getElementById('deleteConfirmBtn').onclick = function () {
-                executeDelete(pendingDeleteId);
-            };
-            openModal('deleteConfirmModal');
-        }
-
-        async function executeDelete(id) {
-            try {
-                const res = await API.del(`/admin/announcements/${id}`);
-                if (!res.ok) throw new Error();
-                closeModal('deleteConfirmModal');
-                showToast("Announcement deleted successfully", "success");
-                loadAnnouncements();
-            } catch (err) {
-                closeModal('deleteConfirmModal');
-                showToast("Delete failed", "error");
-            }
-            pendingDeleteId = null;
-        }
-
-        // ── API ──
-        const API_URL = window.location.origin + '/api';
-        console.log('📡 API URL:', API_URL);
-
-        function getToken() {
-            return localStorage.getItem('token');
-        }
-
-        const API = {
-            get: async (endpoint) => {
-                return fetch(API_URL + endpoint, {
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-            },
-            post: async (endpoint, data) => {
-                return fetch(API_URL + endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getToken()}`
-                    },
-                    body: JSON.stringify(data)
-                });
-            },
-            del: async (endpoint) => {
-                return fetch(API_URL + endpoint, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-            }
-        };
-
-        function fmtDate(date) {
-            if (!date) return '—';
-            const d = new Date(date);
-            return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-
-        function checkAuth() {
-            const token = getToken();
-            if (!token) {
-                window.location.href = '/login.html';
-            }
-        }
-        checkAuth();
-
-        function doLogout() {
-            localStorage.removeItem('token');
-            closeModal('logoutConfirmModal');
-            showToast('Logged out successfully', 'success');
-            setTimeout(() => {
-                window.location.href = '/login.html';
-            }, 500);
-        }
-        window.doLogout = doLogout;
-
-        function escHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c =>
-                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-
-        async function loadAnnouncements() {
-            try {
-                const res = await API.get("/admin/announcements");
-                if (!res.ok) throw new Error();
-                const data = await res.json();
-                document.getElementById("annCount").textContent = data.length;
-                const grid = document.getElementById("annGrid");
-                if (!data.length) {
-                    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📢</div><div class="empty-state-text">No announcements yet. Create one above!</div></div>';
-                    return;
-                }
-                grid.innerHTML = data.map(a => `
-                    <div class="ann-card">
-                        ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder">📢</div>`}
-                        <div class="ann-card-body">
-                            <div class="ann-card-meta">
-                                <span class="ann-card-date">${fmtDate(a.created_at)}</span>
-                                <span class="ann-card-author">· ${escHtml(a.admin_name || "Admin")}</span>
-                            </div>
-                            <div class="ann-card-title">${escHtml(a.title)}</div>
-                            <div class="ann-card-msg">${escHtml(a.message)}</div>
-                            ${a.pickup_date ? `<div class="ann-card-pickup">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
-                        </div>
-                        <div class="ann-card-footer">
-                            <span class="badge badge-gold">Published</span>
-                            <button class="btn btn-danger btn-sm" onclick="confirmDelete(${a.id}, '${escHtml(a.title)}')">🗑 Delete</button>
-                        </div>
-                    </div>`).join("");
-            } catch {
-                showToast("Failed to load announcements", "error");
-            }
-        }
-
-        async function createAnnouncement() {
-            const title = document.getElementById("annTitle").value.trim();
-            const msg = document.getElementById("annMsg").value.trim();
-            const date = document.getElementById("annDate").value;
-            const imgData = document.getElementById("annImg").value;
-
-            if (!title || !msg) {
-                showToast("Title and message required", "error");
-                return;
-            }
-
-            try {
-                const res = await API.post("/admin/announcements", {
-                    title,
-                    message: msg,
-                    pickup_date: date || null,
-                    image_url: imgData || null
-                });
-
-                if (!res.ok) throw new Error();
-
-                // Reset form
-                document.getElementById("annTitle").value = "";
-                document.getElementById("annMsg").value = "";
-                document.getElementById("annDate").value = "";
-                removeImage();
-
-                showToast("Announcement published!", "success");
-                loadAnnouncements();
-            } catch {
-                showToast("Failed to create announcement", "error");
-            }
-        }
-
-        async function loadAdminProfile() {
-            try {
-                const res = await API.get("/admin/profile");
-                if (res.ok) {
-                    const data = await res.json();
-                    document.getElementById("adminName").textContent = data.name || "Admin";
-                }
-            } catch { }
-        }
-
-        // ── THEME TOGGLE (Self-contained) ──
-        document.addEventListener('DOMContentLoaded', function () {
+            // ── THEME TOGGLE ──
             const themeToggle = document.getElementById('themeToggleBtn');
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                if (themeToggle) {
+                    const icon = themeToggle.querySelector('.theme-icon');
+                    const label = themeToggle.querySelector('.theme-label');
+                    const knob = themeToggle.querySelector('.theme-knob');
+                    if (theme === 'dark') {
+                        if (icon) icon.textContent = '☀️';
+                        if (label) label.textContent = 'Light Mode';
+                        if (knob) knob.style.transform = 'translateX(16px)';
+                    } else {
+                        if (icon) icon.textContent = '🌙';
+                        if (label) label.textContent = 'Dark Mode';
+                        if (knob) knob.style.transform = 'translateX(0)';
+                    }
+                }
+            }
+            const saved = localStorage.getItem('theme') || 'light';
+            applyTheme(saved);
             if (themeToggle) {
-                // Check saved theme
-                const savedTheme = localStorage.getItem('theme') || 'light';
-                document.documentElement.setAttribute('data-theme', savedTheme);
-                updateThemeUI(themeToggle, savedTheme);
-
                 themeToggle.addEventListener('click', function () {
-                    const currentTheme = document.documentElement.getAttribute('data-theme');
-                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                    document.documentElement.setAttribute('data-theme', newTheme);
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(themeToggle, newTheme);
+                    const cur = document.documentElement.getAttribute('data-theme');
+                    applyTheme(cur === 'light' ? 'dark' : 'light');
                 });
             }
-        });
 
-        function updateThemeUI(toggle, theme) {
-            const icon = toggle.querySelector('.theme-icon');
-            const label = toggle.querySelector('.theme-label');
-            const knob = toggle.querySelector('.theme-knob');
+            // ── TOAST ──
+            window.showToast = function (message, type) {
+                const container = document.getElementById('toastContainer');
+                if (!container) return;
+                const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+                const toast = document.createElement('div');
+                toast.className = `toast ${type || 'info'}`;
+                toast.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ️'}</span><span>${message}</span><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateX(20px)';
+                        setTimeout(() => { if (toast.parentElement) toast.remove(); }, 300);
+                    }
+                }, 4000);
+            };
 
-            if (theme === 'dark') {
-                if (icon) icon.textContent = '☀️';
-                if (label) label.textContent = 'Light Mode';
-                if (knob) knob.style.transform = 'translateX(16px)';
-            } else {
-                if (icon) icon.textContent = '🌙';
-                if (label) label.textContent = 'Dark Mode';
-                if (knob) knob.style.transform = 'translateX(0)';
+            // ── MODAL HELPERS ──
+            window.openModal = function (id) {
+                const el = document.getElementById(id);
+                if (el) { el.classList.add('open'); document.body.style.overflow = 'hidden'; }
+            };
+            window.closeModal = function (id) {
+                const el = document.getElementById(id);
+                if (el) { el.classList.remove('open'); document.body.style.overflow = ''; }
+            };
+
+            // ── IMAGE UPLOAD ──
+            let uploadedImageData = null;
+            window.handleImageUpload = function (event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) { showToast("Image too large. Max 5MB.", "error"); event.target.value = ''; return; }
+                if (!file.type.startsWith('image/')) { showToast("Please select an image file.", "error"); event.target.value = ''; return; }
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const imageData = e.target.result;
+                    uploadedImageData = imageData;
+                    document.getElementById('imagePreview').src = imageData;
+                    document.getElementById('imagePreview').classList.add('visible');
+                    document.getElementById('annImg').value = imageData;
+                    document.getElementById('removeImageBtn').style.display = 'inline-flex';
+                    document.getElementById('fileNameDisplay').textContent = '📎 ' + file.name;
+                    showToast("Image uploaded", "success");
+                };
+                reader.readAsDataURL(file);
+            };
+            window.removeImage = function () {
+                uploadedImageData = null;
+                document.getElementById('imagePreview').src = '';
+                document.getElementById('imagePreview').classList.remove('visible');
+                document.getElementById('annImg').value = '';
+                document.getElementById('imageInput').value = '';
+                document.getElementById('removeImageBtn').style.display = 'none';
+                document.getElementById('fileNameDisplay').textContent = '';
+                showToast("Image removed", "info");
+            };
+
+            // ── API ──
+            const API_URL = window.location.origin + '/api';
+            function getToken() { return localStorage.getItem('token'); }
+            const API = {
+                get: async (endpoint) => fetch(API_URL + endpoint, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
+                post: async (endpoint, data) => fetch(API_URL + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` }, body: JSON.stringify(data) }),
+                del: async (endpoint) => fetch(API_URL + endpoint, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
+            };
+
+            function fmtDate(date) {
+                if (!date) return '—';
+                const d = new Date(date);
+                return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
             }
-        }
+            function escHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
-        // ── INIT ──
-        loadAdminProfile();
-        loadAnnouncements();
+            // ── LOAD ANNOUNCEMENTS ──
+            async function loadAnnouncements() {
+                try {
+                    const res = await API.get("/admin/announcements");
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    document.getElementById("annCount").textContent = data.length;
+                    const grid = document.getElementById("annGrid");
+                    if (!data.length) {
+                        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📢</div><div class="empty-state-text">No announcements yet. Create one above!</div></div>';
+                        return;
+                    }
+                    grid.innerHTML = data.map(a => `
+            <div class="ann-card">
+              ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder">📢</div>`}
+              <div class="ann-card-body">
+                <div class="ann-card-meta"><span class="ann-card-date">${fmtDate(a.created_at)}</span><span class="ann-card-author">· ${escHtml(a.admin_name || "Admin")}</span></div>
+                <div class="ann-card-title">${escHtml(a.title)}</div>
+                <div class="ann-card-msg">${escHtml(a.message)}</div>
+                ${a.pickup_date ? `<div class="ann-card-pickup">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
+              </div>
+              <div class="ann-card-footer">
+                <span class="badge badge-gold">Published</span>
+                <button class="btn btn-danger" onclick="confirmDelete(${a.id}, '${escHtml(a.title)}')">🗑 Delete</button>
+              </div>
+            </div>`).join("");
+                } catch { showToast("Failed to load announcements", "error"); }
+            }
+
+            // ── CREATE ──
+            window.createAnnouncement = async function () {
+                const title = document.getElementById("annTitle").value.trim();
+                const msg = document.getElementById("annMsg").value.trim();
+                const date = document.getElementById("annDate").value;
+                const imgData = document.getElementById("annImg").value;
+                if (!title || !msg) { showToast("Title and message required", "error"); return; }
+                try {
+                    const res = await API.post("/admin/announcements", {
+                        title, message: msg, pickup_date: date || null, image_url: imgData || null
+                    });
+                    if (!res.ok) throw new Error();
+                    document.getElementById("annTitle").value = "";
+                    document.getElementById("annMsg").value = "";
+                    document.getElementById("annDate").value = "";
+                    removeImage();
+                    showToast("Announcement published!", "success");
+                    loadAnnouncements();
+                } catch { showToast("Failed to create announcement", "error"); }
+            };
+
+            // ── DELETE ──
+            let pendingDeleteId = null;
+            window.confirmDelete = function (id, name) {
+                pendingDeleteId = id;
+                document.getElementById('deleteModalMessage').textContent = `Are you sure you want to delete "${name || 'this announcement'}"? This action cannot be undone.`;
+                document.getElementById('deleteConfirmBtn').onclick = function () { executeDelete(pendingDeleteId); };
+                openModal('deleteConfirmModal');
+            };
+            async function executeDelete(id) {
+                try {
+                    const res = await API.del(`/admin/announcements/${id}`);
+                    if (!res.ok) throw new Error();
+                    closeModal('deleteConfirmModal');
+                    showToast("Announcement deleted", "success");
+                    loadAnnouncements();
+                } catch { closeModal('deleteConfirmModal'); showToast("Delete failed", "error"); }
+                pendingDeleteId = null;
+            }
+
+            // ── LOGOUT ──
+            window.doLogout = function () {
+                localStorage.removeItem('token');
+                closeModal('logoutConfirmModal');
+                showToast('Logged out', 'success');
+                setTimeout(() => { window.location.href = '/login.html'; }, 500);
+            };
+
+            // ── PROFILE ──
+            async function loadAdminProfile() {
+                try {
+                    const res = await API.get("/admin/profile");
+                    if (res.ok) {
+                        const data = await res.json();
+                        document.getElementById("adminName").textContent = data.name || "Admin";
+                    }
+                } catch { }
+            }
+
+            // ── AUTH CHECK ──
+            function checkAuth() {
+                if (!getToken()) window.location.href = '/login.html';
+            }
+            checkAuth();
+
+            // INIT
+            loadAdminProfile();
+            loadAnnouncements();
+
+        })();
     </script>
 
 </body>
