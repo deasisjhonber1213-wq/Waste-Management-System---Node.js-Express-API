@@ -1,0 +1,283 @@
+
+    .modal-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 99999 !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        backdrop-filter: blur(4px) !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 20px !important;
+    }
+
+    .modal-overlay.open {
+        display: flex !important;
+    }
+
+    .modal {
+        background: var(--panel) !important;
+        border: 1px solid var(--border2) !important;
+        border-radius: 16px !important;
+        max-width: 420px !important;
+        width: 100% !important;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
+        animation: modalSlideIn 0.25s ease !important;
+        position: relative !important;
+        z-index: 999999 !important;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .modal-header {
+        padding: 20px 24px 16px !important;
+        border-bottom: 1px solid var(--border2) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+
+    .modal-title {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    .modal-close {
+        background: none !important;
+        border: none !important;
+        color: var(--text2) !important;
+        font-size: 1.2rem !important;
+        cursor: pointer !important;
+        padding: 4px 8px !important;
+        border-radius: 6px !important;
+        transition: all 0.2s !important;
+    }
+
+    .modal-close:hover {
+        color: var(--red) !important;
+        background: var(--red-dim) !important;
+    }
+
+    .modal-body {
+        padding: 20px 24px !important;
+    }
+
+    .modal-body p {
+        color: var(--text2) !important;
+        font-size: 0.9rem !important;
+        line-height: 1.6 !important;
+        margin: 0 !important;
+    }
+
+    .modal-footer {
+        padding: 16px 24px !important;
+        border-top: 1px solid var(--border2) !important;
+        display: flex !important;
+        gap: 10px !important;
+        justify-content: flex-end !important;
+        flex-wrap: wrap !important;
+    }
+
+    .modal-footer .btn {
+        padding: 10px 24px !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+        border: none !important;
+    }
+
+    .btn-outline {
+        background: transparent !important;
+        border: 1px solid var(--border2) !important;
+        color: var(--text2) !important;
+    }
+
+    .btn-outline:hover {
+        border-color: var(--gold) !important;
+        color: var(--gold) !important;
+        background: var(--gold-dim) !important;
+    }
+
+    .btn-danger {
+        background: var(--red) !important;
+        color: #fff !important;
+    }
+
+    .btn-danger:hover {
+        background: #e74c3c !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
+    }
+
+    /* Ensure sidebar doesn't overlap modals */
+    .sidebar {
+        z-index: 1000 !important;
+    }
+
+    .sidebar-overlay {
+        z-index: 999 !important;
+    }
+
+    .topbar {
+        z-index: 100 !important;
+    }
+
+    /* Toast fixes */
+    .toast-container {
+        z-index: 9999999 !important;
+    }
+
+    /* ── Enhanced metric grid styles ── */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .metric-card {
+        background: var(--bg3);
+        border: 1px solid var(--border2);
+        border-radius: 10px;
+        padding: 14px 16px;
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gold);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .metric-card:hover {
+        border-color: var(--gold-mid);
+        transform: translateX(4px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .metric-card:hover::before {
+        opacity: 1;
+    }
+
+    .metric-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .metric-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        transition: transform 0.3s ease;
+    }
+
+    .metric-card:hover .metric-dot {
+        transform: scale(1.2);
+    }
+
+    .metric-card-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text);
+        flex: 1;
+    }
+
+    .metric-card-value {
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--gold);
+        background: var(--gold-dim);
+        padding: 2px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+    }
+
+    .metric-bar-track {
+        width: 100%;
+        height: 6px;
+        background: var(--bg2);
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 6px 0;
+    }
+
+    .metric-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .metric-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 6px;
+    }
+
+    .metric-percent {
+        font-size: 0.68rem;
+        color: var(--text2);
+        font-weight: 500;
+    }
+
+    .metric-count {
+        font-size: 0.68rem;
+        color: var(--text3);
+    }
+
+    @media (min-width: 768px) {
+        .metric-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 550px) {
+        .metric-card-header {
+            flex-wrap: wrap;
+        }
+
+        .metric-card-value {
+            font-size: 0.75rem;
+            padding: 1px 8px;
+        }
+
+        .metric-card-label {
+            font-size: 0.75rem;
+        }
+
+        .modal {
+            margin: 10px !important;
+        }
+
+        .modal-header,
+        .modal-body,
+        .modal-footer {
+            padding: 16px !important;
+        }
+    }
