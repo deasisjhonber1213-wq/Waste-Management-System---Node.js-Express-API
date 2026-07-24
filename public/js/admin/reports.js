@@ -1,5 +1,4 @@
 
-
 const API_URL = window.location.origin + '/api';
 console.log('📡 API URL:', API_URL);
 
@@ -165,23 +164,23 @@ function buildReportPopupHtml(r) {
     const label = TYPE_LABEL[r.type] || r.type.replace(/_/g, ' ');
     const imgHtml = r.image_url ?
         `<img class="rp-popup-img" src="${escHtml(r.image_url)}"
-            alt="Report photo"
-            onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')"
-            onerror="this.style.display='none'">` :
+                        alt="Report photo"
+                        onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')"
+                        onerror="this.style.display='none'">` :
         '<div style="color:var(--text3);font-size:0.7rem;">No photo</div>';
     const desc = r.description ? escHtml(r.description).substring(0, 120) + (r.description.length > 120 ? '…' : '') :
         'No description';
     return `
-            <div>
-                <div class="rp-popup-type" style="color:${color};">${label}</div>
-                ${imgHtml}
-                <div class="rp-popup-desc">${desc}</div>
-                <div class="rp-popup-meta">
-                    <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
-                    <span>${fmtDate(r.created_at)}</span>
-                </div>
-                <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
-            </div>`;
+                    <div>
+                        <div class="rp-popup-type" style="color:${color};">${label}</div>
+                        ${imgHtml}
+                        <div class="rp-popup-desc">${desc}</div>
+                        <div class="rp-popup-meta">
+                            <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
+                            <span>${fmtDate(r.created_at)}</span>
+                        </div>
+                        <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
+                    </div>`;
 }
 
 function renderResidentPins(residents) {
@@ -207,15 +206,15 @@ function renderResidentPins(residents) {
         const marker = L.marker([lat, lng], { icon })
             .addTo(reportMap)
             .bindPopup(`
-            <div>
-                <strong style="color:#60a5fa;">👤 ${escHtml(r.name || 'Resident')}</strong><br>
-                    <span style="font-size:0.7rem;">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
-                        <span style="font-size:0.65rem;color:${isRecent ? '#4ade80' : '#7a8499'}">
-                            Last seen: ${fmtTime(r.location_updated_at)}
-                        </span>
-                        <button class="rp-popup-btn" style="margin-top:6px;" onclick="viewResident(${r.id})">👁 View Details</button>
-                    </div>
-                    `, { maxWidth: 260 });
+                            <div>
+                                <strong style="color:#60a5fa;">👤 ${escHtml(r.name || 'Resident')}</strong><br>
+                                <span style="font-size:0.7rem;">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
+                                <span style="font-size:0.65rem;color:${isRecent ? '#4ade80' : '#7a8499'}">
+                                    Last seen: ${fmtTime(r.location_updated_at)}
+                                </span>
+                                <button class="rp-popup-btn" style="margin-top:6px;" onclick="viewResident(${r.id})">👁 View Details</button>
+                            </div>
+                        `, { maxWidth: 260 });
 
         residentMarkers.push({ id: r.id, marker });
     });
@@ -309,17 +308,17 @@ function renderResidentList() {
         const lngStr = lng != null && !isNaN(lng) ? lng.toFixed(5) : '—';
 
         return `
-                    <div class="resident-card" onclick="viewResident(${r.id})">
-                        <div class="resident-avatar">👤</div>
-                        <div class="resident-info">
-                            <div class="resident-name">${escHtml(r.name || 'Resident')}</div>
-                            <div class="resident-loc-time">
-                                📍 ${latStr}, ${lngStr}<br>
+                        <div class="resident-card" onclick="viewResident(${r.id})">
+                            <div class="resident-avatar">👤</div>
+                            <div class="resident-info">
+                                <div class="resident-name">${escHtml(r.name || 'Resident')}</div>
+                                <div class="resident-loc-time">
+                                    📍 ${latStr}, ${lngStr}<br>
                                     🕐 ${fmtTime(r.location_updated_at)} ${isRecent ? '<span style="color:#4ade80;">(Active)</span>' : ''}
+                                </div>
                             </div>
+                            <div style="font-size:1.2rem;">📍</div>
                         </div>
-                        <div style="font-size:1.2rem;">📍</div>
-                    </div>
                     `;
     }).join('');
 }
@@ -374,16 +373,16 @@ function renderTable(data) {
         // Check if image_url exists and is valid
         const hasImage = r.image_url && r.image_url.length > 100;
         return `<tr class="${hasLoc ? 'row-has-location' : ''}" ${hasLoc ? `onclick="flyToReport(${r.id})" title="Click to locate on map"` : ''}>
-                        <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
-                        <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
-                        <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
-                            ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
-                        </td>
-                        <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
-                        <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
-                        <td style="text-align:center;">${hasImage ? `<img src="${r.image_url}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${r.image_url}')" onerror="this.style.display='none'" loading="lazy">` : '—'}</td>
-                        <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
-                    </tr>`;
+                <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
+                <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
+                <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
+                    ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
+                </td>
+                <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
+                <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
+                <td style="text-align:center;">${hasImage ? `<img src="${r.image_url}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${r.image_url}')" onerror="this.style.display='none'" loading="lazy">` : '—'}</td>
+                <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
+             </tr>`;
     }).join('');
 }
 
@@ -396,56 +395,56 @@ function viewReport(id) {
     const label = TYPE_LABEL[r.type] || r.type.replace(/_/g, ' ');
 
     const imgSection = r.image_url ? `
-                    <div>
-                        <div class="form-label" style="margin-bottom:6px;">Photo</div>
-                        <img src="${escHtml(r.image_url)}"
-                            alt="Report photo"
-                            style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;cursor:pointer;"
-                            onclick="openLightbox('${escHtml(r.image_url)}')"
-                            onerror="this.parentElement.style.display='none'">
-                    </div>` :
+                        <div>
+                            <div class="form-label" style="margin-bottom:6px;">Photo</div>
+                            <img src="${escHtml(r.image_url)}"
+                                 alt="Report photo"
+                                 style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;cursor:pointer;"
+                                 onclick="openLightbox('${escHtml(r.image_url)}')"
+                                 onerror="this.parentElement.style.display='none'">
+                        </div>` :
         '<div style="color:var(--text3);">No photo attached</div>';
 
     const locSection = (r.latitude != null && r.longitude != null) ? `
-                    <div>
-                        <div class="form-label" style="margin-bottom:4px;">Location</div>
-                        <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
-                            ${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}
-                        </div>
-                        <button class="btn btn-outline btn-sm" style="margin-top:6px;"
-                            onclick="closeModal('viewReportModal');flyToReport(${r.id})">
-                            🗺️ Show on Map
-                        </button>
-                    </div>` :
+                        <div>
+                            <div class="form-label" style="margin-bottom:4px;">Location</div>
+                            <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
+                                ${Number(r.latitude).toFixed(6)}, ${Number(r.longitude).toFixed(6)}
+                            </div>
+                            <button class="btn btn-outline btn-sm" style="margin-top:6px;"
+                                    onclick="closeModal('viewReportModal');flyToReport(${r.id})">
+                                🗺️ Show on Map
+                            </button>
+                        </div>` :
         '<div style="color:var(--text3);">No location provided</div>';
 
     document.getElementById('reportModalBody').innerHTML = `
-                    <div style="display:flex;flex-direction:column;gap:16px;">
-                        <div>
-                            <div class="form-label">Type</div>
-                            <div style="margin-top:6px;"><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}" style="background:${color}20;color:${color};">${label}</span></div>
-                        </div>
-                        <div>
-                            <div class="form-label">Description</div>
-                            <div style="margin-top:6px;font-size:0.85rem;color:var(--text);line-height:1.6;background:var(--bg3);padding:12px;border-radius:8px;">
-                                ${escHtml(r.description || 'No description provided.')}
-                            </div>
-                        </div>
-                        ${imgSection}
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div style="display:flex;flex-direction:column;gap:16px;">
                             <div>
-                                <div class="form-label">Reporter</div>
-                                <div style="margin-top:4px;font-size:0.8rem;">
-                                    ${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}
+                                <div class="form-label">Type</div>
+                                <div style="margin-top:6px;"><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}" style="background:${color}20;color:${color};">${label}</span></div>
+                            </div>
+                            <div>
+                                <div class="form-label">Description</div>
+                                <div style="margin-top:6px;font-size:0.85rem;color:var(--text);line-height:1.6;background:var(--bg3);padding:12px;border-radius:8px;">
+                                    ${escHtml(r.description || 'No description provided.')}
                                 </div>
                             </div>
-                            <div>
-                                <div class="form-label">Submitted</div>
-                                <div style="margin-top:4px;font-size:0.8rem;">${fmtDate(r.created_at)}</div>
+                            ${imgSection}
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <div class="form-label">Reporter</div>
+                                    <div style="margin-top:4px;font-size:0.8rem;">
+                                        ${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="form-label">Submitted</div>
+                                    <div style="margin-top:4px;font-size:0.8rem;">${fmtDate(r.created_at)}</div>
+                                </div>
                             </div>
-                        </div>
-                        ${locSection}
-                    </div>`;
+                            ${locSection}
+                        </div>`;
     openModal('viewReportModal');
 }
 
@@ -462,33 +461,33 @@ function viewResident(id) {
     const lngStr = lng != null && !isNaN(lng) ? lng.toFixed(6) : '—';
 
     document.getElementById('residentModalBody').innerHTML = `
-                    <div style="display:flex;flex-direction:column;gap:16px;">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <div style="width:50px;height:50px;background:var(--blue-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</div>
+                        <div style="display:flex;flex-direction:column;gap:16px;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:50px;height:50px;background:var(--blue-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</div>
+                                <div>
+                                    <div class="form-label">Name</div>
+                                    <div style="font-size:1rem;font-weight:700;">${escHtml(r.name || 'Resident')}</div>
+                                </div>
+                            </div>
                             <div>
-                                <div class="form-label">Name</div>
-                                <div style="font-size:1rem;font-weight:700;">${escHtml(r.name || 'Resident')}</div>
+                                <div class="form-label">Location</div>
+                                <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
+                                    📍 ${latStr}, ${lngStr}
+                                </div>
+                                <button class="btn btn-outline btn-sm" style="margin-top:6px;"
+                                        onclick="closeModal('viewResidentModal');flyToResident(${r.id})">
+                                    🗺️ Show on Map
+                                </button>
                             </div>
-                        </div>
-                        <div>
-                            <div class="form-label">Location</div>
-                            <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
-                                📍 ${latStr}, ${lngStr}
+                            <div>
+                                <div class="form-label">Last Seen</div>
+                                <div style="color:${isRecent ? '#4ade80' : '#7a8499'}">
+                                    ${fmtDate(r.location_updated_at)} at ${fmtTime(r.location_updated_at)}
+                                    ${isRecent ? ' (Active)' : ''}
+                                </div>
                             </div>
-                            <button class="btn btn-outline btn-sm" style="margin-top:6px;"
-                                onclick="closeModal('viewResidentModal');flyToResident(${r.id})">
-                                🗺️ Show on Map
-                            </button>
-                        </div>
-                        <div>
-                            <div class="form-label">Last Seen</div>
-                            <div style="color:${isRecent ? '#4ade80' : '#7a8499'}">
-                                ${fmtDate(r.location_updated_at)} at ${fmtTime(r.location_updated_at)}
-                                ${isRecent ? ' (Active)' : ''}
-                            </div>
-                        </div>
-                        ${r.address ? `<div><div class="form-label">Address</div><div style="font-size:0.85rem;">${escHtml(r.address)}</div></div>` : ''}
-                    </div>`;
+                            ${r.address ? `<div><div class="form-label">Address</div><div style="font-size:0.85rem;">${escHtml(r.address)}</div></div>` : ''}
+                        </div>`;
     openModal('viewResidentModal');
 }
 
