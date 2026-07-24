@@ -776,8 +776,11 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
 
+        /* ── TOPBAR - HIGH Z-INDEX ── */
         .topbar {
             height: var(--topbar-h);
             background: var(--panel);
@@ -987,13 +990,15 @@
             font-weight: 500;
         }
 
-        /* ── Map ── */
+        /* ── MAP - LOWER Z-INDEX ── */
         .map-card {
             background: var(--panel);
             border: 1px solid var(--border2);
             border-radius: 18px;
             overflow: hidden;
             margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
         }
 
         .map-toolbar {
@@ -1004,6 +1009,8 @@
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+            position: relative;
+            z-index: 5;
         }
 
         .map-toolbar-title {
@@ -1068,6 +1075,8 @@
             height: 480px;
             width: 100%;
             background: var(--bg3);
+            position: relative;
+            z-index: 0;
         }
 
         .map-legend {
@@ -1081,6 +1090,8 @@
             font-family: var(--mono);
             font-size: .6rem;
             font-weight: 500;
+            position: relative;
+            z-index: 5;
         }
 
         .legend-item {
@@ -1152,6 +1163,8 @@
             font-size: .7rem;
             flex-wrap: wrap;
             font-weight: 500;
+            position: relative;
+            z-index: 5;
         }
 
         .loc-coords {
@@ -1906,9 +1919,18 @@
             color: #fff;
         }
 
-        /* ── Leaflet Overrides ── */
+        /* ── Leaflet Overrides - FIX Z-INDEX ── */
         .leaflet-container {
             background: #131720 !important;
+            z-index: 0 !important;
+        }
+
+        .leaflet-control-container {
+            z-index: 10 !important;
+        }
+
+        .leaflet-popup {
+            z-index: 50 !important;
         }
 
         .leaflet-routing-container {

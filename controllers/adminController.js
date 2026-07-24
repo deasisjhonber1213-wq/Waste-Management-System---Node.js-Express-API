@@ -616,7 +616,8 @@ exports.getReports = async (req, res) => {
             r.description,
             r.latitude,
             r.longitude,
-            r.created_at
+            r.created_at,
+            r.image_url
         `;
 
         if (hasStatus) selectCols += `, r.status`;
@@ -637,8 +638,19 @@ exports.getReports = async (req, res) => {
 
         const [reports] = await db.query(query, [...params, limit, offset]);
 
+        // Ensure image_url is properly formatted for each report
+        const processedReports = reports.map(report => {
+            if (report.image_url) {
+                // If it's already a data URL, keep it as is
+                if (!report.image_url.startsWith('data:image') && !report.image_url.startsWith('http')) {
+                    report.image_url = `data:image/jpeg;base64,${report.image_url}`;
+                }
+            }
+            return report;
+        });
+
         res.json({
-            data: reports,
+            data: processedReports,
             pagination: {
                 current_page: page,
                 per_page: limit,

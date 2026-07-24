@@ -1328,19 +1328,22 @@
             }
             tbody.innerHTML = data.map((r, i) => {
                 const hasLoc = r.latitude != null && r.longitude != null;
+                // Check if image_url exists and is valid
+                const hasImage = r.image_url && r.image_url.length > 100;
                 return `<tr class="${hasLoc ? 'row-has-location' : ''}" ${hasLoc ? `onclick="flyToReport(${r.id})" title="Click to locate on map"` : ''}>
-                        <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
-                        <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
-                        <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
-                            ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
-                        </td>
-                        <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
-                        <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
-                        <td style="text-align:center;">${r.image_url ? `<img src="${escHtml(r.image_url)}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${escHtml(r.image_url)}')" onerror="this.style.display='none'">` : '—'}</td>
-                        <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
-                     </tr>`;
+                <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
+                <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
+                <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
+                    ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
+                </td>
+                <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
+                <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
+                <td style="text-align:center;">${hasImage ? `<img src="${r.image_url}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${r.image_url}')" onerror="this.style.display='none'" loading="lazy">` : '—'}</td>
+                <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
+             </tr>`;
             }).join('');
         }
+
 
         function viewReport(id) {
             const r = allReports.find(x => x.id === id);
