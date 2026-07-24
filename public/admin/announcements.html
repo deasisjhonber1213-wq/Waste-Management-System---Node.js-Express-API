@@ -3,17 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
     <title>Announcements · SmartWaste Admin</title>
-    <link rel="stylesheet" href="../css/admin/announcements.css" />
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin/announcements.css">
 </head>
 
 <body>
 
-    <!-- SIDEBAR OVERLAY -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-icon">♻</div>
@@ -32,12 +31,15 @@
             <a href="/announcements" class="nav-item active"><span class="nav-icon">📢</span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
             <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
             <button class="theme-toggle" id="themeToggleBtn">
                 <span class="theme-icon">🌙</span>
                 <span class="theme-label">Dark Mode</span>
-                <span class="theme-switch"><span class="theme-knob"></span></span>
+                <span class="theme-switch">
+                    <span class="theme-knob"></span>
+                </span>
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -48,29 +50,31 @@
                     <div class="sidebar-user-role">Administrator</div>
                 </div>
             </div>
-            <button type="button" class="sidebar-logout" onclick="openModal('logoutConfirmModal')">⎋
-                &nbsp;Logout</button>
+            <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
+                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
         </div>
     </aside>
 
-    <!-- TOPBAR -->
     <div class="topbar">
         <div style="display:flex;align-items:center;gap:14px;">
             <button class="topbar-hamburger" id="hamburger"><span></span><span></span><span></span></button>
             <div class="topbar-left">
                 <div class="topbar-title">Announcements</div>
+                <div class="topbar-breadcrumb">Jose Dalman WM / Community / <span>Announcements</span></div>
             </div>
         </div>
-        <div class="topbar-right"></div>
+        <div class="topbar-right">
+            <!-- Removed duplicate "New Announcement" button -->
+        </div>
     </div>
 
-    <!-- MAIN -->
     <main class="main">
 
-        <!-- compose panel -->
         <div class="panel reveal section-gap">
             <div class="panel-header">
-                <div class="panel-title"><span class="panel-title-icon">✍️</span>Compose Announcement</div>
+                <div class="panel-title">
+                    <div class="panel-title-icon">✍️</div>Compose Announcement
+                </div>
                 <button class="btn btn-gold" onclick="createAnnouncement()">Publish →</button>
             </div>
             <div class="panel-body">
@@ -85,9 +89,13 @@
                             <img id="imagePreview" class="image-upload-preview" alt="Preview">
                             <div class="image-upload-actions">
                                 <button class="image-upload-btn"
-                                    onclick="document.getElementById('imageInput').click()">📷 Upload Image</button>
+                                    onclick="document.getElementById('imageInput').click()">
+                                    📷 Upload Image
+                                </button>
                                 <button class="image-upload-btn remove" id="removeImageBtn" onclick="removeImage()"
-                                    style="display:none;">✕ Remove</button>
+                                    style="display:none;">
+                                    ✕ Remove
+                                </button>
                             </div>
                             <input type="file" id="imageInput" class="image-upload-input" accept="image/*"
                                 onchange="handleImageUpload(event)">
@@ -102,10 +110,11 @@
             </div>
         </div>
 
-        <!-- announcements list -->
         <div class="panel reveal">
             <div class="panel-header">
-                <div class="panel-title"><span class="panel-title-icon">📢</span>Published Announcements</div>
+                <div class="panel-title">
+                    <div class="panel-title-icon">📢</div>Published Announcements
+                </div>
                 <span class="badge badge-gold" id="annCount">0</span>
             </div>
             <div style="padding:20px">
@@ -118,41 +127,46 @@
 
     </main>
 
-    <!-- MODALS -->
+    <!-- ── MODALS ── -->
+
+    <!-- Logout Confirmation Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div><button class="modal-close"
-                    onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to log out of the admin panel?</p>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('logoutConfirmModal')">Cancel</button><button class="btn btn-danger"
-                    onclick="doLogout()">Yes, Logout</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('logoutConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="doLogout()">Yes, Logout</button>
+            </div>
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
     <div class="modal-overlay" id="deleteConfirmModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🗑️ Confirm Delete</div><button class="modal-close"
-                    onclick="closeModal('deleteConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">🗑️ Confirm Delete</div>
+                <button class="modal-close" onclick="closeModal('deleteConfirmModal')">✕</button>
             </div>
             <div class="modal-body">
                 <p id="deleteModalMessage">Are you sure you want to delete this announcement? This action cannot be
                     undone.</p>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline"
-                    onclick="closeModal('deleteConfirmModal')">Cancel</button><button class="btn btn-danger"
-                    id="deleteConfirmBtn">Yes, Delete</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button class="btn btn-danger" id="deleteConfirmBtn">Yes, Delete</button>
+            </div>
         </div>
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
-
     <script src="../js/admin/announcements.js"></script>
+
 </body>
 
 </html>
