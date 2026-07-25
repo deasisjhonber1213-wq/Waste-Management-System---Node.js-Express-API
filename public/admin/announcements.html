@@ -6,151 +6,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=5.0">
     <title>Announcements · SmartWaste Admin</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="../js/style.js"></script>
     <style>
-        /* ── Modal fixes ── */
-        .modal-overlay {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 99999 !important;
-            background: rgba(0, 0, 0, 0.6) !important;
-            backdrop-filter: blur(4px) !important;
-            display: none !important;
-            align-items: center !important;
-            justify-content: center !important;
-            padding: 20px !important;
-        }
-
-        .modal-overlay.open {
-            display: flex !important;
-        }
-
-        .modal {
-            background: var(--panel) !important;
-            border: 1px solid var(--border2) !important;
-            border-radius: 16px !important;
-            max-width: 420px !important;
-            width: 100% !important;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4) !important;
-            animation: modalSlideIn 0.25s ease !important;
-            position: relative !important;
-            z-index: 999999 !important;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: scale(0.96) translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .modal-header {
-            padding: 20px 24px 16px !important;
-            border-bottom: 1px solid var(--border2) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-        }
-
-        .modal-title {
-            font-size: 1rem !important;
-            font-weight: 700 !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px !important;
-        }
-
-        .modal-close {
-            background: none !important;
-            border: none !important;
-            color: var(--text2) !important;
-            font-size: 1.2rem !important;
-            cursor: pointer !important;
-            padding: 4px 8px !important;
-            border-radius: 6px !important;
-            transition: all 0.2s !important;
-        }
-
-        .modal-close:hover {
-            color: var(--red) !important;
-            background: var(--red-dim) !important;
-        }
-
-        .modal-body {
-            padding: 20px 24px !important;
-        }
-
-        .modal-body p {
-            color: var(--text2) !important;
-            font-size: 0.9rem !important;
-            line-height: 1.6 !important;
-            margin: 0 !important;
-        }
-
-        .modal-footer {
-            padding: 16px 24px !important;
-            border-top: 1px solid var(--border2) !important;
-            display: flex !important;
-            gap: 10px !important;
-            justify-content: flex-end !important;
-            flex-wrap: wrap !important;
-        }
-
-        .modal-footer .btn {
-            padding: 10px 24px !important;
-            font-size: 0.8rem !important;
-            font-weight: 600 !important;
-            border-radius: 10px !important;
-            cursor: pointer !important;
-            transition: all 0.2s !important;
-            border: none !important;
-        }
-
-        .btn-outline {
-            background: transparent !important;
-            border: 1px solid var(--border2) !important;
-            color: var(--text2) !important;
-        }
-
-        .btn-outline:hover {
-            border-color: var(--gold) !important;
-            color: var(--gold) !important;
-            background: var(--gold-dim) !important;
-        }
-
-        .btn-danger {
-            background: var(--red) !important;
-            color: #fff !important;
-        }
-
-        .btn-danger:hover {
-            background: #e74c3c !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3) !important;
-        }
-
-        /* Ensure sidebar doesn't overlap modals */
-        .sidebar {
-            z-index: 1000 !important;
-        }
-
-        .sidebar-overlay {
-            z-index: 999 !important;
-        }
-
-        .topbar {
-            z-index: 100 !important;
-        }
-
-        /* Toast fixes */
-        .toast-container {
-            z-index: 9999999 !important;
-        }
+        /* ── Additional styles for announcements (only what's missing from style.css) ── */
 
         /* ── Enhanced announcement grid styles ── */
         .ann-grid {
@@ -199,6 +56,7 @@
         .ann-card-body {
             padding: 16px 18px;
             flex: 1;
+            background: var(--panel);
         }
 
         .ann-card-meta {
@@ -213,6 +71,7 @@
         .ann-card-date {
             font-family: var(--mono);
             font-size: 0.68rem;
+            color: var(--text2);
         }
 
         .ann-card-author {
@@ -283,6 +142,7 @@
             border: 2px dashed var(--border2);
             display: none;
             background: var(--bg3);
+            min-height: 50px;
         }
 
         .image-upload-preview.visible {
@@ -334,6 +194,183 @@
             padding: 4px 0;
         }
 
+        /* ── Toast container ── */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999999 !important;
+            max-width: 380px;
+            width: 100%;
+        }
+
+        .toast {
+            padding: 14px 18px;
+            border-radius: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            color: var(--text);
+            font-size: 0.85rem;
+            animation: toastIn 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.success {
+            border-left: 4px solid #4ade80;
+        }
+
+        .toast.error {
+            border-left: 4px solid #f87171;
+        }
+
+        .toast.info {
+            border-left: 4px solid #60a5fa;
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+        }
+
+        .toast-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 4px;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text2);
+            background: transparent;
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .empty-state-text {
+            font-size: 0.9rem;
+            color: var(--text2);
+        }
+
+        /* ── FIX: Main content visibility ── */
+        .main {
+            background: var(--bg);
+            color: var(--text);
+            min-height: calc(100vh - var(--topbar-h));
+            padding: 28px;
+            transition: margin 0.3s ease, padding 0.3s ease;
+            display: block;
+            width: 100%;
+            margin-left: var(--sidebar-w);
+            margin-top: var(--topbar-h);
+            flex: 1;
+        }
+
+        /* Make sure panels are visible */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            display: block;
+            width: 100%;
+        }
+
+        /* Ensure all text inputs are visible */
+        .form-control {
+            background: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--border2);
+        }
+
+        .form-control::placeholder {
+            color: var(--text3);
+        }
+
+        .form-control:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--gold-dim);
+        }
+
+        /* Fix modal text visibility */
+        .modal {
+            background: var(--panel);
+            color: var(--text);
+        }
+
+        .modal-title {
+            color: var(--text);
+        }
+
+        .modal-body p {
+            color: var(--text);
+        }
+
+        /* Fix sidebar user text */
+        .sidebar-user-name {
+            color: var(--text);
+        }
+
+        .sidebar-user-role {
+            color: var(--gold);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .main {
+                padding: 24px;
+            }
+        }
+
+        @media (max-width: 820px) {
+            .main {
+                margin-left: 0;
+                padding: 16px;
+            }
+        }
+
         @media (max-width: 768px) {
             .ann-grid {
                 grid-template-columns: 1fr;
@@ -368,22 +405,32 @@
                 gap: 8px;
             }
 
-            .modal {
-                margin: 10px !important;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 16px !important;
-            }
-
             .image-upload-actions {
                 flex-direction: column;
             }
 
             .image-upload-btn {
                 justify-content: center;
+            }
+
+            .toast-container {
+                bottom: 12px;
+                right: 12px;
+                max-width: calc(100% - 24px);
+            }
+
+            .main {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .main {
+                padding: 10px;
+            }
+
+            .panel-body {
+                padding: 14px;
             }
         }
     </style>
@@ -443,9 +490,7 @@
                 <div class="topbar-breadcrumb">Jose Dalman WM / Community / <span>Announcements</span></div>
             </div>
         </div>
-        <div class="topbar-right">
-            <!-- Removed duplicate "New Announcement" button -->
-        </div>
+        <div class="topbar-right"></div>
     </div>
 
     <main class="main">
@@ -459,10 +504,14 @@
             </div>
             <div class="panel-body">
                 <div class="form-grid form-grid-3">
-                    <div class="form-group"><label class="form-label">Title</label><input class="form-control"
-                            id="annTitle" placeholder="Announcement title…"></div>
-                    <div class="form-group"><label class="form-label">Pickup Date (optional)</label><input
-                            class="form-control" type="date" id="annDate"></div>
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input class="form-control" id="annTitle" placeholder="Announcement title…">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pickup Date (optional)</label>
+                        <input class="form-control" type="date" id="annDate">
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Image (optional)</label>
                         <div class="image-upload-area">
@@ -483,9 +532,11 @@
                             <input type="hidden" id="annImg" value="">
                         </div>
                     </div>
-                    <div class="form-group" style="grid-column:1/-1"><label class="form-label">Message</label><textarea
-                            class="form-control" id="annMsg" placeholder="Write your message to residents…"
-                            style="min-height:80px"></textarea></div>
+                    <div class="form-group" style="grid-column:1/-1">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" id="annMsg" placeholder="Write your message to residents…"
+                            style="min-height:80px"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -499,8 +550,9 @@
             </div>
             <div style="padding:20px">
                 <div class="ann-grid" id="annGrid">
-                    <div style="text-align:center;padding:28px;color:var(--text2);grid-column:1/-1"><span
-                            class="loading-spinner"></span></div>
+                    <div style="text-align:center;padding:28px;color:var(--text2);grid-column:1/-1">
+                        <span class="loading-spinner"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -508,7 +560,6 @@
     </main>
 
     <!-- ── MODALS ── -->
-
     <!-- Logout Confirmation Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal">
@@ -547,21 +598,111 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // ── Image upload handling ──
+        // ── SIDEBAR TOGGLE ──
+        document.addEventListener('DOMContentLoaded', function () {
+            const hamburger = document.getElementById('hamburger');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (hamburger && sidebar) {
+                hamburger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('open');
+                    if (overlay) {
+                        overlay.classList.toggle('active');
+                    }
+                    hamburger.classList.toggle('active');
+                });
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function () {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                    if (hamburger) hamburger.classList.remove('active');
+                });
+            }
+
+            document.querySelectorAll('.nav-item').forEach(link => {
+                link.addEventListener('click', function () {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('open');
+                        overlay.classList.remove('active');
+                        if (hamburger) hamburger.classList.remove('active');
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                    if (hamburger) hamburger.classList.remove('active');
+                }
+            });
+        });
+
+        // ── TOAST SYSTEM ──
+        function showToast(message, type) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type || 'info'}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <span>${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(20px)';
+                    setTimeout(() => {
+                        if (toast.parentElement) toast.remove();
+                    }, 300);
+                }
+            }, 4000);
+        }
+
+        // ── MODAL HELPERS ──
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        }
+
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
+        // ── IMAGE UPLOAD ──
         let uploadedImageData = null;
 
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            // Check file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 showToast("Image too large. Max 5MB.", "error");
                 event.target.value = '';
                 return;
             }
 
-            // Check file type
             if (!file.type.startsWith('image/')) {
                 showToast("Please select an image file.", "error");
                 event.target.value = '';
@@ -573,18 +714,12 @@
                 const imageData = e.target.result;
                 uploadedImageData = imageData;
 
-                // Show preview
                 const preview = document.getElementById('imagePreview');
                 preview.src = imageData;
                 preview.classList.add('visible');
 
-                // Store base64 in hidden input (or you could upload to server here)
                 document.getElementById('annImg').value = imageData;
-
-                // Show remove button
                 document.getElementById('removeImageBtn').style.display = 'inline-flex';
-
-                // Show filename
                 document.getElementById('fileNameDisplay').textContent = `📎 ${file.name}`;
 
                 showToast("Image uploaded successfully", "success");
@@ -603,7 +738,7 @@
             showToast("Image removed", "info");
         }
 
-        // ── Delete with confirmation modal ──
+        // ── DELETE WITH CONFIRMATION ──
         let pendingDeleteId = null;
 
         function confirmDelete(id, name) {
@@ -721,7 +856,9 @@
                             <button class="btn btn-danger btn-sm" onclick="confirmDelete(${a.id}, '${escHtml(a.title)}')">🗑 Delete</button>
                         </div>
                     </div>`).join("");
-            } catch { showToast("Failed to load announcements", "error"); }
+            } catch {
+                showToast("Failed to load announcements", "error");
+            }
         }
 
         async function createAnnouncement() {
@@ -730,11 +867,12 @@
             const date = document.getElementById("annDate").value;
             const imgData = document.getElementById("annImg").value;
 
-            if (!title || !msg) { showToast("Title and message required", "error"); return; }
+            if (!title || !msg) {
+                showToast("Title and message required", "error");
+                return;
+            }
 
             try {
-                // If image is base64, send it as-is (server should handle it)
-                // Or you could upload to a storage service first
                 const res = await API.post("/admin/announcements", {
                     title,
                     message: msg,
@@ -744,7 +882,6 @@
 
                 if (!res.ok) throw new Error();
 
-                // Reset form
                 document.getElementById("annTitle").value = "";
                 document.getElementById("annMsg").value = "";
                 document.getElementById("annDate").value = "";
@@ -767,45 +904,41 @@
             } catch { }
         }
 
-        // ── Sidebar toggle (from style.js) ──
-        // The style.js should handle this, but we ensure it works
+        // ── THEME TOGGLE ──
         document.addEventListener('DOMContentLoaded', function () {
-            const hamburger = document.getElementById('hamburger');
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
+            const themeToggle = document.getElementById('themeToggleBtn');
+            if (themeToggle) {
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                updateThemeUI(themeToggle, savedTheme);
 
-            if (hamburger && sidebar) {
-                hamburger.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    sidebar.classList.toggle('open');
-                    if (overlay) overlay.classList.toggle('active');
-                });
-            }
-
-            if (overlay) {
-                overlay.addEventListener('click', function () {
-                    sidebar.classList.remove('open');
-                    overlay.classList.remove('active');
+                themeToggle.addEventListener('click', function () {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(themeToggle, newTheme);
                 });
             }
         });
 
-        // ── Modal helpers (if not in style.js) ──
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.add('open');
-            document.body.style.overflow = 'hidden';
+        function updateThemeUI(toggle, theme) {
+            const icon = toggle.querySelector('.theme-icon');
+            const label = toggle.querySelector('.theme-label');
+            const knob = toggle.querySelector('.theme-knob');
+
+            if (theme === 'dark') {
+                if (icon) icon.textContent = '☀️';
+                if (label) label.textContent = 'Light Mode';
+                if (knob) knob.style.transform = 'translateX(16px)';
+            } else {
+                if (icon) icon.textContent = '🌙';
+                if (label) label.textContent = 'Dark Mode';
+                if (knob) knob.style.transform = 'translateX(0)';
+            }
         }
 
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        window.openModal = openModal;
-        window.closeModal = closeModal;
-
+        // ── INIT ──
         loadAdminProfile();
         loadAnnouncements();
     </script>
