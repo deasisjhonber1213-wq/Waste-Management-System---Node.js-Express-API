@@ -1,11 +1,4 @@
-/* ============================================================
-   SMARTWASTE ADMIN — SHARED JS UTILITIES
-   Includes: Theme toggle, toast, modals, sidebar, reveal, etc.
-   This is the ONLY place sidebar/hamburger behavior should live.
-   Do not add a second hamburger listener in a page's own <script>.
-============================================================ */
 
-/* ── THEME TOGGLE ── */
 function toggleTheme() {
     const html = document.documentElement;
     const currentTheme = html.getAttribute('data-theme');
@@ -13,11 +6,10 @@ function toggleTheme() {
     html.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
     updateThemeIcon(newTheme);
-    // Dispatch event so other pages can sync
+
     window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
 }
 
-// Make toggleTheme globally available for inline onclick handlers
 window.toggleTheme = toggleTheme;
 
 function updateThemeIcon(theme) {
@@ -38,20 +30,17 @@ function updateThemeIcon(theme) {
     }
 }
 
-// Improved theme loading - prevents flash
 (function () {
     const theme = localStorage.getItem('theme') ||
         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
 })();
 
-// Load theme after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     updateThemeIcon(theme);
 });
 
-// Listen for theme changes from other tabs/windows
 window.addEventListener('storage', (e) => {
     if (e.key === 'theme') {
         const theme = e.newValue || 'light';
@@ -60,14 +49,12 @@ window.addEventListener('storage', (e) => {
     }
 });
 
-// Listen for theme changes within the same page
 window.addEventListener('themeChanged', (e) => {
     const theme = e.detail.theme;
     document.documentElement.setAttribute('data-theme', theme);
     updateThemeIcon(theme);
 });
 
-/* ── TOAST ── */
 function showToast(msg, type = "info") {
     const icons = { success: "✓", error: "✕", info: "●" };
     const container = document.getElementById("toastContainer") || (() => {
@@ -84,10 +71,8 @@ function showToast(msg, type = "info") {
     setTimeout(() => toast.remove(), 3500);
 }
 
-// Make showToast globally available
 window.showToast = showToast;
 
-/* ── MODAL ── */
 function openModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.add("open");
@@ -100,13 +85,9 @@ function closeModal(id) {
     document.body.style.overflow = "";
 }
 
-// Make modal functions globally available
 window.openModal = openModal;
 window.closeModal = closeModal;
 
-/* ── SIDEBAR MOBILE + REVEAL + ACTIVE NAV ──
-   Guarded so this never double-binds even if a page's own script
-   (accidentally) also calls initSidebar-style code. */
 if (!window.__smartwasteSidebarInit) {
     window.__smartwasteSidebarInit = true;
 
@@ -125,7 +106,6 @@ if (!window.__smartwasteSidebarInit) {
             if (overlay) overlay.classList.remove("active");
         }
 
-        // Mobile sidebar toggle
         if (hamburger && sidebar) {
             hamburger.addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -140,7 +120,6 @@ if (!window.__smartwasteSidebarInit) {
             }
         }
 
-        // Close sidebar on nav item click (mobile)
         document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
             link.addEventListener("click", () => {
                 if (window.innerWidth <= 820) {
@@ -149,14 +128,12 @@ if (!window.__smartwasteSidebarInit) {
             });
         });
 
-        // Close sidebar with Escape
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && sidebar && sidebar.classList.contains("open")) {
                 closeSidebar();
             }
         });
 
-        // Reveal animations
         const obs = new IntersectionObserver(entries => {
             entries.forEach(e => {
                 if (e.isIntersecting) {
@@ -166,8 +143,6 @@ if (!window.__smartwasteSidebarInit) {
             });
         }, { threshold: 0.08 });
         document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
-
-        // Active nav state (optional - relies on href matching current path)
         const currentPath = window.location.pathname.split("/").pop() || "dashboard";
         document.querySelectorAll(".nav-item").forEach(a => {
             const href = a.getAttribute("href");
@@ -176,7 +151,6 @@ if (!window.__smartwasteSidebarInit) {
             }
         });
 
-        // Theme toggle button event listener
         const themeToggleBtn = document.getElementById("themeToggleBtn");
         if (themeToggleBtn) {
             themeToggleBtn.addEventListener("click", toggleTheme);
@@ -184,21 +158,16 @@ if (!window.__smartwasteSidebarInit) {
     });
 }
 
-/* ── CONFIRM DELETE ── */
 function confirmDelete(message, onConfirm) {
     if (confirm(message)) onConfirm();
 }
 
-// Make confirmDelete globally available
 window.confirmDelete = confirmDelete;
-
-/* ── FORMAT DATE ── */
 function fmtDate(d) {
     if (!d) return "—";
     return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-/* ── RENDER STATUS BADGE ── */
 function statusBadge(status) {
     const map = {
         pending: "badge-warning",
@@ -215,7 +184,6 @@ function statusBadge(status) {
     return `<span class="badge ${map[status] || "badge-gray"}">${String(status).replace('_', ' ').toUpperCase()}</span>`;
 }
 
-/* ── FORMAT DATETIME ── */
 function fmtDateTime(d) {
     if (!d) return "—";
     return new Date(d).toLocaleString("en-US", {
@@ -226,7 +194,6 @@ function fmtDateTime(d) {
     });
 }
 
-/* ── ESCAPE HTML ── */
 function escHtml(str) {
     if (!str) return "";
     return String(str).replace(/[&<>"']/g, c =>
@@ -234,7 +201,6 @@ function escHtml(str) {
     );
 }
 
-// Make utility functions globally available
 window.fmtDate = fmtDate;
 window.statusBadge = statusBadge;
 window.fmtDateTime = fmtDateTime;
