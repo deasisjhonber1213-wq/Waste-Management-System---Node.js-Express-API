@@ -1,62 +1,9 @@
 
-document.addEventListener('DOMContentLoaded', function () {
-    const hamburger = document.getElementById('hamburger');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-
-    if (hamburger && sidebar) {
-        // Toggle sidebar on hamburger click
-        hamburger.addEventListener('click', function (e) {
-            e.stopPropagation();
-            sidebar.classList.toggle('open');
-            if (overlay) {
-                overlay.classList.toggle('active');
-            }
-            // Toggle hamburger active state
-            hamburger.classList.toggle('active');
-        });
-    }
-
-    // Close sidebar when clicking overlay
-    if (overlay) {
-        overlay.addEventListener('click', function () {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-            if (hamburger) hamburger.classList.remove('active');
-        });
-    }
-
-    // Close sidebar when clicking a nav link (on mobile)
-    document.querySelectorAll('.nav-item').forEach(link => {
-        link.addEventListener('click', function () {
-            if (window.innerWidth <= 768) {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('active');
-                if (hamburger) hamburger.classList.remove('active');
-            }
-        });
-    });
-
-    // Close sidebar with Escape key
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-            if (hamburger) hamburger.classList.remove('active');
-        }
-    });
-});
-
-// ── TOAST SYSTEM ──
 function showToast(message, type) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
-    const icons = {
-        success: '✅',
-        error: '❌',
-        info: 'ℹ️'
-    };
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
 
     const toast = document.createElement('div');
     toast.className = `toast ${type || 'info'}`;
@@ -68,7 +15,6 @@ function showToast(message, type) {
 
     container.appendChild(toast);
 
-    // Auto-remove after 4 seconds
     setTimeout(() => {
         if (toast.parentElement) {
             toast.style.opacity = '0';
@@ -292,7 +238,6 @@ async function createAnnouncement() {
 
         if (!res.ok) throw new Error();
 
-        // Reset form
         document.getElementById("annTitle").value = "";
         document.getElementById("annMsg").value = "";
         document.getElementById("annDate").value = "";
@@ -315,22 +260,14 @@ async function loadAdminProfile() {
     } catch { }
 }
 
-// ── THEME TOGGLE (Self-contained) ──
+// ── THEME TOGGLE ──
+// Note: style.js handles theme toggle, but we need to update the UI after load
 document.addEventListener('DOMContentLoaded', function () {
+    // Just ensure the theme toggle button state matches the current theme
     const themeToggle = document.getElementById('themeToggleBtn');
     if (themeToggle) {
-        // Check saved theme
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        updateThemeUI(themeToggle, savedTheme);
-
-        themeToggle.addEventListener('click', function () {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeUI(themeToggle, newTheme);
-        });
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        updateThemeUI(themeToggle, currentTheme);
     }
 });
 
