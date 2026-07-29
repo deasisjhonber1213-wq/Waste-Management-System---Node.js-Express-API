@@ -537,13 +537,29 @@ authPages.forEach(page => {
 const adminPages = ['dashboard', 'users', 'trucks', 'routes', 'schedules', 'reports', 'announcements', 'analytics'];
 
 adminPages.forEach(page => {
+    // /admin/users
     app.get(`/admin/${page}`, (req, res) => {
         const filePath = path.join(__dirname, 'public/pages/admin', `${page}.html`);
         if (fs.existsSync(filePath)) return res.sendFile(filePath);
         res.status(404).json({ error: 'Page not found', path: req.path });
     });
 
+    // /pages/admin/users
     app.get(`/pages/admin/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public/pages/admin', `${page}.html`);
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        res.status(404).json({ error: 'Page not found', path: req.path });
+    });
+
+    // /users  (short version)
+    app.get(`/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public/pages/admin', `${page}.html`);
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        res.status(404).json({ error: 'Page not found', path: req.path });
+    });
+
+    // /pages/users
+    app.get(`/pages/${page}`, (req, res) => {
         const filePath = path.join(__dirname, 'public/pages/admin', `${page}.html`);
         if (fs.existsSync(filePath)) return res.sendFile(filePath);
         res.status(404).json({ error: 'Page not found', path: req.path });
@@ -603,7 +619,6 @@ app.get('/pages/driver', (req, res) => {
     res.redirect('/login');
 });
 
-// Redirect .html → clean URL
 app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
         const cleanPath = req.path.replace(/\.html$/, '');
@@ -612,13 +627,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// ---------- API ROUTES ----------
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/resident", require("./routes/residentRoutes"));
 app.use("/driver/api", require("./routes/driverRoutes"));
 
-// Fallback for any other clean paths under public/pages
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/driver/api/')) {
         return next();
