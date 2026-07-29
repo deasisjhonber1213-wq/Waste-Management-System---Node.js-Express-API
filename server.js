@@ -16,6 +16,7 @@ const server = http.createServer(app);
 function manilaToday() {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 }
+
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -449,12 +450,13 @@ io.on('connection', (socket) => {
         console.log('🔌 Client disconnected:', socket.id);
     });
 });
+
+// ---------- UPLOADS ----------
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
     maxAge: '7d',
     etag: true,
     lastModified: true
 }));
-
 
 app.get('/uploads/announcements/:filename', (req, res) => {
     const filePath = path.join(__dirname, 'public/uploads/announcements', req.params.filename);
@@ -476,6 +478,8 @@ uploadDirs.forEach(dir => {
         console.log(`📁 Created directory: ${dir}`);
     }
 });
+
+// ---------- CRON ----------
 const cron = require("node-cron");
 cron.schedule("0 0 * * 1", async () => {
     try {
@@ -493,95 +497,113 @@ cron.schedule("0 0 * * 1", async () => {
     }
 });
 
+// ---------- STATIC FILES ----------
 app.use(express.static(path.join(__dirname, "public"), {
     maxAge: '1d',
     etag: true,
-    lastModified: true
+    lastModified: true,
+    index: false
 }));
 
+app.use('/pages', express.static(path.join(__dirname, 'public/pages'), {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+    index: false
+}));
+
+// ---------- PAGE ROUTES (public/pages/...) ----------
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    res.sendFile(path.join(__dirname, 'public/pages', 'login.html'));
 });
 
+// Auth pages
 const authPages = ['login', 'register', 'forgot-password'];
 authPages.forEach(page => {
     app.get(`/${page}`, (req, res) => {
-        const filePath = path.join(__dirname, 'public', `${page}.html`);
-        if (fs.existsSync(filePath)) {
-            res.sendFile(filePath);
-        } else {
-            res.status(404).json({ error: 'Page not found' });
-        }
+        const filePath = path.join(__dirname, 'public/pages', `${page}.html`);
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        res.status(404).json({ error: 'Page not found' });
+    });
+
+    app.get(`/pages/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public/pages', `${page}.html`);
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        res.status(404).json({ error: 'Page not found' });
     });
 });
 
+// Admin pages
 const adminPages = ['dashboard', 'users', 'trucks', 'routes', 'schedules', 'reports', 'announcements', 'analytics'];
 
 adminPages.forEach(page => {
-
     app.get(`/admin/${page}`, (req, res) => {
-        const filePath = path.join(__dirname, 'public', 'admin', `${page}.html`);
-        if (fs.existsSync(filePath)) {
-            res.sendFile(filePath);
-        } else {
-            res.status(404).json({ error: 'Page not found', path: req.path });
-        }
+        const filePath = path.join(__dirname, 'public/pages/admin', `${page}.html`);
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        res.status(404).json({ error: 'Page not found', path: req.path });
     });
 
-    app.get(`/${page}`, (req, res) => {
-        const filePath = path.join(__dirname, 'public', 'admin', `${page}.html`);
-        if (fs.existsSync(filePath)) {
-            res.sendFile(filePath);
-        } else {
-            res.status(404).json({ error: 'Page not found', path: req.path });
-        }
+    app.get(`/pages/admin/${page}`, (req, res) => {
+        const filePath = path.join(__dirname, 'public/pages/admin', `${page}.html`);
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        res.status(404).json({ error: 'Page not found', path: req.path });
     });
 });
 
-app.get('/admin', (req, res) => {
-    res.redirect('/admin/dashboard');
-});
+app.get('/admin', (req, res) => res.redirect('/pages/admin/dashboard'));
+app.get('/pages/admin', (req, res) => res.redirect('/pages/admin/dashboard'));
 
+// Resident
 app.get('/resident/dashboard', (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'residents', 'dashboard.html');
-    if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
-    } else {
-        res.status(404).json({ error: 'Page not found' });
-    }
+    const filePath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    res.status(404).json({ error: 'Page not found' });
+});
+app.get('/pages/resident/dashboard', (req, res) => {
+    const filePath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    res.status(404).json({ error: 'Page not found' });
 });
 
 app.get('/resident', (req, res) => {
-    const residentPath = path.join(__dirname, 'public', 'residents', 'resident.html');
-    const dashboardPath = path.join(__dirname, 'public', 'residents', 'dashboard.html');
-
-    if (fs.existsSync(residentPath)) {
-        res.sendFile(residentPath);
-    } else if (fs.existsSync(dashboardPath)) {
-        res.sendFile(dashboardPath);
-    } else {
-        res.redirect('/login');
-    }
+    const residentPath = path.join(__dirname, 'public/pages/residents', 'resident.html');
+    const dashboardPath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    if (fs.existsSync(residentPath)) return res.sendFile(residentPath);
+    if (fs.existsSync(dashboardPath)) return res.sendFile(dashboardPath);
+    res.redirect('/login');
+});
+app.get('/pages/resident', (req, res) => {
+    const residentPath = path.join(__dirname, 'public/pages/residents', 'resident.html');
+    const dashboardPath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    if (fs.existsSync(residentPath)) return res.sendFile(residentPath);
+    if (fs.existsSync(dashboardPath)) return res.sendFile(dashboardPath);
+    res.redirect('/login');
 });
 
+// Driver
 app.get('/driver/dashboard', (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'driver', 'dashboard.html');
-    if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
-    } else {
-        res.status(404).json({ error: 'Page not found' });
-    }
+    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    res.status(404).json({ error: 'Page not found' });
+});
+app.get('/pages/driver/dashboard', (req, res) => {
+    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    res.status(404).json({ error: 'Page not found' });
 });
 
 app.get('/driver', (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'driver', 'dashboard.html');
-    if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
-    } else {
-        res.redirect('/login');
-    }
+    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    res.redirect('/login');
+});
+app.get('/pages/driver', (req, res) => {
+    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    if (fs.existsSync(filePath)) return res.sendFile(filePath);
+    res.redirect('/login');
 });
 
+// Redirect .html → clean URL
 app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
         const cleanPath = req.path.replace(/\.html$/, '');
@@ -590,11 +612,13 @@ app.use((req, res, next) => {
     next();
 });
 
+// ---------- API ROUTES ----------
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/resident", require("./routes/residentRoutes"));
 app.use("/driver/api", require("./routes/driverRoutes"));
 
+// Fallback for any other clean paths under public/pages
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/driver/api/')) {
         return next();
@@ -605,12 +629,23 @@ app.use((req, res, next) => {
 
     if (path.extname(req.path) === '') {
         const cleanPath = req.path.replace(/\/$/, '');
-        const htmlPath = path.join(__dirname, 'public', cleanPath + '.html');
+
+        // try public/pages/...
+        let htmlPath = path.join(__dirname, 'public/pages', cleanPath + '.html');
         if (fs.existsSync(htmlPath)) {
             return res.sendFile(htmlPath);
         }
+
+        // try without leading /pages
+        if (cleanPath.startsWith('/pages/')) {
+            htmlPath = path.join(__dirname, 'public', cleanPath + '.html');
+            if (fs.existsSync(htmlPath)) {
+                return res.sendFile(htmlPath);
+            }
+        }
+
         if (req.path === '/' || req.path === '') {
-            const indexPath = path.join(__dirname, 'public', 'index.html');
+            const indexPath = path.join(__dirname, 'public/pages', 'login.html');
             if (fs.existsSync(indexPath)) {
                 return res.sendFile(indexPath);
             }
@@ -619,6 +654,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// ---------- UTILITY ROUTES ----------
 app.get('/migrate', async (req, res) => {
     try {
         const secret = req.query.secret;
@@ -815,8 +851,9 @@ app.get('/api/drivers/online', (req, res) => {
     res.json(online);
 });
 
+// ---------- 404 & ERROR ----------
 app.use((req, res) => {
-    const notFoundPath = path.join(__dirname, 'public', '404.html');
+    const notFoundPath = path.join(__dirname, 'public/pages', '404.html');
     if (fs.existsSync(notFoundPath)) {
         return res.status(404).sendFile(notFoundPath);
     }
