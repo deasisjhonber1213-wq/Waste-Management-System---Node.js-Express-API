@@ -4,6 +4,8 @@
   "description": "Smart Waste Management System with real-time tracking, reporting, and enterprise-grade security",
   "main": "server.js",
   "scripts": {
+     "preinstall": "npm cache clean --force",
+    "install": "npm install --legacy-peer-deps",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "build": "echo 'No build step needed'",
