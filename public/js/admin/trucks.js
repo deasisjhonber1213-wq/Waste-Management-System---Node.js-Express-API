@@ -13,7 +13,6 @@ function closeModal(id) {
 window.openModal = openModal;
 window.closeModal = closeModal;
 
-// ---- API ----
 const API_URL = window.location.origin + '/api';
 console.log('📡 API URL:', API_URL);
 

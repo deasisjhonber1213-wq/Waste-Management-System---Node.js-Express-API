@@ -1,5 +1,3 @@
-
-
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "/login.html";
 
@@ -61,15 +59,12 @@ window.toggleTheme = toggleTheme;
 
 function updateThemeIcon(theme) {
     const btn = document.getElementById('themeToggleBtn');
-    const icon = document.getElementById('themeIcon');
     const label = document.getElementById('themeLabel');
     if (!btn) return;
     if (theme === 'dark') {
-        icon.textContent = '☀️';
         label.textContent = 'Light Mode';
         btn.classList.add('dark');
     } else {
-        icon.textContent = '🌙';
         label.textContent = 'Dark Mode';
         btn.classList.remove('dark');
     }
@@ -121,7 +116,6 @@ function getDriverId() {
     }
 }
 const driverId = getDriverId();
-
 
 function saveProgressState() {
     const assignmentId = currentAssignmentId || document.querySelector('.today-card')?.dataset?.assignmentId;
@@ -207,7 +201,10 @@ function restoreProgressState(assignmentId) {
             const wrap = document.getElementById(`mrfWrap${i}`);
             const pin = document.getElementById(`mrfPin${i}`);
             if (wrap) wrap.classList.add('passed');
-            if (pin) { pin.classList.add('passed'); pin.innerHTML = '<span style="font-size:16px">✓</span>'; }
+            if (pin) {
+                pin.classList.add('passed');
+                pin.innerHTML = '<span style="font-size:14px;font-weight:800">✓</span>';
+            }
         }
     });
 
@@ -243,7 +240,7 @@ let routeStatus = null;
 function connectWebSocket() {
     if (socket && socket.connected) return;
 
-    console.log('🔌 Connecting WebSocket...');
+    console.log('Connecting WebSocket...');
     socket = io(WS_URL, {
         transports: ['websocket', 'polling'],
         auth: { token: token },
@@ -255,7 +252,7 @@ function connectWebSocket() {
     });
 
     socket.on('connect', () => {
-        console.log('✅ WebSocket connected');
+        console.log('WebSocket connected');
         socketConnected = true;
         reconnectAttempts = 0;
         updateConnectionStatus(true);
@@ -264,7 +261,7 @@ function connectWebSocket() {
     });
 
     socket.on('connect_error', (error) => {
-        console.error('❌ WebSocket connection error:', error);
+        console.error('WebSocket connection error:', error);
         socketConnected = false;
         updateConnectionStatus(false);
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
@@ -276,7 +273,7 @@ function connectWebSocket() {
     });
 
     socket.on('disconnect', (reason) => {
-        console.log('🔌 WebSocket disconnected:', reason);
+        console.log('WebSocket disconnected:', reason);
         socketConnected = false;
         updateConnectionStatus(false);
         if (reason === 'io server disconnect') {
@@ -285,17 +282,17 @@ function connectWebSocket() {
     });
 
     socket.on('auth-success', (data) => {
-        console.log('✅ Authenticated:', data.message);
+        console.log('Authenticated:', data.message);
         toast(`Welcome ${data.driver.name}!`, 'success');
     });
 
     socket.on('auth-error', (data) => {
-        console.error('❌ Auth error:', data.message);
+        console.error('Auth error:', data.message);
         toast('Authentication failed: ' + data.message, 'error');
     });
 
     socket.on('assignment-update', (assignment) => {
-        console.log('📋 Assignment update received:', assignment);
+        console.log('Assignment update received:', assignment);
         currentAssignmentId = assignment?.id || null;
         routeStatus = assignment?.status || null;
         renderAssignment(assignment);
@@ -305,7 +302,7 @@ function connectWebSocket() {
     });
 
     socket.on('route-waypoints', (data) => {
-        console.log('🗺️ Route waypoints received:', data);
+        console.log('Route waypoints received:', data);
         if (data.waypoints) {
             const parsed = parseWaypointsJson(data.waypoints);
             if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
@@ -315,7 +312,7 @@ function connectWebSocket() {
     });
 
     socket.on('stats-update', (stats) => {
-        console.log('📊 Stats update:', stats);
+        console.log('Stats update:', stats);
         if (stats) {
             document.getElementById('statCompleted').textContent = stats.completed || 0;
             document.getElementById('statTotal').textContent = stats.total || 0;
@@ -324,7 +321,7 @@ function connectWebSocket() {
     });
 
     socket.on('assignment-status-changed', (data) => {
-        console.log('🔄 Status changed:', data);
+        console.log('Status changed:', data);
         routeStatus = data.status;
         toast(`Route status: ${data.status}`, 'info');
         loadToday();
@@ -337,8 +334,8 @@ function connectWebSocket() {
     });
 
     socket.on('new-announcement', (data) => {
-        console.log('📢 New announcement:', data);
-        toast(`📢 ${data.title || 'New announcement'}`, 'info');
+        console.log('New announcement:', data);
+        toast(`${data.title || 'New announcement'}`, 'info');
         loadAnnouncements();
         const badge = document.getElementById('annBadge');
         if (badge) {
@@ -349,25 +346,25 @@ function connectWebSocket() {
     });
 
     socket.on('report-submitted', (data) => {
-        console.log('✅ Report submitted:', data);
+        console.log('Report submitted:', data);
         toast('Report submitted successfully!', 'success');
     });
 
     socket.on('profile-updated', (data) => {
-        console.log('✅ Profile updated:', data);
+        console.log('Profile updated:', data);
         toast('Profile saved successfully!', 'success');
         loadProfile();
     });
 
     socket.on('status-updated', (data) => {
-        console.log('✅ Status updated:', data);
+        console.log('Status updated:', data);
         toast(data.message, 'success');
         loadToday();
         loadStats();
     });
 
     socket.on('error', (data) => {
-        console.error('❌ Socket error:', data);
+        console.error('Socket error:', data);
         toast(data.message || 'An error occurred', 'error');
     });
 
@@ -377,7 +374,7 @@ function connectWebSocket() {
     });
 
     socket.on('driver-disconnected', (data) => {
-        console.log('👋 Driver disconnected:', data.driverId);
+        console.log('Driver disconnected:', data.driverId);
     });
 
     socket.on('report-status-changed', (data) => {
@@ -478,7 +475,6 @@ function switchTab(id, btn) {
 
 let dMap, dMarker, accCircle;
 let mrfMarkers = [];
-let fallbackMRF = null;
 let residentMarkers = {};
 let pinMarkers = [];
 let roadPolyline = null;
@@ -507,9 +503,7 @@ let issuesVisible = true;
 
 const ISSUE_COLORS = { missed_pickup: '#ffc13c', overflowing_bin: '#4ade80', illegal_dumping: '#f87171', road_blocked: '#f87171', equipment_fault: '#a78bfa', other: '#a78bfa' };
 const ISSUE_LABELS = { missed_pickup: 'Missed Pickup', overflowing_bin: 'Overflowing Bin', illegal_dumping: 'Illegal Dumping', road_blocked: 'Road Blocked', equipment_fault: 'Equipment Fault', other: 'Other Issue' };
-const ISSUE_ICON = { missed_pickup: '🗑️', overflowing_bin: '♻️', illegal_dumping: '🚯', road_blocked: '🚧', equipment_fault: '🔧', other: '⚠️' };
-
-const MRF_FALLBACK = { name: "Jose Dalman MRF", latitude: 8.2317, longitude: 123.4018 };
+const ISSUE_ICON = { missed_pickup: 'MP', overflowing_bin: 'OB', illegal_dumping: 'ID', road_blocked: 'RB', equipment_fault: 'EF', other: '!' };
 
 function initMap(lat = 8.2380, lng = 123.0, zoom = 14) {
     if (dMap) { dMap.setView([lat, lng], zoom); return; }
@@ -523,7 +517,6 @@ function initMap(lat = 8.2380, lng = 123.0, zoom = 14) {
             mapView = { lat: c.lat, lng: c.lng, zoom: dMap.getZoom() };
         }
     });
-    loadFallbackMRF();
     loadResidents();
     setInterval(loadResidents, 30000);
     renderIssueMarkers();
@@ -559,7 +552,9 @@ function toggleLock() {
     locked = !locked;
     const btn = document.getElementById("lockBtn");
     btn.classList.toggle("active", locked);
-    btn.textContent = locked ? "🔓 Unlock" : "🔒 Lock";
+    btn.innerHTML = locked
+        ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> Unlock'
+        : '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Lock';
     toast(locked ? "View locked" : "View unlocked", "info");
 }
 
@@ -581,8 +576,13 @@ function fitAllStops() {
 
 function goToMRF() {
     if (!dMap) return;
-    const m = mrfMarkers[0] || fallbackMRF;
-    if (m) { dMap.setView(m.getLatLng(), 17); m.openPopup(); }
+    const m = mrfMarkers[0];
+    if (m) {
+        dMap.setView(m.getLatLng(), 17);
+        m.openPopup();
+    } else {
+        toast("No MRF on this route", "info");
+    }
 }
 
 function optimizeRoute() { toast("Route optimization coming soon", "info"); }
@@ -590,27 +590,6 @@ function useCurrentLoc() {
     if (!lastPos) { toast("GPS not active", "info"); return; }
     document.getElementById("repLocation").value = `${lastPos.lat.toFixed(5)}, ${lastPos.lng.toFixed(5)}`;
     toast("Location added", "success");
-}
-
-// ── MRF ──
-async function loadFallbackMRF() {
-    let mrf = MRF_FALLBACK;
-    try {
-        const data = await apiRaw("/api/resident/mrf-location");
-        if (data && data.latitude && data.longitude) mrf = data;
-    } catch (e) {
-        console.warn("MRF lookup failed, using fallback coordinates:", e);
-    }
-
-    const icon = L.divIcon({
-        className: "",
-        html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:18px">🏭</span></div></div>`,
-        iconSize: [42, 42],
-        iconAnchor: [21, 21]
-    });
-    fallbackMRF = L.marker([mrf.latitude, mrf.longitude], { icon, zIndexOffset: 500, opacity: 0.5 })
-        .addTo(dMap)
-        .bindPopup(`<strong style="color:#2dd4a0">🏭 ${mrf.name}</strong><br><span style="color:#7a8499">Fallback MRF location</span>`);
 }
 
 function parseWaypointsJson(raw) {
@@ -674,7 +653,7 @@ function markStopsReachedUpTo(pt, idxLimit) {
 
         if (!alreadyDone) {
             reachedStopKeys.add(key);
-            if (nearEnough) toast(`Stop ${p.num} reached! ✓`, "success");
+            if (nearEnough) toast(`Stop ${p.num} reached!`, "success");
             saveProgressState();
         }
 
@@ -695,17 +674,20 @@ function markMRFPassed(idxLimit) {
         if (m._routeIdx > idxLimit + 2) return;
 
         reachedMrfKeys.add(key);
-        toast(`Passed MRF: ${m.name} ✓`, "success");
+        toast(`Passed MRF: ${m.name}`, "success");
         saveProgressState();
 
         const wrap = document.getElementById(`mrfWrap${i}`);
         const pin = document.getElementById(`mrfPin${i}`);
         const wpNum = document.getElementById(`mrfWpNum${i}`);
         if (wrap) wrap.classList.add("passed");
-        if (pin) { pin.classList.add("passed"); pin.innerHTML = '<span style="font-size:16px">✓</span>'; }
+        if (pin) {
+            pin.classList.add("passed");
+            pin.innerHTML = '<span style="font-size:14px;font-weight:800">✓</span>';
+        }
         if (wpNum) wpNum.classList.add("passed");
         const marker = mrfMarkers[i];
-        if (marker) marker.setPopupContent(`<strong style="color:#94a3b8">🏭 ${m.name}</strong><br><span style="color:#2dd4a0">✓ Already passed</span>`);
+        if (marker) marker.setPopupContent(`<strong style="color:#94a3b8">MRF ${m.name}</strong><br><span style="color:#2dd4a0">Already passed</span>`);
     });
 }
 
@@ -791,17 +773,16 @@ function showRouteFromData(routeData) {
         const isPassed = reachedMrfKeys.has(m._key);
         const icon = L.divIcon({
             className: "",
-            html: `<div class="mrf-wrap ${isPassed ? 'passed' : ''}" id="mrfWrap${i}"><div class="mrf-pulse-ring"></div><div class="mrf-pin ${isPassed ? 'passed' : ''}" id="mrfPin${i}"><span style="font-size:${isPassed ? '16px' : '18px'}">${isPassed ? '✓' : '🏭'}</span></div></div>`,
+            html: `<div class="mrf-wrap ${isPassed ? 'passed' : ''}" id="mrfWrap${i}"><div class="mrf-pulse-ring"></div><div class="mrf-pin ${isPassed ? 'passed' : ''}" id="mrfPin${i}">${isPassed ? '<span style="font-size:14px;font-weight:800">✓</span>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9v.01M15 9v.01M9 15v.01M15 15v.01"/></svg>'}</div></div>`,
             iconSize: [42, 42],
             iconAnchor: [21, 21]
         });
         const marker = L.marker([m.lat, m.lng], { icon, zIndexOffset: 600 })
             .addTo(dMap)
             .bindPopup(isPassed
-                ? `<strong style="color:#94a3b8">🏭 ${m.name}</strong><br><span style="color:#2dd4a0">✓ Already passed</span>`
-                : `<strong style="color:#2dd4a0">🏭 ${m.name}</strong><br><span style="color:#7a8499">MRF Collection Point</span>`);
+                ? `<strong style="color:#94a3b8">MRF ${m.name}</strong><br><span style="color:#2dd4a0">Already passed</span>`
+                : `<strong style="color:#2dd4a0">MRF ${m.name}</strong><br><span style="color:#7a8499">MRF Collection Point</span>`);
         mrfMarkers.push(marker);
-        if (fallbackMRF) fallbackMRF.setOpacity(0);
     });
 
     const items = [
@@ -817,7 +798,7 @@ function showRouteFromData(routeData) {
             const isPassed = reachedMrfKeys.has(m._key);
             return `
                     <div class="wp-item ${isPassed ? 'reached' : ''}">
-                        <div class="wp-num mrf-stop ${isPassed ? 'passed' : ''}" id="mrfWpNum${i}">${isPassed ? '✓' : '🏭'}</div>
+                        <div class="wp-num mrf-stop ${isPassed ? 'passed' : ''}" id="mrfWpNum${i}">${isPassed ? '✓' : 'M'}</div>
                         <span class="wp-name" style="color:${isPassed ? 'var(--text3)' : 'var(--green)'}">${m.name}${isPassed ? ' · passed' : ''}</span>
                     </div>`;
         })
@@ -893,7 +874,7 @@ function setMarker(lat, lng, accuracy) {
 
     const icon = L.divIcon({
         className: "",
-        html: `<div class="truck-marker"><span style="font-size:16px">🚛</span></div>`,
+        html: `<div class="truck-marker"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0d0f12" stroke-width="2"><path d="M7 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M17 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M5 15H3V7a1 1 0 0 1 1-1h10l3 4v5h-2"/><path d="M9 6v4h7"/></svg></div>`,
         iconSize: [34, 34],
         iconAnchor: [17, 17]
     });
@@ -953,7 +934,7 @@ async function loadResidents() {
             const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
             const icon = L.divIcon({
                 className: "",
-                html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:13px">🏠</span></div>`,
+                html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}">R</div>`,
                 iconSize: [30, 30],
                 iconAnchor: [15, 15]
             });
@@ -962,7 +943,7 @@ async function loadResidents() {
             } else {
                 residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon })
                     .addTo(dMap)
-                    .bindPopup(`<strong style="color:#5b9cf6">🏠 ${r.name || "Resident"}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`);
+                    .bindPopup(`<strong style="color:#5b9cf6">${r.name || "Resident"}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`);
             }
         });
         Object.keys(residentMarkers).forEach(id => {
@@ -1011,13 +992,13 @@ function buildIssuePopup(r) {
         ? `<img src="${r.image_url}" style="width:100%;max-height:110px;object-fit:cover;border-radius:8px;margin:6px 0" onerror="this.style.display='none'">`
         : '';
     return `<div style="min-width:210px">
-                <strong style="color:${color};font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;">${ISSUE_ICON[r.type] || '⚠️'} ${label}</strong>
+                <strong style="color:${color};font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;">${label}</strong>
                 ${img}
                 <div style="font-size:.75rem;color:#c7d0da;margin:6px 0;line-height:1.5;">${desc}</div>
                 <div style="font-size:.62rem;color:#7a8499;margin-bottom:8px;">${r.created_at ? fmtDate(r.created_at) : ''}</div>
                 <button onclick="markIssueResolved(${r.id})"
                     style="width:100%;padding:7px;border-radius:8px;border:1px solid rgba(45,212,160,.4);background:rgba(45,212,160,.12);color:#2dd4a0;font-weight:700;font-size:.68rem;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;">
-                    ✓ MARK RESOLVED
+                    MARK RESOLVED
                 </button>
             </div>`;
 }
@@ -1034,7 +1015,7 @@ function renderIssueMarkers() {
         const color = ISSUE_COLORS[r.type] || '#a78bfa';
         const icon = L.divIcon({
             className: "",
-            html: `<div class="issue-marker" style="background:${color}"><span>${ISSUE_ICON[r.type] || '⚠️'}</span></div>`,
+            html: `<div class="issue-marker" style="background:${color}">${ISSUE_ICON[r.type] || '!'}</div>`,
             iconSize: [28, 28],
             iconAnchor: [14, 14]
         });
@@ -1072,7 +1053,7 @@ function locateIssue(id) {
 async function markIssueResolved(id) {
     try {
         await api('PATCH', `/reports/${id}/status`, { status: 'resolved' });
-        toast('Issue marked as resolved ✓', 'success');
+        toast('Issue marked as resolved', 'success');
         allIssues = allIssues.filter(r => r.id !== id);
         renderIssueMarkers();
         renderIssuesListPanel();
@@ -1087,7 +1068,7 @@ function renderIssuesListPanel() {
     const el = document.getElementById('issuesListPanel');
     if (!el) return;
     if (!allIssues.length) {
-        el.innerHTML = `<div class="empty"><div class="empty-icon">🚨</div><div class="empty-title">No Open Issues</div><div class="empty-sub">All reported problems are resolved</div></div>`;
+        el.innerHTML = `<div class="empty"><div class="empty-title">No Open Issues</div><div class="empty-sub">All reported problems are resolved</div></div>`;
         return;
     }
 
@@ -1113,20 +1094,20 @@ function renderIssuesListPanel() {
             : '';
         const isNew = r._isNew ? ' is-new' : '';
         return `<div class="report-card${isNew}" id="reportCard${r.id}">
-                    <div class="report-icon" style="background:${color}22;color:${color}">${ISSUE_ICON[r.type] || '⚠️'}</div>
+                    <div class="report-icon" style="background:${color}22;color:${color}">${ISSUE_ICON[r.type] || '!'}</div>
                     <div class="report-body">
                         <span class="badge" style="background:${color}22;border:1px solid ${color}66;color:${color}">${label.toUpperCase()}</span>
                         <div class="report-desc">${r.description || 'No description'}</div>
                         ${r.image_url ? `<img class="report-photo-thumb" src="${r.image_url}" onerror="this.style.display='none'">` : ''}
                         <div class="report-note">
-                            ${r.latitude ? `📍 ${parseFloat(r.latitude).toFixed(5)}, ${parseFloat(r.longitude).toFixed(5)}` : 'No location'}
+                            ${r.latitude ? `${parseFloat(r.latitude).toFixed(5)}, ${parseFloat(r.longitude).toFixed(5)}` : 'No location'}
                             ${distText ? ` · ${distText}` : ''}
                             ${r.resident_name ? ` · reported by ${r.resident_name}` : ''}
                         </div>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch;">
-                        <button class="btn btn-ghost" style="padding:8px 14px;font-size:.65rem" onclick="locateIssue(${r.id})">🧭 Go</button>
-                        <button class="btn btn-success" style="padding:8px 14px;font-size:.65rem" onclick="markIssueResolved(${r.id})">✓ Done</button>
+                        <button class="btn btn-ghost" style="padding:8px 14px;font-size:.65rem" onclick="locateIssue(${r.id})">Go</button>
+                        <button class="btn btn-success" style="padding:8px 14px;font-size:.65rem" onclick="markIssueResolved(${r.id})">Done</button>
                     </div>
                     <div class="report-ts" style="width:100%;text-align:left;margin-top:-6px;">${r.created_at ? fmtDate(r.created_at) : ''}</div>
                  </div>`;
@@ -1148,8 +1129,10 @@ function startGPS() {
         return;
     }
     gpsActive = true;
-    document.getElementById("gpsToggle").classList.add("on");
-    document.getElementById("gpsLabel").textContent = "GPS ON";
+    const btn = document.getElementById("gpsToggle");
+    btn.classList.add("on");
+    btn.setAttribute("aria-pressed", "true");
+    document.getElementById("gpsLabel").textContent = "GPS On";
 
     gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -1182,7 +1165,7 @@ function startGPS() {
         }
     }, 30000);
 
-    toast("GPS tracking started (real-time)", "success");
+    toast("GPS tracking started", "success");
 }
 
 function stopGPS() {
@@ -1195,8 +1178,10 @@ function stopGPS() {
         clearInterval(gpsInterval);
         gpsInterval = null;
     }
-    document.getElementById("gpsToggle").classList.remove("on");
-    document.getElementById("gpsLabel").textContent = "GPS OFF";
+    const btn = document.getElementById("gpsToggle");
+    btn.classList.remove("on");
+    btn.setAttribute("aria-pressed", "false");
+    document.getElementById("gpsLabel").textContent = "GPS Off";
     document.getElementById("gpsAccBadge").textContent = "—";
     toast("GPS stopped", "info");
 }
@@ -1216,7 +1201,7 @@ async function loadToday() {
     } catch (e) {
         console.error("loadToday:", e);
         document.getElementById("assignmentCard").innerHTML =
-            `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No Assignment Today</div><div class="empty-sub">Check your schedule for upcoming routes</div></div>`;
+            `<div class="empty"><div class="empty-title">No Assignment Today</div><div class="empty-sub">Check your schedule for upcoming routes</div></div>`;
         initMap(8.2380, 123.0, 14);
         loadStats();
     }
@@ -1259,7 +1244,7 @@ async function loadRouteWaypoints(routeId) {
 function renderAssignment(data) {
     if (!data) {
         document.getElementById("assignmentCard").innerHTML =
-            `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No Assignment Today</div><div class="empty-sub">You have no scheduled route for today</div></div>`;
+            `<div class="empty"><div class="empty-title">No Assignment Today</div><div class="empty-sub">You have no scheduled route for today</div></div>`;
         return;
     }
 
@@ -1272,7 +1257,7 @@ function renderAssignment(data) {
                         <div class="check-circle">✓</div>
                         <div>
                             <div class="completed-title">Route Completed</div>
-                            <div class="completed-sub">Nice work — all done for today 🎉</div>
+                            <div class="completed-sub">Nice work — all done for today</div>
                         </div>
                    </div>`;
     } else if (isCancelled) {
@@ -1286,8 +1271,8 @@ function renderAssignment(data) {
     } else {
         footer = `<div class="today-footer">
                         ${data.status === "in_progress"
-                ? `<button class="btn btn-success" onclick="updateStatus(${data.id},'completed')">✓ Mark Complete</button>`
-                : `<button class="btn btn-primary" onclick="updateStatus(${data.id},'in_progress')">▶ Start Route</button>`}
+                ? `<button class="btn btn-success" onclick="updateStatus(${data.id},'completed')">Mark Complete</button>`
+                : `<button class="btn btn-primary" onclick="updateStatus(${data.id},'in_progress')">Start Route</button>`}
                         <span class="status-badge status-${data.status}">${(data.status || "pending").replace("_", " ").toUpperCase()}</span>
                    </div>`;
     }
@@ -1295,10 +1280,10 @@ function renderAssignment(data) {
     document.getElementById("assignmentCard").innerHTML = `
                 <div class="today-card ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''}" data-assignment-id="${data.id}">
                     <div class="today-inner">
-                        <div class="today-route">📍 ${data.zone_name || "Unknown Zone"}</div>
+                        <div class="today-route">${data.zone_name || "Unknown Zone"}</div>
                         ${data.zone_description ? `<div style="font-size:.78rem;color:var(--text2);margin-top:8px;font-weight:400">${data.zone_description}</div>` : ""}
                         <div class="today-meta">
-                            <span class="chip amber">🚛 ${data.plate_number || "Truck"}</span>
+                            <span class="chip amber">${data.plate_number || "Truck"}</span>
                             <span class="chip">${data.model || "Vehicle"}</span>
                             <span class="chip">${(data.pickup_type || "REGULAR").replace(/_/g, " ").toUpperCase()}</span>
                             <span class="chip">${data.assigned_date ? fmtDate(data.assigned_date) : "Today"}</span>
@@ -1335,7 +1320,7 @@ async function loadSchedule() {
         const data = await api("GET", "/schedule");
         const el = document.getElementById("scheduleList");
         if (!data.length) {
-            el.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No Schedules</div></div>`;
+            el.innerHTML = `<div class="empty"><div class="empty-title">No Schedules</div></div>`;
             return;
         }
         el.innerHTML = data.map(s => {
@@ -1346,8 +1331,8 @@ async function loadSchedule() {
                             <div class="sched-date-sub">${new Date(s.assigned_date).toLocaleDateString("en-US", { weekday: "short" })}</div>
                         </div>
                         <div>
-                            <div class="sched-zone">📍 ${s.zone_name}</div>
-                            <div class="sched-meta">🚛 ${s.plate_number} · ${(s.pickup_type || "REGULAR").replace(/_/g, " ")}</div>
+                            <div class="sched-zone">${s.zone_name}</div>
+                            <div class="sched-meta">${s.plate_number} · ${(s.pickup_type || "REGULAR").replace(/_/g, " ")}</div>
                         </div>
                         <span class="badge ${scheduleBadgeClass(s.status)}">${s.status === 'in_progress' ? 'IN PROGRESS' : s.status.toUpperCase()}</span>
                     </div>`;
@@ -1358,7 +1343,7 @@ async function loadSchedule() {
 document.getElementById("reportForm").addEventListener("submit", async e => {
     e.preventDefault();
     const btn = e.target.querySelector("button[type=submit]");
-    btn.textContent = "⏳ Submitting…";
+    btn.textContent = "Submitting…";
     try {
         const type = document.getElementById("repType").value;
         const description = document.getElementById("repDesc").value;
@@ -1367,7 +1352,7 @@ document.getElementById("reportForm").addEventListener("submit", async e => {
         loadFlags.report = false;
         setTimeout(loadMyReports, 500);
     } catch (err) { toast(err.message, "error"); }
-    finally { btn.textContent = "⚠️ Submit Report"; }
+    finally { btn.textContent = "Submit Report"; }
 });
 
 async function loadMyReports() {
@@ -1376,16 +1361,16 @@ async function loadMyReports() {
         const data = await api("GET", "/reports");
         const el = document.getElementById("myReportsList");
         if (!data.length) {
-            el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No Reports Filed</div></div>`;
+            el.innerHTML = `<div class="empty"><div class="empty-title">No Reports Filed</div></div>`;
             return;
         }
         el.innerHTML = data.map(r => `
                     <div class="report-card">
-                        <div class="report-icon">⚠️</div>
+                        <div class="report-icon">!</div>
                         <div class="report-body">
                             <span class="badge badge-amber">${(r.type || "").replace(/_/g, " ").toUpperCase()}</span>
                             <div class="report-desc">${r.description}</div>
-                            ${r.location_note ? `<div class="report-note">📍 ${r.location_note}</div>` : ""}
+                            ${r.location_note ? `<div class="report-note">${r.location_note}</div>` : ""}
                         </div>
                         <div class="report-ts">${fmtShort(r.created_at)}<br>${fmtTime(r.created_at)}</div>
                     </div>`).join("");
@@ -1403,7 +1388,7 @@ async function loadAnnouncements() {
         }
         const el = document.getElementById("annList");
         if (!data.length) {
-            el.innerHTML = `<div class="empty"><div class="empty-icon">📢</div><div class="empty-title">No Announcements</div></div>`;
+            el.innerHTML = `<div class="empty"><div class="empty-title">No Announcements</div></div>`;
             return;
         }
         el.innerHTML = data.map(a => `
@@ -1423,7 +1408,7 @@ async function loadTrips() {
         const data = await api("GET", "/trips");
         const el = document.getElementById("tripList");
         if (!data.length) {
-            el.innerHTML = `<div class="empty"><div class="empty-icon">🗺️</div><div class="empty-title">No Completed Trips</div></div>`;
+            el.innerHTML = `<div class="empty"><div class="empty-title">No Completed Trips</div></div>`;
             return;
         }
         el.innerHTML = data.map(t => `
@@ -1433,8 +1418,8 @@ async function loadTrips() {
                             <div class="trip-sub">${t.completed_at ? fmtTime(t.completed_at) : "Completed"}</div>
                         </div>
                         <div>
-                            <div class="sched-zone">📍 ${t.zone_name}</div>
-                            <div class="sched-meta">🚛 ${t.plate_number}</div>
+                            <div class="sched-zone">${t.zone_name}</div>
+                            <div class="sched-meta">${t.plate_number}</div>
                         </div>
                         <span class="badge ${t.status === 'cancelled' ? 'badge-gray' : 'badge-green'}">${t.status === 'cancelled' ? 'CANCELLED' : 'DONE'}</span>
                     </div>`).join("");
@@ -1460,7 +1445,7 @@ async function loadProfile() {
 document.getElementById("profileForm").addEventListener("submit", async e => {
     e.preventDefault();
     const btn = e.target.querySelector("button[type=submit]");
-    btn.textContent = "⏳ Saving…";
+    btn.textContent = "Saving…";
     try {
         const name = document.getElementById("profName").value;
         const phone = document.getElementById("profPhone").value;
@@ -1468,9 +1453,8 @@ document.getElementById("profileForm").addEventListener("submit", async e => {
         emitProfileUpdate(name, phone, address);
         setTimeout(loadProfile, 500);
     } catch (err) { toast(err.message, "error"); }
-    finally { btn.textContent = "💾 Save Changes"; }
+    finally { btn.textContent = "Save Changes"; }
 });
-
 
 updateThemeIcon(document.documentElement.getAttribute('data-theme') || 'light');
 document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
@@ -1481,7 +1465,7 @@ loadProfile();
 
 setInterval(() => {
     if (!socketConnected) {
-        console.log('🔄 REST fallback refresh');
+        console.log('REST fallback refresh');
         loadToday();
         loadStats();
     }
@@ -1522,14 +1506,14 @@ window.markIssueResolved = markIssueResolved;
                 badge.classList.add('pulse');
                 setTimeout(() => badge.classList.remove('pulse'), 4000);
             }
-            toast(`🚨 New report: ${ISSUE_LABELS[report.type] || 'Issue'}`, 'info');
+            toast(`New report: ${ISSUE_LABELS[report.type] || 'Issue'}`, 'info');
             setTimeout(() => { report._isNew = false; }, 3000);
         });
     };
     tryAttach();
 })();
 
-console.log('🚀 Hybrid Driver Portal initialized');
-console.log(`📡 WebSocket: ${WS_URL}`);
-console.log(`👤 Driver ID: ${driverId}`);
-console.log(`🔌 Socket connected: ${socketConnected}`);
+console.log('Hybrid Driver Portal initialized');
+console.log(`WebSocket: ${WS_URL}`);
+console.log(`Driver ID: ${driverId}`);
+console.log(`Socket connected: ${socketConnected}`);

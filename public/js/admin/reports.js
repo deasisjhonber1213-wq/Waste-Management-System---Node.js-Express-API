@@ -370,7 +370,6 @@ function renderTable(data) {
     }
     tbody.innerHTML = data.map((r, i) => {
         const hasLoc = r.latitude != null && r.longitude != null;
-        // Check if image_url exists and is valid
         const hasImage = r.image_url && r.image_url.length > 100;
         return `<tr class="${hasLoc ? 'row-has-location' : ''}" ${hasLoc ? `onclick="flyToReport(${r.id})" title="Click to locate on map"` : ''}>
                 <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>

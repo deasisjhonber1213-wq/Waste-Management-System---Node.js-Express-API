@@ -24,7 +24,7 @@ app.use(helmet({
                 "'self'", "'unsafe-inline'", "'unsafe-eval'",
                 "https://unpkg.com", "https://cdn.socket.io", "https://cdn.jsdelivr.net"
             ],
-            scriptSrcAttr: ["'unsafe-inline'"],   // ← add this line
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: [
@@ -35,7 +35,7 @@ app.use(helmet({
             connectSrc: [
                 "'self'", process.env.CORS_ORIGIN || "*",
                 "https://*.basemaps.cartocdn.com", "https://server.arcgisonline.com",
-                "https://unpkg.com", "https://cdn.jsdelivr.net",   // silences the .map warnings below
+                "https://unpkg.com", "https://cdn.jsdelivr.net",
                 "wss:", "ws:"
             ],
         },

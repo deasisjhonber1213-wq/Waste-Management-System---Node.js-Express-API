@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SmartWaste · Driver Portal (Real-time)</title>
     <script>
         (function () {
@@ -15,14 +15,12 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="../css/driver/dashboard.css" />
-
 </head>
 
 <body>
@@ -31,52 +29,134 @@
 
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-            <div class="logo-icon">♻</div>
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                    <path d="M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                    <path d="M5 17H3V6a1 1 0 0 1 1-1h11l3 5v7h-2" />
+                    <path d="M9 6v5h8" />
+                </svg>
+            </div>
             <div>
                 <div class="logo-text">Jose Dalman WM</div>
                 <div class="logo-sub">Driver Portal</div>
             </div>
         </div>
-        <div class="gps-toggle" id="gpsToggle" onclick="toggleGPS()">
-            <div class="gps-dot"></div>
-            <span id="gpsLabel">GPS OFF</span>
-            <span class="gps-accuracy" id="gpsAccBadge">—</span>
-        </div>
+
+        <!-- Redesigned GPS toggle -->
+        <button type="button" class="gps-btn" id="gpsToggle" onclick="toggleGPS()" aria-pressed="false">
+            <span class="gps-btn-icon" aria-hidden="true">
+                <svg class="gps-icon-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                </svg>
+                <svg class="gps-icon-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                </svg>
+            </span>
+            <span class="gps-btn-text">
+                <span class="gps-btn-label" id="gpsLabel">GPS Off</span>
+                <span class="gps-btn-acc" id="gpsAccBadge">—</span>
+            </span>
+            <span class="gps-btn-switch" aria-hidden="true"><span class="gps-btn-knob"></span></span>
+        </button>
+
         <nav class="sidebar-nav">
             <div class="nav-label">Today</div>
             <button class="nav-item active" data-tab="today" onclick="switchTab('today',this)">
-                <span class="nav-icon">📋</span> Today's Route
+                <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                        <rect x="9" y="3" width="6" height="4" rx="1" />
+                        <path d="M9 12h6M9 16h4" />
+                    </svg></span>
+                Today's Route
             </button>
+
             <div class="nav-label">Schedule</div>
             <button class="nav-item" data-tab="schedule" onclick="switchTab('schedule',this)">
-                <span class="nav-icon">📅</span> My Schedule
+                <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <path d="M16 2v4M8 2v4M3 10h18" />
+                    </svg></span>
+                My Schedule
             </button>
+
             <div class="nav-label">Operations</div>
             <button class="nav-item" data-tab="report" onclick="switchTab('report',this)">
-                <span class="nav-icon">⚠️</span> File Report
+                <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg></span>
+                File Report
             </button>
             <button class="nav-item" data-tab="issues" onclick="switchTab('issues',this)">
-                <span class="nav-icon">🚨</span> Nearby Issues
+                <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg></span>
+                Nearby Issues
                 <span class="nav-badge" id="issuesBadge" style="display:none">0</span>
             </button>
             <button class="nav-item" data-tab="announcements" onclick="switchTab('announcements',this)">
-                <span class="nav-icon">📢</span> Notices
+                <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg></span>
+                Notices
                 <span class="nav-badge" id="annBadge" style="display:none">0</span>
             </button>
+
             <div class="nav-label">History & Profile</div>
             <button class="nav-item" data-tab="trips" onclick="switchTab('trips',this)">
-                <span class="nav-icon">🗂️</span> Trip History
+                <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18" />
+                        <path d="M7 16l4-8 4 4 4-6" />
+                    </svg></span>
+                Trip History
             </button>
             <button class="nav-item" data-tab="profile" onclick="switchTab('profile',this)">
-                <span class="nav-icon">👤</span> My Profile
+                <span class="nav-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg></span>
+                My Profile
             </button>
+
             <div class="nav-label">Preferences</div>
-            <button class="theme-toggle" id="themeToggleBtn">
-                <span class="theme-icon" id="themeIcon">🌙</span>
+            <button class="theme-toggle" id="themeToggleBtn" type="button">
+                <span class="theme-icon" id="themeIcon">
+                    <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                    <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                </span>
                 <span class="theme-label" id="themeLabel">Dark Mode</span>
                 <span class="theme-switch"><span class="theme-knob"></span></span>
             </button>
         </nav>
+
         <div class="sidebar-footer">
             <div class="driver-card">
                 <div class="driver-avatar" id="sidebarAvatar">?</div>
@@ -85,15 +165,21 @@
                     <div class="driver-role">Collector · Driver</div>
                 </div>
             </div>
-            <button type="button" class="btn-logout" onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Sign
-                Out</button>
+            <button type="button" class="btn-logout" onclick="openModal('logoutConfirmModal')">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign Out
+            </button>
         </div>
     </aside>
 
     <div class="layout">
-
         <div class="topbar">
-            <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+            <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
                 <span></span><span></span><span></span>
             </button>
             <div class="topbar-title" id="topbarTitle">Today's Route</div>
@@ -105,7 +191,6 @@
         </div>
 
         <div class="content">
-
             <div class="tab-panel active" id="tab-today">
                 <div id="assignmentCard">
                     <div class="skel" style="height:180px;margin-bottom:20px"></div>
@@ -131,16 +216,71 @@
 
                 <div class="map-card">
                     <div class="map-toolbar">
-                        <span class="map-toolbar-title">🗺️ Live Navigation</span>
-                        <button class="map-btn" onclick="centerMe()">📍 Me</button>
-                        <button class="map-btn" id="lockBtn" onclick="toggleLock()">🔒 Lock</button>
-                        <button class="map-btn" id="satBtn" onclick="toggleSat()">🛰️ Sat</button>
-                        <button class="map-btn" onclick="toggleRoutePanel()">📋 Stops</button>
-                        <button class="map-btn blue-btn" onclick="loadResidents();toast('Refreshed','success')">🏠
-                            Residents</button>
-                        <button class="map-btn red-btn active" id="issuesToggleBtn" onclick="toggleIssueMarkers()">🚨
-                            Issues</button>
-                        <button class="map-btn" onclick="goToMRF()">🏭 MRF</button>
+                        <span class="map-toolbar-title">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                            </svg>
+                            Live Navigation
+                        </span>
+                        <button class="map-btn" onclick="centerMe()">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <circle cx="12" cy="12" r="3" />
+                                <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
+                            </svg>
+                            Me
+                        </button>
+                        <button class="map-btn" id="lockBtn" onclick="toggleLock()">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            Lock
+                        </button>
+                        <button class="map-btn" id="satBtn" onclick="toggleSat()">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path
+                                    d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                            </svg>
+                            Sat
+                        </button>
+                        <button class="map-btn" onclick="toggleRoutePanel()">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                                <rect x="9" y="3" width="6" height="4" rx="1" />
+                            </svg>
+                            Stops
+                        </button>
+                        <button class="map-btn blue-btn" onclick="loadResidents();toast('Refreshed','success')">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                <polyline points="9 22 9 12 15 12 15 22" />
+                            </svg>
+                            Residents
+                        </button>
+                        <button class="map-btn red-btn active" id="issuesToggleBtn" onclick="toggleIssueMarkers()">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            Issues
+                        </button>
+                        <button class="map-btn" onclick="goToMRF()">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <path d="M3 21h18M5 21V7l7-4 7 4v14" />
+                                <path d="M9 9v.01M15 9v.01M9 15v.01M15 15v.01" />
+                            </svg>
+                            MRF
+                        </button>
                     </div>
                     <div id="driverMap"></div>
                     <div class="map-legend">
@@ -165,11 +305,23 @@
                         <div class="legend-item">
                             <div class="legend-dot driven"></div>Route Done
                         </div>
-                        <div class="hud-residents" onclick="loadResidents()">🏠 <span id="residentCountHUD">0</span>
-                            online</div>
+                        <div class="hud-residents" onclick="loadResidents()">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            </svg>
+                            <span id="residentCountHUD">0</span> online
+                        </div>
                     </div>
                     <div class="location-bar">
-                        <span>📍 Position:</span>
+                        <span class="loc-label">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            Position:
+                        </span>
                         <span class="loc-coords" id="coordsText">Waiting for GPS…</span>
                         <span id="accText">—</span>
                         <span class="loc-time" id="locTime">—</span>
@@ -177,15 +329,18 @@
                 </div>
 
                 <div class="route-info-box" id="routePanel">
-                    <div
-                        style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-                        <strong style="color:var(--amber);font-size:.85rem;font-weight:700;letter-spacing:-.01em;">📋
-                            ROUTE STOPS</strong>
-                        <div style="display:flex;gap:8px">
-                            <button class="btn btn-ghost" onclick="fitAllStops()"
-                                style="padding:6px 14px;font-size:.65rem">🗺️ Fit Map</button>
-                            <button class="btn btn-ghost" onclick="optimizeRoute()"
-                                style="padding:6px 14px;font-size:.65rem">🚀 Optimize</button>
+                    <div class="route-panel-header">
+                        <strong class="route-panel-title">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                                <rect x="9" y="3" width="6" height="4" rx="1" />
+                            </svg>
+                            Route Stops
+                        </strong>
+                        <div class="route-panel-actions">
+                            <button class="btn btn-ghost btn-sm" onclick="fitAllStops()">Fit Map</button>
+                            <button class="btn btn-ghost btn-sm" onclick="optimizeRoute()">Optimize</button>
                         </div>
                     </div>
                     <div class="route-stats">
@@ -221,21 +376,20 @@
                         <div class="form-group">
                             <label class="form-label">Issue Type</label>
                             <select id="repType" class="form-control">
-                                <option value="missed_pickup">🚮 Missed Pickup</option>
-                                <option value="illegal_dumping">🚨 Illegal Dumping</option>
-                                <option value="overflowing_bin">♻️ Overflowing Bin</option>
-                                <option value="road_blocked">🚧 Road Blocked</option>
-                                <option value="equipment_fault">🔧 Equipment Fault</option>
-                                <option value="other">📝 Other</option>
+                                <option value="missed_pickup">Missed Pickup</option>
+                                <option value="illegal_dumping">Illegal Dumping</option>
+                                <option value="overflowing_bin">Overflowing Bin</option>
+                                <option value="road_blocked">Road Blocked</option>
+                                <option value="equipment_fault">Equipment Fault</option>
+                                <option value="other">Other</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Location</label>
-                            <div style="display:flex;gap:10px;align-items:center">
+                            <div class="input-with-btn">
                                 <input type="text" id="repLocation" class="form-control"
                                     placeholder="e.g. Corner of Rizal & Mabini St">
-                                <button type="button" class="btn btn-ghost" onclick="useCurrentLoc()"
-                                    style="white-space:nowrap">📍 Use GPS</button>
+                                <button type="button" class="btn btn-ghost" onclick="useCurrentLoc()">Use GPS</button>
                             </div>
                         </div>
                         <div class="form-group">
@@ -243,7 +397,7 @@
                             <textarea id="repDesc" class="form-control"
                                 placeholder="Describe the issue clearly…"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary">⚠️ Submit Report</button>
+                        <button type="submit" class="btn btn-primary">Submit Report</button>
                     </form>
                 </div>
                 <div class="divider"></div>
@@ -253,10 +407,8 @@
 
             <div class="tab-panel" id="tab-issues">
                 <div class="section-title">Nearby Reported Issues</div>
-                <div style="font-size:.75rem;color:var(--text2);margin-bottom:16px;line-height:1.6;">
-                    Issues reported by residents that haven't been resolved yet. Tap <strong>🧭 Go</strong> to locate
-                    one on the map, or <strong>✓ Done</strong> once you've handled it.
-                </div>
+                <p class="tab-intro">Issues reported by residents that haven't been resolved yet. Use
+                    <strong>Go</strong> to locate one on the map, or <strong>Done</strong> once you've handled it.</p>
                 <div class="list-stack" id="issuesListPanel">
                     <div class="skel" style="height:100px"></div>
                     <div class="skel" style="height:100px"></div>
@@ -281,9 +433,8 @@
                     </div>
                     <div class="profile-info">
                         <div class="profile-name" id="profNameDisplay">—</div>
-                        <div class="profile-role-tag">🚛 Driver · Collector</div>
-                        <div style="font-size:.7rem;color:var(--text2);margin-top:10px;font-family:var(--mono);font-weight:500"
-                            id="profEmailDisplay">—</div>
+                        <div class="profile-role-tag">Driver · Collector</div>
+                        <div class="profile-email" id="profEmailDisplay">—</div>
                     </div>
                 </div>
                 <div class="form-card">
@@ -296,7 +447,7 @@
                         </div>
                         <div class="form-group"><label class="form-label">Address</label><input type="text"
                                 id="profAddress" class="form-control"></div>
-                        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
                     </form>
                 </div>
             </div>
@@ -306,8 +457,8 @@
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
-                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);">Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')" aria-label="Close">✕</button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to sign out of the driver portal? Your GPS tracking will stop.</p>

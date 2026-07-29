@@ -48,20 +48,16 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ---- LOGOUT FUNCTION ----
+
 function doLogout() {
     localStorage.removeItem('token');
-    // Close modal
     closeModal('logoutConfirmModal');
-    // Show toast message
     showToast('Logged out successfully', 'success');
-    // Redirect to login page after short delay
     setTimeout(() => {
         window.location.href = '/login.html';
     }, 500);
 }
 
-// Make doLogout globally available
 window.doLogout = doLogout;
 
 async function loadStats() {
@@ -83,8 +79,6 @@ async function loadChart() {
         const res = await API.get("/admin/analytics");
         if (!res.ok) throw new Error();
         const data = await res.json();
-
-        // Extract report data from the response
         let reportData = [];
         if (data.type_breakdown && Array.isArray(data.type_breakdown)) {
             reportData = data.type_breakdown;
@@ -92,11 +86,9 @@ async function loadChart() {
             reportData = data;
         }
 
-        // Filter out the 'ALL' type if it exists
         reportData = reportData.filter(d => d.type !== 'ALL');
 
         if (reportData.length === 0) {
-            // Show empty state on chart
             document.getElementById('reportChart').parentElement.innerHTML =
                 '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">No report data available</div></div>';
             return;
@@ -144,7 +136,6 @@ async function loadRecentReports() {
         const data = await res.json();
         const el = document.getElementById("recentReports");
 
-        // Handle both array and paginated responses
         let reports = [];
         if (Array.isArray(data)) {
             reports = data;
@@ -199,15 +190,13 @@ async function loadProfile() {
         if (!res.ok) throw new Error();
         const d = await res.json();
         document.getElementById("adminName").textContent = d.name || "Admin";
-    } catch { /* ignore */ }
+    } catch { }
 }
 
 function checkAuth() {
     if (!getToken()) window.location.href = '/login.html';
 }
 checkAuth();
-
-// Load all data
 loadStats();
 loadChart();
 loadRecentReports();

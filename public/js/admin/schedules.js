@@ -52,7 +52,6 @@
     }
 })();
 
-// ---- THEME TOGGLE ----
 (function () {
     function toggleTheme() {
         var html = document.documentElement;
@@ -102,7 +101,6 @@
     window.toggleTheme = toggleTheme;
 })();
 
-// ---- REVEAL ANIMATIONS ----
 (function () {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initReveal);
@@ -124,7 +122,6 @@
     }
 })();
 
-// ---- API ----
 const API_URL = window.location.origin + '/api';
 console.log('📡 API URL:', API_URL);
 

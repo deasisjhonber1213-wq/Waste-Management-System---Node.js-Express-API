@@ -105,7 +105,6 @@ let mrfMarkers = [];
 let detailMap = null;
 let isDetailMapSatellite = false;
 
-// ---- MRF Management State ----
 let globalMRFLocations = [];
 let facilityMarkerLayers = { marking: [], detail: [], pick: [] };
 let mrfPickMap = null, mrfPickTiles = null, isMRFPickSatellite = false;
@@ -171,7 +170,6 @@ function getMRFIcon() {
     });
 }
 
-// ---- Load Routes ----
 async function loadRoutes() {
     try {
         const res = await API.get('/admin/routes');
@@ -730,9 +728,6 @@ async function loadAdminProfile() {
     } catch { }
 }
 
-// ═══════════════════════════════════════
-// MRF FACILITY LOCATIONS
-// ═══════════════════════════════════════
 
 async function loadMRFLocations() {
     try {

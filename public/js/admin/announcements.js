@@ -46,7 +46,6 @@ function closeModal(id) {
 window.openModal = openModal;
 window.closeModal = closeModal;
 
-// ── IMAGE UPLOAD ──
 let uploadedImageData = null;
 
 function handleImageUpload(event) {
@@ -94,7 +93,6 @@ function removeImage() {
     showToast("Image removed", "info");
 }
 
-// ── DELETE WITH CONFIRMATION ──
 let pendingDeleteId = null;
 
 function confirmDelete(id, name) {
@@ -123,7 +121,6 @@ async function executeDelete(id) {
     pendingDeleteId = null;
 }
 
-// ── API ──
 const API_URL = window.location.origin + '/api';
 console.log('📡 API URL:', API_URL);
 
@@ -260,10 +257,8 @@ async function loadAdminProfile() {
     } catch { }
 }
 
-// ── THEME TOGGLE ──
-// Note: style.js handles theme toggle, but we need to update the UI after load
 document.addEventListener('DOMContentLoaded', function () {
-    // Just ensure the theme toggle button state matches the current theme
+
     const themeToggle = document.getElementById('themeToggleBtn');
     if (themeToggle) {
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -287,6 +282,6 @@ function updateThemeUI(toggle, theme) {
     }
 }
 
-// ── INIT ──
+
 loadAdminProfile();
 loadAnnouncements();
