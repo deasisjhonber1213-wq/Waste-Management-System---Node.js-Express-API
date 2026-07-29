@@ -3,11 +3,6 @@ const router = express.Router();
 const ctrl = require("../controllers/adminController");
 const { protect, adminOnly } = require("../middleware/auth");
 
-/* =================================================
-   ALL ROUTES — auth applied to every request
-   Router is mounted at /api/admin so paths here
-   are RELATIVE.  Full URL = /api/admin/<path>
-================================================= */
 router.use(protect, adminOnly);
 
 // Dashboard stats
@@ -15,8 +10,8 @@ router.get("/dashboard", ctrl.dashboardStats);
 
 // Users
 router.get("/users", ctrl.getUsers);
-router.get("/users/:id", ctrl.getUserById);        // ← ADD THIS
-router.put("/users/:id", ctrl.updateUser);         // ← ADD THIS
+router.get("/users/:id", ctrl.getUserById);
+router.put("/users/:id", ctrl.updateUser);
 router.delete("/users/:id", ctrl.deleteUser);
 
 // Trucks
@@ -40,9 +35,9 @@ router.delete("/pickups/:id", ctrl.deletePickup);
 
 // Reports
 router.get("/reports", ctrl.getReports);
-router.get("/reports/:id", ctrl.getReportById);    // ← ADD THIS
-router.put("/reports/:id/status", ctrl.updateReportStatus); // ← ADD THIS
-router.delete("/reports/:id", ctrl.deleteReport);  // ← ADD THIS
+router.get("/reports/:id", ctrl.getReportById);
+router.put("/reports/:id/status", ctrl.updateReportStatus);
+router.delete("/reports/:id", ctrl.deleteReport);
 
 // Analytics
 router.get("/analytics", ctrl.reportAnalytics);

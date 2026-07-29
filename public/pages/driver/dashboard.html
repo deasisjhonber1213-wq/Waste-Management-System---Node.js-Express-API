@@ -12,7 +12,8 @@
             document.documentElement.setAttribute("data-theme", theme);
         })();
     </script>
-
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♻️</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -20,7 +21,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="../css/driver/dashboard.css" />
+    <link rel="stylesheet" href="../../css/driver/dashboard.css" />
 </head>
 
 <body>
@@ -408,7 +409,8 @@
             <div class="tab-panel" id="tab-issues">
                 <div class="section-title">Nearby Reported Issues</div>
                 <p class="tab-intro">Issues reported by residents that haven't been resolved yet. Use
-                    <strong>Go</strong> to locate one on the map, or <strong>Done</strong> once you've handled it.</p>
+                    <strong>Go</strong> to locate one on the map, or <strong>Done</strong> once you've handled it.
+                </p>
                 <div class="list-stack" id="issuesListPanel">
                     <div class="skel" style="height:100px"></div>
                     <div class="skel" style="height:100px"></div>
@@ -471,7 +473,7 @@
     </div>
 
     <div id="toast"></div>
-    <script src="../js/driver/dashboard.js"></script>
+    <script src="../../js/driver/dashboard.js"></script>
 </body>
 
 </html>

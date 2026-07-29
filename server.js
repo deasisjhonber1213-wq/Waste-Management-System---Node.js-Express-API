@@ -35,7 +35,7 @@ app.use(helmet({
             connectSrc: [
                 "'self'", process.env.CORS_ORIGIN || "*",
                 "https://*.basemaps.cartocdn.com", "https://server.arcgisonline.com",
-                "https://unpkg.com", "https://cdn.jsdelivr.net",
+                "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdn.socket.io",
                 "wss:", "ws:"
             ],
         },
