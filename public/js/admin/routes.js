@@ -161,12 +161,20 @@ function parseWaypoints(json) {
     }
 }
 
-function getMRFIcon() {
+function getMRFIcon(inUse = true) {
+    if (inUse) {
+        // Solid green — this facility IS a stop on the current route
+        return L.divIcon({
+            className: "",
+            html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
+            iconSize: [36, 36], iconAnchor: [18, 18]
+        });
+    }
+    // Hollow blue/dashed — reference only, not yet used on this route
     return L.divIcon({
         className: "",
-        html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        html: `<div class="mrf-wrap"><div class="mrf-ref-pin"><span style="font-size:14px">🏭</span></div></div>`,
+        iconSize: [34, 34], iconAnchor: [17, 17]
     });
 }
 
@@ -323,8 +331,6 @@ function initDetailMap(road, pins, mrf) {
         L.marker([p.lat, p.lng], { icon }).bindPopup(`<b>🏭 MRF Stop</b>`).addTo(detailMap);
     });
 
-    renderFacilityReferenceLayer(detailMap, 'detail');
-
     if (allPts.length) detailMap.fitBounds(L.latLngBounds(allPts.map(p => [p.lat, p.lng])).pad(0.25));
 }
 
@@ -394,10 +400,10 @@ function initMarkingMap() {
     markingMap.invalidateSize();
 
     markingMap.on('click', e => {
+        if (mrfPlacementActive) return;   // MRF-mode click is handled by its own one-time listener
         if (activeLayer === 'road') addRoadVertex(e.latlng.lat, e.latlng.lng);
         if (activeLayer === 'pin') addPinMarker(e.latlng.lat, e.latlng.lng);
     });
-
     renderFacilityReferenceLayer(markingMap, 'marking', { allowUse: true });
     updateUI();
 }
@@ -522,22 +528,49 @@ function markMRFManual() {
         showToast('MRF Stop placed', 'success');
     });
 }
+let mrfIdCounter = 0;
+const mrfMarkerById = new Map();
 
 function addMRFMarker(lat, lng) {
-    mrfPoints.push({ lat, lng });
-    const icon = getMRFIcon();
+    const id = ++mrfIdCounter;
+    mrfPoints.push({ lat, lng, _id: id });
+    const icon = getMRFIcon(true); // true = active/in-route style
     const m = L.marker([lat, lng], { icon, draggable: true, zIndexOffset: 300 })
-        .bindPopup(`<b>🏭 MRF Stop</b>`).addTo(markingMap);
+        .addTo(markingMap);
+    m.bindPopup(`
+        <b>🏭 MRF Stop</b>
+        <br><button onclick="removeMRFStop(${id})"
+            style="margin-top:6px;width:100%;padding:6px;border-radius:6px;border:1px solid #f87171;background:rgba(248,113,113,.12);color:#f87171;font-weight:700;font-size:.65rem;cursor:pointer;">
+            ✕ Remove This Stop
+        </button>`);
     m.on('dragend', () => {
-        const idx = mrfMarkers.indexOf(m);
+        const idx = mrfPoints.findIndex(p => p._id === id);
         if (idx >= 0) {
-            mrfPoints[idx] = { lat: m.getLatLng().lat, lng: m.getLatLng().lng };
+            mrfPoints[idx] = { ...mrfPoints[idx], lat: m.getLatLng().lat, lng: m.getLatLng().lng };
             updateUI();
         }
     });
+    m.on('contextmenu', e => {
+        L.DomEvent.stopPropagation(e);
+        removeMRFStop(id);
+    });
+    mrfMarkerById.set(id, m);
     mrfMarkers.push(m);
     updateUI();
 }
+
+function removeMRFStop(id) {
+    const m = mrfMarkerById.get(id);
+    if (!m) return;
+    markingMap.removeLayer(m);
+    mrfMarkerById.delete(id);
+    const mi = mrfMarkers.indexOf(m);
+    if (mi >= 0) mrfMarkers.splice(mi, 1);
+    const pi = mrfPoints.findIndex(p => p._id === id);
+    if (pi >= 0) mrfPoints.splice(pi, 1);
+    updateUI();
+}
+window.removeMRFStop = removeMRFStop;
 
 function undoLast() {
     if (activeLayer === 'road') {
@@ -1052,6 +1085,14 @@ function deleteMRFLocation(id, btn) {
         }
     })();
 }
+function clearMRFStopsOnly() {
+    mrfPoints = [];
+    mrfMarkers.forEach(m => markingMap?.removeLayer(m));
+    mrfMarkers = [];
+    mrfMarkerById.clear();
+    updateUI();
+}
+window.clearMRFStopsOnly = clearMRFStopsOnly;
 
 function openMRFModal() {
     openModal('mrfManageModal');

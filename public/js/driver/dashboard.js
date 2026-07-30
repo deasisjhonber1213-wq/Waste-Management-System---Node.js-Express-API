@@ -291,14 +291,12 @@ function connectWebSocket() {
         toast('Authentication failed: ' + data.message, 'error');
     });
 
-    socket.on('assignment-update', (assignment) => {
-        console.log('Assignment update received:', assignment);
-        currentAssignmentId = assignment?.id || null;
-        routeStatus = assignment?.status || null;
-        renderAssignment(assignment);
-        if (assignment && assignment.route_id) {
-            loadRouteWaypoints(assignment.route_id);
-        }
+    socket.on('assignment-update', (payload) => {
+        console.log('Assignment update received:', payload);
+        todaysAssignments = Array.isArray(payload) ? payload : (payload ? [payload] : []);
+        renderRouteTabs();
+        const idx = activeAssignmentIdx < todaysAssignments.length ? activeAssignmentIdx : pickDefaultIndex();
+        selectAssignment(idx);
     });
 
     socket.on('route-waypoints', (data) => {
@@ -401,11 +399,11 @@ function updateConnectionStatus(connected) {
 }
 
 function emitLocation(lat, lng, accuracy) {
+    const payload = { latitude: lat, longitude: lng, accuracy: accuracy || 0, assignmentId: currentAssignmentId, timestamp: Date.now() };
     if (socket && socketConnected) {
-        socket.emit('driver-location', { latitude: lat, longitude: lng, accuracy: accuracy || 0, timestamp: Date.now() });
+        socket.emit('driver-location', payload);
     } else {
-        console.warn('WebSocket not connected, using REST fallback');
-        api('POST', '/location', { latitude: lat, longitude: lng, accuracy: accuracy || 0 })
+        api('POST', '/location', { latitude: lat, longitude: lng, accuracy: accuracy || 0, assignment_id: currentAssignmentId })
             .catch(err => console.warn('REST location fallback failed:', err));
     }
 }
@@ -1186,26 +1184,72 @@ function stopGPS() {
     toast("GPS stopped", "info");
 }
 
+let todaysAssignments = [];
+let activeAssignmentIdx = 0;
+
 async function loadToday() {
     try {
-        const assignment = await api("GET", "/today");
-        currentAssignmentId = assignment?.id || null;
-        routeStatus = assignment?.status || null;
-        renderAssignment(assignment);
+        const data = await api("GET", "/today");
+        todaysAssignments = Array.isArray(data) ? data : (data ? [data] : []);
+        renderRouteTabs();
+        selectAssignment(pickDefaultIndex());
         loadStats();
-        if (assignment && assignment.route_id) {
-            await loadRouteWaypoints(assignment.route_id);
-        } else {
-            initMap(8.2380, 123.0, 14);
-        }
     } catch (e) {
         console.error("loadToday:", e);
+        todaysAssignments = [];
+        renderRouteTabs();
         document.getElementById("assignmentCard").innerHTML =
             `<div class="empty"><div class="empty-title">No Assignment Today</div><div class="empty-sub">Check your schedule for upcoming routes</div></div>`;
         initMap(8.2380, 123.0, 14);
         loadStats();
     }
 }
+
+function pickDefaultIndex() {
+    if (!todaysAssignments.length) return -1;
+    let idx = todaysAssignments.findIndex(a => a.status === 'in_progress');
+    if (idx >= 0) return idx;
+    idx = todaysAssignments.findIndex(a => a.status === 'pending');
+    return idx >= 0 ? idx : 0;
+}
+
+function renderRouteTabs() {
+    const el = document.getElementById('routeTabs');
+    if (!el) return;
+    if (todaysAssignments.length <= 1) {
+        el.style.display = 'none';
+        el.innerHTML = '';
+        return;
+    }
+    el.style.display = 'flex';
+    el.innerHTML = todaysAssignments.map((a, i) => `
+        <button class="route-tab ${i === activeAssignmentIdx ? 'active' : ''}" onclick="selectAssignment(${i})">
+            ${a.zone_name || 'Route ' + (i + 1)}
+            <span class="route-tab-status">${(a.status || 'pending').replace('_', ' ')}</span>
+        </button>`).join('');
+}
+
+function selectAssignment(idx) {
+    if (idx < 0 || idx >= todaysAssignments.length) {
+        currentAssignmentId = null;
+        routeStatus = null;
+        renderAssignment(null);
+        initMap(8.2380, 123.0, 14);
+        return;
+    }
+    activeAssignmentIdx = idx;
+    const data = todaysAssignments[idx];
+    currentAssignmentId = data.id;
+    routeStatus = data.status;
+    renderAssignment(data);
+    renderRouteTabs();
+    if (data.route_id) {
+        loadRouteWaypoints(data.route_id);
+    } else {
+        initMap(8.2380, 123.0, 14);
+    }
+}
+window.selectAssignment = selectAssignment;
 
 async function loadRouteWaypoints(routeId) {
     if (routeId !== lastLoadedRouteId) {

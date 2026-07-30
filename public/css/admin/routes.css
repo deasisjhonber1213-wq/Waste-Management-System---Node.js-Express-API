@@ -833,3 +833,15 @@
             padding: 12px !important;
         }
     }
+
+    .mrf-ref-pin {
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: 2.5px dashed #3b82f6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: .85;
+}

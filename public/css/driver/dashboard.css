@@ -2171,3 +2171,36 @@ textarea.form-control {
         bottom: calc(28px + env(safe-area-inset-bottom));
     }
 }
+
+.route-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.route-tab {
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: var(--panel);
+    color: var(--text2);
+    font-size: .72rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    transition: all .18s;
+    font-family: var(--font);
+}
+.route-tab:hover { border-color: var(--amber-mid); color: var(--text); }
+.route-tab.active { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
+.route-tab-status {
+    font-size: .55rem;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    color: var(--text3);
+    letter-spacing: .04em;
+}
+.route-tab.active .route-tab-status { color: var(--amber); opacity: .8; }

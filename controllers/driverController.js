@@ -38,45 +38,26 @@ exports.autoCancelMissedAssignments = autoCancelMissedAssignments;
 
 exports.getTodayAssignment = async (req, res) => {
     try {
-        console.log("=== getTodayAssignment Debug ===");
-        console.log("Driver ID:", req.user?.id);
-
         if (!req.user || !req.user.id) {
-            console.error("No user ID in request");
             return res.status(401).json({ error: "User not authenticated" });
         }
-
         await autoCancelMissedAssignments();
-
         const today = manilaToday();
-        console.log("Today's date (Philippines):", today);
 
         const [assignments] = await db.query(
             `SELECT
-                ra.id,
-                ra.assigned_date,
-                ra.status,
-                ra.pickup_type,
-                r.id as route_id,
-                r.zone_name,
-                r.description AS zone_description,
-                t.id AS truck_id,
-                t.plate_number,
-                t.model,
-                t.latitude,
-                t.longitude
+                ra.id, ra.assigned_date, ra.status, ra.pickup_type,
+                r.id as route_id, r.zone_name, r.description AS zone_description,
+                t.id AS truck_id, t.plate_number, t.model, t.latitude, t.longitude
              FROM route_assignments ra
              JOIN routes r ON ra.route_id = r.id
              JOIN trucks t ON ra.truck_id = t.id
              WHERE ra.driver_id = ? AND ra.assigned_date = ?
-             LIMIT 1`,
+             ORDER BY ra.id ASC`,
             [req.user.id, today]
         );
 
-        const assignment = assignments[0] || null;
-        console.log("Found assignment:", assignment ? `YES (${assignment.zone_name})` : "NO");
-
-        res.json(assignment);
+        res.json(assignments); // array, possibly empty
     } catch (err) {
         console.error("Error in getTodayAssignment:", err);
         res.status(500).json({ error: err.message });
@@ -165,21 +146,32 @@ exports.getMySchedule = async (req, res) => {
 
 exports.updateMyLocation = async (req, res) => {
     try {
-        const { latitude, longitude, accuracy } = req.body;
+        const { latitude, longitude, accuracy, assignment_id } = req.body;
         if (latitude === undefined || longitude === undefined) {
             return res.status(400).json({ error: "latitude and longitude required" });
         }
 
         const today = manilaToday();
+        let assignment;
 
-        const [[assignment]] = await db.query(
-            `SELECT truck_id FROM route_assignments
-             WHERE driver_id=? AND assigned_date=? LIMIT 1`,
-            [req.user.id, today]
-        );
+        if (assignment_id) {
+            [[assignment]] = await db.query(
+                `SELECT id, truck_id FROM route_assignments
+                 WHERE id=? AND driver_id=? AND assigned_date=?`,
+                [assignment_id, req.user.id, today]
+            );
+        } else {
+            [[assignment]] = await db.query(
+                `SELECT id, truck_id FROM route_assignments
+                 WHERE driver_id=? AND assigned_date=?
+                 ORDER BY FIELD(status,'in_progress','pending','completed','cancelled'), id ASC
+                 LIMIT 1`,
+                [req.user.id, today]
+            );
+        }
 
         if (!assignment) {
-            return res.status(404).json({ error: "No truck assigned today" });
+            return res.status(404).json({ error: "No matching assignment today" });
         }
 
         await db.query(
@@ -189,34 +181,23 @@ exports.updateMyLocation = async (req, res) => {
 
         await db.query(
             `INSERT INTO trip_logs (assignment_id, latitude, longitude, logged_at)
-             SELECT ra.id, ?, ?, NOW()
-             FROM route_assignments ra
-             WHERE ra.driver_id = ? AND ra.assigned_date = ?
-             LIMIT 1`,
-            [latitude, longitude, req.user.id, today]
+             VALUES (?, ?, ?, NOW())`,
+            [assignment.id, latitude, longitude]
         );
 
         if (req.app.get('io')) {
             const io = req.app.get('io');
             io.to(`dispatcher-${req.user.id}`).emit('driver-moved', {
-                driverId: req.user.id,
-                latitude: latitude,
-                longitude: longitude,
-                accuracy: accuracy || 0,
-                timestamp: Date.now()
+                driverId: req.user.id, assignmentId: assignment.id,
+                latitude, longitude, accuracy: accuracy || 0, timestamp: Date.now()
             });
-
-            // Broadcast truck location to all residents
             io.emit('truck-location', {
-                truckId: assignment.truck_id,
-                latitude: latitude,
-                longitude: longitude,
-                accuracy: accuracy || 0,
-                timestamp: Date.now()
+                truckId: assignment.truck_id, latitude, longitude,
+                accuracy: accuracy || 0, timestamp: Date.now()
             });
         }
 
-        res.json({ message: "Location updated", accuracy: accuracy });
+        res.json({ message: "Location updated", accuracy });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
@@ -448,49 +429,35 @@ exports.getStats = async (req, res) => {
 exports.getTodayRouteDetails = async (req, res) => {
     try {
         await autoCancelMissedAssignments();
-
         const today = manilaToday();
 
         const [assignments] = await db.query(
             `SELECT
-                ra.id,
-                ra.assigned_date,
-                ra.status,
-                ra.pickup_type,
-                r.id as route_id,
-                r.zone_name,
-                r.description AS zone_description,
-                r.waypoints_json,
-                t.id AS truck_id,
-                t.plate_number,
-                t.model,
-                t.latitude,
-                t.longitude
+                ra.id, ra.assigned_date, ra.status, ra.pickup_type,
+                r.id as route_id, r.zone_name, r.description AS zone_description, r.waypoints_json,
+                t.id AS truck_id, t.plate_number, t.model, t.latitude, t.longitude
              FROM route_assignments ra
              JOIN routes r ON ra.route_id = r.id
              JOIN trucks t ON ra.truck_id = t.id
              WHERE ra.driver_id = ? AND ra.assigned_date = ?
-             LIMIT 1`,
+             ORDER BY ra.id ASC`,
             [req.user.id, today]
         );
 
-        const assignment = assignments[0] || null;
-
-        if (assignment && assignment.waypoints_json) {
-            try {
-                let parsed = assignment.waypoints_json;
-                if (typeof parsed === 'string') {
-                    parsed = JSON.parse(parsed);
-                }
-                assignment.waypoints = parsed;
-            } catch (e) {
-                console.error("Error parsing waypoints:", e);
-                assignment.waypoints = null;
+        const result = assignments.map(a => {
+            if (a.waypoints_json) {
+                try {
+                    a.waypoints = typeof a.waypoints_json === 'string'
+                        ? JSON.parse(a.waypoints_json) : a.waypoints_json;
+                } catch (e) { a.waypoints = null; }
+            } else {
+                a.waypoints = null;
             }
-            delete assignment.waypoints_json;
-        }
+            delete a.waypoints_json;
+            return a;
+        });
 
-        res.json(assignment);
+        res.json(result); // array
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });

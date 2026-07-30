@@ -223,42 +223,30 @@ io.on('connection', (socket) => {
 
             console.log(`✅ Driver ${driverId} (${user[0].name}) authenticated`);
 
-            const [assignment] = await db.query(
+            // Multi-assignment fetch — no LIMIT 1
+            const [assignments] = await db.query(
                 `SELECT 
-                    ra.id, ra.assigned_date, ra.status, ra.pickup_type,
-                    r.id as route_id, r.zone_name, r.description as zone_description,
-                    t.id as truck_id, t.plate_number, t.model
-                FROM route_assignments ra
-                JOIN routes r ON ra.route_id = r.id
-                JOIN trucks t ON ra.truck_id = t.id
-                WHERE ra.driver_id = ? AND ra.assigned_date = CURDATE()
-                LIMIT 1`,
+                ra.id, ra.assigned_date, ra.status, ra.pickup_type,
+                r.id as route_id, r.zone_name, r.description as zone_description,
+                t.id as truck_id, t.plate_number, t.model
+            FROM route_assignments ra
+            JOIN routes r ON ra.route_id = r.id
+            JOIN trucks t ON ra.truck_id = t.id
+            WHERE ra.driver_id = ? AND ra.assigned_date = CURDATE()
+            ORDER BY ra.id ASC`,
                 [driverId]
             );
 
-            if (assignment.length) {
-                socket.emit('assignment-update', assignment[0]);
-
-                const [route] = await db.query(
-                    'SELECT waypoints_json FROM routes WHERE id = ?',
-                    [assignment[0].route_id]
-                );
-
-                if (route.length && route[0].waypoints_json) {
-                    socket.emit('route-waypoints', {
-                        route_id: assignment[0].route_id,
-                        waypoints: route[0].waypoints_json
-                    });
-                }
-            }
+            // Always emit an array — client's assignment-update handler expects it
+            socket.emit('assignment-update', assignments);
 
             const [stats] = await db.query(
                 `SELECT 
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
-                FROM route_assignments
-                WHERE driver_id = ?`,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
+            FROM route_assignments
+            WHERE driver_id = ?`,
                 [driverId]
             );
             socket.emit('stats-update', stats[0]);
@@ -276,7 +264,7 @@ io.on('connection', (socket) => {
 
     socket.on('driver-location', async (data) => {
         try {
-            const { latitude, longitude, accuracy, timestamp } = data;
+            const { latitude, longitude, accuracy, timestamp, assignmentId } = data;
             const driverId = socket.driverId;
 
             if (!driverId) {
@@ -284,29 +272,44 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            const [assignment] = await db.query(
-                `SELECT truck_id FROM route_assignments 
-                 WHERE driver_id = ? AND assigned_date = CURDATE() 
-                 LIMIT 1`,
-                [driverId]
-            );
+            let assignment;
+            if (assignmentId) {
+                const [rows] = await db.query(
+                    `SELECT id, truck_id FROM route_assignments
+                 WHERE id = ? AND driver_id = ? AND assigned_date = CURDATE()`,
+                    [assignmentId, driverId]
+                );
+                assignment = rows[0];
+            }
 
-            if (assignment.length) {
+            if (!assignment) {
+                // No/invalid assignmentId supplied — fall back to the most
+                // relevant assignment: in-progress first, else earliest pending.
+                const [rows] = await db.query(
+                    `SELECT id, truck_id FROM route_assignments
+                 WHERE driver_id = ? AND assigned_date = CURDATE()
+                 ORDER BY FIELD(status,'in_progress','pending','completed','cancelled'), id ASC
+                 LIMIT 1`,
+                    [driverId]
+                );
+                assignment = rows[0];
+            }
+
+            if (assignment) {
                 await db.query(
                     'UPDATE trucks SET latitude = ?, longitude = ?, location_updated_at = NOW() WHERE id = ?',
-                    [latitude, longitude, assignment[0].truck_id]
+                    [latitude, longitude, assignment.truck_id]
                 );
 
                 await db.query(
                     `INSERT INTO trip_logs (assignment_id, latitude, longitude, logged_at)
-                     SELECT ra.id, ?, ?, NOW()
-                     FROM route_assignments ra
-                     WHERE ra.driver_id = ? AND ra.assigned_date = CURDATE()
-                     LIMIT 1`,
-                    [latitude, longitude, driverId]
+                 VALUES (?, ?, ?, NOW())`,
+                    [assignment.id, latitude, longitude]
                 );
+
                 io.emit('truck-location', {
-                    truckId: assignment[0].truck_id,
+                    truckId: assignment.truck_id,
+                    assignmentId: assignment.id,
                     latitude, longitude, accuracy,
                     timestamp: timestamp || Date.now()
                 });
@@ -314,6 +317,7 @@ io.on('connection', (socket) => {
 
             socket.broadcast.to(`dispatcher-${driverId}`).emit('driver-moved', {
                 driverId,
+                assignmentId: assignment ? assignment.id : null,
                 latitude,
                 longitude,
                 accuracy,
@@ -351,8 +355,8 @@ io.on('connection', (socket) => {
             if (status === 'completed') {
                 await db.query(
                     `INSERT INTO trip_logs (assignment_id, completed_at, status)
-                     VALUES (?, NOW(), 'completed')
-                     ON DUPLICATE KEY UPDATE completed_at = NOW(), status = 'completed'`,
+                 VALUES (?, NOW(), 'completed')
+                 ON DUPLICATE KEY UPDATE completed_at = NOW(), status = 'completed'`,
                     [assignmentId]
                 );
             }
@@ -363,6 +367,21 @@ io.on('connection', (socket) => {
                 timestamp: new Date()
             });
             io.emit('assignment-public-status', { assignmentId, status, driverId });
+
+            // NEW: push the refreshed set of today's assignments so tabs update live
+            const [assignments] = await db.query(
+                `SELECT 
+                ra.id, ra.assigned_date, ra.status, ra.pickup_type,
+                r.id as route_id, r.zone_name, r.description as zone_description,
+                t.id as truck_id, t.plate_number, t.model
+            FROM route_assignments ra
+            JOIN routes r ON ra.route_id = r.id
+            JOIN trucks t ON ra.truck_id = t.id
+            WHERE ra.driver_id = ? AND ra.assigned_date = CURDATE()
+            ORDER BY ra.id ASC`,
+                [driverId]
+            );
+            io.to(`driver-${driverId}`).emit('assignment-update', assignments);
 
             socket.broadcast.to(`dispatcher-${driverId}`).emit('driver-status-changed', {
                 driverId,
@@ -392,8 +411,8 @@ io.on('connection', (socket) => {
             }
 
             await db.query(
-                `INSERT INTO reports (resident_id, type, description, location_note, created_at)
-                 VALUES (?, ?, ?, ?, NOW())`,
+                `INSERT INTO reports (resident_id, type, description, location_note, status, created_at)
+     VALUES (?, ?, ?, ?, 'pending', NOW())`,
                 [driverId, type, description, location_note || null]
             );
 

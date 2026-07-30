@@ -140,6 +140,16 @@
                     <div class="date-pill" id="pill-week" onclick="setDateFilter('week')">This Week</div>
                     <div class="date-pill" id="pill-month" onclick="setDateFilter('month')">This Month</div>
                 </div>
+                <div class="date-pills" style="margin-bottom:15px;">
+                    <div class="date-pill active" id="pill-status-all" onclick="setStatusFilter('all')">All Status</div>
+                    <div class="date-pill" id="pill-status-pending" onclick="setStatusFilter('pending')">Pending</div>
+                    <div class="date-pill" id="pill-status-in_progress" onclick="setStatusFilter('in_progress')">In
+                        Progress</div>
+                    <div class="date-pill" id="pill-status-resolved" onclick="setStatusFilter('resolved')">Resolved
+                    </div>
+                    <div class="date-pill" id="pill-status-rejected" onclick="setStatusFilter('rejected')">Rejected
+                    </div>
+                </div>
 
                 <div class="tab-buttons">
                     <button class="tab-btn active" onclick="switchTab('reports')">📋 Resident Reports</button>
@@ -162,6 +172,7 @@
                                     <th>Description</th>
                                     <th>Reporter</th>
                                     <th>Date</th>
+                                    <th>Status</th>
                                     <th>Photo</th>
                                     <th>Map</th>
                                 </tr>

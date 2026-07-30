@@ -147,7 +147,8 @@
                     Use <strong>🛣️ Road layer</strong> to click &amp; draw the road path — drag vertices to reshape,
                     drag ghost dots to add mid-points, right-click a vertex to delete it.
                     Use <strong>📍 Pin layer</strong> to drop numbered collection stop markers anywhere.
-                    Use <strong>🏭 Mark MRF Stop</strong> to manually stamp an MRF facility.
+                    Use <strong>🏭 Mark MRF Stop</strong> to manually stamp an MRF facility — right-click any placed MRF
+                    stop to remove it.
                     The dashed teal circles are your saved <strong>real MRF facility locations</strong> (managed via
                     "🏭 MRF Facilities" in the top bar) — click one and choose <em>Use as MRF Stop Here</em> to snap
                     this route's MRF stop exactly onto it. All layers are saved together.
@@ -170,7 +171,7 @@
 
                 <div class="map-toolbar">
                     <button class="map-tool-btn" onclick="undoLast()">↩ Undo</button>
-                    <button class="map-tool-btn" onclick="clearActiveLayer()">🗑 Clear Layer</button>
+                    <button class="map-tool-btn" onclick="clearMRFStopsOnly()">🗑 Clear MRF Stops</button>
                     <button class="map-tool-btn" onclick="clearAll()">🗑 Clear All</button>
                     <span id="wpCountLabel" style="font-size:0.7rem;color:var(--text2);"></span>
                     <button class="map-tool-btn" id="markingMapSatBtn" onclick="toggleMarkingMapSatellite()"

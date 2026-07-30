@@ -6,13 +6,62 @@ function getToken() {
     return localStorage.getItem('token');
 }
 
+// PUT support was missing from API
 const API = {
     get: async (endpoint) => {
         return fetch(API_URL + endpoint, {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
+    },
+    put: async (endpoint, data) => {
+        return fetch(API_URL + endpoint, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(data)
+        });
     }
 };
+
+const STATUS_LABEL = { pending: 'Pending', in_progress: 'In Progress', resolved: 'Resolved', rejected: 'Rejected' };
+const STATUS_BADGE = { pending: 'badge-gold', in_progress: 'badge-blue', resolved: 'badge-green', rejected: 'badge-red' };
+
+let activeStatusFilter = 'all';
+
+function setStatusFilter(s) {
+    activeStatusFilter = s;
+    ['all', 'pending', 'in_progress', 'resolved', 'rejected'].forEach(k => {
+        document.getElementById(`pill-status-${k}`).classList.toggle('active', k === s);
+    });
+    applyFilters();
+}
+window.setStatusFilter = setStatusFilter;
+
+// inside applyFilters(), add status matching:
+filtered = reports.filter(r => {
+    const matchQ = !q || (r.description || '').toLowerCase().includes(q);
+    const matchTp = !tp || r.type === tp;
+    const matchDt = inDateRange(r, activeDateFilter);
+    const matchSt = activeStatusFilter === 'all' || r.status === activeStatusFilter;
+    return matchQ && matchTp && matchDt && matchSt;
+});
+
+
+
+async function resolveReport(id) {
+    try {
+        const res = await API.put(`/admin/reports/${id}/status`, { status: 'resolved' });
+        if (!res.ok) throw new Error();
+        showToast('Report marked resolved', 'success');
+        await loadReports();
+    } catch {
+        showToast('Failed to update report', 'error');
+    }
+}
+window.resolveReport = resolveReport;
+
 
 function checkAuth() {
     const token = getToken();
@@ -341,14 +390,14 @@ function setDateFilter(f) {
 function applyFilters() {
     const q = document.getElementById('searchInput').value.toLowerCase();
     const tp = document.getElementById('typeFilter').value;
-
     const reports = Array.isArray(allReports) ? allReports : [];
 
     filtered = reports.filter(r => {
         const matchQ = !q || (r.description || '').toLowerCase().includes(q);
         const matchTp = !tp || r.type === tp;
         const matchDt = inDateRange(r, activeDateFilter);
-        return matchQ && matchTp && matchDt;
+        const matchSt = activeStatusFilter === 'all' || r.status === activeStatusFilter;   // ADD THIS
+        return matchQ && matchTp && matchDt && matchSt;   // ADD matchSt HERE
     });
 
     renderTable(filtered);
@@ -365,7 +414,7 @@ function renderTable(data) {
     const tbody = document.getElementById('reportsBody');
     if (!data.length) {
         tbody.innerHTML =
-            `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No reports match this filter</div></div></td></tr>`;
+            `<tr><td colspan="8"><div class="empty-state">...</div></td></tr>`;  // colspan 7→8
         return;
     }
     tbody.innerHTML = data.map((r, i) => {
@@ -379,8 +428,12 @@ function renderTable(data) {
                 </td>
                 <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
                 <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
+                <td><span class="badge ${STATUS_BADGE[r.status] || 'badge-gray'}">${STATUS_LABEL[r.status] || r.status || 'pending'}</span></td>
                 <td style="text-align:center;">${hasImage ? `<img src="${r.image_url}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${r.image_url}')" onerror="this.style.display='none'" loading="lazy">` : '—'}</td>
-                <td style="text-align:center;"><button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button></td>
+                <td style="text-align:center;display:flex;gap:4px;justify-content:center;">
+                    <button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button>
+                    ${r.status !== 'resolved' ? `<button class="btn btn-outline btn-sm btn-icon" title="Mark resolved" onclick='event.stopPropagation();resolveReport(${r.id})'>✅</button>` : ''}
+                </td>
              </tr>`;
     }).join('');
 }
