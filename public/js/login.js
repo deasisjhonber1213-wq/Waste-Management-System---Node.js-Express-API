@@ -7,16 +7,10 @@ document.getElementById("togglePasswordBtn")?.addEventListener("click", function
     const showing = input.type === "text";
 
     input.type = showing ? "password" : "text";
-    eye.hidden = !showing;
-    eyeOff.hidden = showing;
+    eye.hidden = !showing;      // when showing password → hide the open eye
+    eyeOff.hidden = showing;    // when showing password → show the closed eye
     this.setAttribute("aria-label", showing ? "Show password" : "Hide password");
 });
-
-document.addEventListener("keydown", e => {
-    if (e.key === "Enter") login();
-});
-
-document.getElementById("loginBtn")?.addEventListener("click", login);
 
 async function login() {
     const email = document.getElementById("email").value.trim().toLowerCase();
@@ -27,11 +21,13 @@ async function login() {
 
     clearAlert();
 
+    // Validate first – never enter loading state on empty fields
     if (!email || !password) {
         showAlert("Email and password are required.", "error");
         return;
     }
 
+    // Only now show loading
     btn.disabled = true;
     btnText.hidden = true;
     btnLoader.hidden = false;
@@ -59,18 +55,27 @@ async function login() {
             }, 900);
         } else {
             showAlert(data.error || data.message || "Invalid credentials", "error");
-            btn.disabled = false;
-            btnText.hidden = false;
-            btnLoader.hidden = true;
+            resetButton(btn, btnText, btnLoader);
         }
     } catch (err) {
         console.error(err);
         showAlert("Connection error. Please try again.", "error");
-        btn.disabled = false;
-        btnText.hidden = false;
-        btnLoader.hidden = true;
+        resetButton(btn, btnText, btnLoader);
     }
 }
+
+function resetButton(btn, btnText, btnLoader) {
+    btn.disabled = false;
+    btnText.hidden = false;
+    btnLoader.hidden = true;
+}
+
+document.addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+});
+
+document.getElementById("loginBtn")?.addEventListener("click", login);
+
 
 function showAlert(msg, type) {
     const el = document.getElementById("alertBox");

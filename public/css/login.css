@@ -20,7 +20,50 @@
     padding: 0;
     box-sizing: border-box;
 }
+/* ── Make `hidden` always work ── */
+[hidden] {
+    display: none !important;
+}
 
+/* Button loader – only visible when NOT hidden */
+.btn-loader {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Password toggle – both icons live here, only one is shown */
+.toggle-password {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 7px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, background 0.2s;
+}
+
+.toggle-password svg {
+    width: 18px;
+    height: 18px;
+}
+
+.toggle-password:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.toggle-password:focus-visible {
+    outline: 2px solid var(--glow);
+    outline-offset: 2px;
+}
 html, body {
     min-height: 100%;
     font-family: var(--body);
@@ -328,37 +371,7 @@ html, body {
     padding-right: 48px;
 }
 
-.toggle-password {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 7px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s, background 0.2s;
-}
 
-.toggle-password svg {
-    width: 18px;
-    height: 18px;
-}
-
-.toggle-password:hover {
-    color: var(--text);
-    background: rgba(255, 255, 255, 0.07);
-}
-
-.toggle-password:focus-visible {
-    outline: 2px solid var(--glow);
-    outline-offset: 2px;
-}
 
 /* ── Forgot ── */
 .forgot-row {
