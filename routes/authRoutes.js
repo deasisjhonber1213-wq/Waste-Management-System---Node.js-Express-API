@@ -3,11 +3,13 @@ const router = express.Router();
 const controller = require("../controllers/authController");
 const { protect } = require("../middleware/auth");
 
-// Public routes with rate limiting already applied in server.js
+// Public
 router.post("/register", controller.register);
 router.post("/login", controller.login);
+router.post("/forgot-password", controller.forgotPassword);
+router.post("/reset-password", controller.resetPassword);
 
-// Protected routes
+// Protected
 router.post("/logout", protect, controller.logout);
 router.post("/change-password", protect, controller.changePassword);
 router.get("/profile", protect, controller.getProfile);

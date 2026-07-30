@@ -512,6 +512,13 @@ app.use('/pages', express.static(path.join(__dirname, 'public/pages'), {
     index: false
 }));
 
+const recoveryLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { error: "Too many recovery attempts, try again later." }
+});
+app.use("/api/auth/forgot-password", recoveryLimiter);
+app.use("/api/auth/reset-password", recoveryLimiter);
 // ---------- PAGE ROUTES (public/pages/...) ----------
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/pages', 'login.html'));

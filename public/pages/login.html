@@ -12,13 +12,11 @@
 </head>
 
 <body>
-
     <div class="bg"></div>
 
     <div class="page">
         <div class="left">
             <div class="brand-logo">
-                <div class="brand-icon">♻</div>
                 <div class="brand-name">
                     Waste Monitoring
                     <span>Jose Dalman · Zamboanga del Norte</span>
@@ -52,23 +50,6 @@
 
         <div class="right">
             <div class="card">
-                <div style="display:none; text-align:center; margin-bottom:24px;" class="mobile-brand">
-                    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
-                        <div
-                            style="width:38px; height:38px; background:var(--glow); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#060d08; font-weight:900;">
-                            ♻</div>
-                        <div
-                            style="font-family:var(--head); font-size:1rem; font-weight:800; letter-spacing:-0.02em; color:var(--glow); line-height:1.2;">
-                            Waste Monitoring
-                            <span
-                                style="display:block; font-size:0.6rem; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted);">Jose
-                                Dalman · ZDN</span>
-                        </div>
-                    </div>
-                    <div style="color:var(--muted); font-size:0.7rem; font-weight:400;">Real-time tracking & reporting
-                    </div>
-                </div>
-
                 <div class="card-title">Welcome back</div>
                 <div class="card-sub">Sign in to access your portal.</div>
 
@@ -77,6 +58,7 @@
                     <input type="email" id="email" class="form-input" placeholder="you@example.com"
                         autocomplete="email">
                 </div>
+
                 <div class="form-group">
                     <label class="form-label">Password</label>
                     <div class="password-wrapper">
@@ -84,12 +66,22 @@
                             autocomplete="current-password">
                         <button type="button" id="togglePasswordBtn" class="toggle-password"
                             aria-label="Toggle password visibility">
-                            👁️
+                            Show
                         </button>
                     </div>
                 </div>
 
-                <button class="btn" id="loginBtn">Sign In</button>
+                <div class="forgot-row">
+                    <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+                </div>
+
+                <button class="btn" id="loginBtn">
+                    <span class="btn-text">Sign In</span>
+                    <span class="btn-loader" hidden>
+                        <span class="spinner"></span>
+                        Signing in…
+                    </span>
+                </button>
 
                 <div class="alert" id="alertBox"></div>
 

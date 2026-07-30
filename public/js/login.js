@@ -1,121 +1,85 @@
+const API_URL = window.location.origin + "/api";
 
-const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
-
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const loginBtn = document.getElementById('loginBtn');
-const alertBox = document.getElementById('alertBox');
-const togglePasswordBtn = document.getElementById('togglePasswordBtn');
-
-togglePasswordBtn.addEventListener('click', function () {
-    const input = passwordInput;
-    if (!input) return;
-    if (input.type === 'password') {
-        input.type = 'text';
-        this.textContent = '🙈';
+document.getElementById("togglePasswordBtn")?.addEventListener("click", function () {
+    const input = document.getElementById("password");
+    if (input.type === "password") {
+        input.type = "text";
+        this.textContent = "Hide";
     } else {
-        input.type = 'password';
-        this.textContent = '👁️';
+        input.type = "password";
+        this.textContent = "Show";
     }
 });
 
-function showAlert(msg, type) {
-    alertBox.textContent = '';
-    alertBox.textContent = msg;
-    alertBox.className = 'alert ' + type;
-}
+document.addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+});
+
+document.getElementById("loginBtn")?.addEventListener("click", login);
 
 async function login() {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    const password = document.getElementById("password").value;
+    const btn = document.getElementById("loginBtn");
+    const btnText = btn.querySelector(".btn-text");
+    const btnLoader = btn.querySelector(".btn-loader");
 
-    alertBox.className = 'alert';
-    alertBox.textContent = '';
+    clearAlert();
 
     if (!email || !password) {
-        showAlert('Please enter your email and password.', 'error');
+        showAlert("Email and password are required.", "error");
         return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showAlert('Please enter a valid email address.', 'error');
-        return;
-    }
-
-    loginBtn.disabled = true;
-    loginBtn.textContent = 'Signing in…';
+    // Loading state
+    btn.disabled = true;
+    btnText.hidden = true;
+    btnLoader.hidden = false;
 
     try {
-        console.log('📤 Sending login request to:', API_URL + '/auth/login');
-
-        const response = await fetch(API_URL + '/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'include',
+        const res = await fetch(API_URL + "/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         });
 
-        const data = await response.json();
+        const data = await res.json();
 
-        if (response.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('role', data.role);
-            showAlert('Login successful! Redirecting…', 'success');
+        if (res.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            localStorage.setItem("role", data.role);
+
+            showAlert("Signed in successfully. Redirecting…", "success");
 
             setTimeout(() => {
-                const redirectMap = {
-                    'admin': '/admin/dashboard',
-                    'resident': '/resident/dashboard',
-                    'driver': '/driver/dashboard'
-                };
-                const redirectPath = redirectMap[data.role] || '/';
-                window.location.href = redirectPath;
+                if (data.role === "admin") window.location = "/admin/dashboard";
+                else if (data.role === "driver") window.location = "/driver/dashboard";
+                else window.location = "/resident/dashboard";
             }, 900);
         } else {
-            showAlert(data.message || 'Invalid credentials. Please try again.', 'error');
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Sign In';
-            passwordInput.value = '';
-            passwordInput.focus();
+            showAlert(data.error || data.message || "Invalid credentials", "error");
+            btn.disabled = false;
+            btnText.hidden = false;
+            btnLoader.hidden = true;
         }
-
     } catch (err) {
-        console.error('❌ Login error:', err);
-        showAlert('Connection error. Please check your internet connection and try again.', 'error');
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Sign In';
+        console.error(err);
+        showAlert("Connection error. Please try again.", "error");
+        btn.disabled = false;
+        btnText.hidden = false;
+        btnLoader.hidden = true;
     }
 }
 
-loginBtn.addEventListener('click', login);
-
-document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        login();
-    }
-});
-
-async function testConnection() {
-    try {
-        const response = await fetch(API_URL + '/health', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        if (response.ok) {
-            console.log('✅ API is reachable');
-        } else {
-            console.warn('⚠️ API returned:', response.status);
-        }
-    } catch (error) {
-        console.warn('⚠️ API not reachable:', error);
-    }
+function showAlert(msg, type) {
+    const el = document.getElementById("alertBox");
+    el.textContent = msg;
+    el.className = "alert " + type;
 }
 
-document.addEventListener('DOMContentLoaded', testConnection);
+function clearAlert() {
+    const el = document.getElementById("alertBox");
+    el.className = "alert";
+    el.textContent = "";
+}
