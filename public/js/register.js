@@ -36,12 +36,17 @@ function clearAlert() {
     el.textContent = "";
 }
 
-// Password show/hide
+// Password show/hide + blink
 document.getElementById("togglePasswordBtn")?.addEventListener("click", function () {
     const input = document.getElementById("password");
     const eye = this.querySelector(".icon-eye");
     const eyeOff = this.querySelector(".icon-eye-off");
     const showing = input.type === "text";
+
+    // Trigger blink animation
+    this.classList.remove("blink");
+    void this.offsetWidth;          // force reflow so animation can restart
+    this.classList.add("blink");
 
     input.type = showing ? "password" : "text";
     if (eye) eye.hidden = !showing;
