@@ -23,17 +23,32 @@ function isValidEmail(email) {
     return true;
 }
 
-function togglePassword(inputId, btn) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    if (input.type === 'password') {
-        input.type = 'text';
-        btn.textContent = 'Hide';
-    } else {
-        input.type = 'password';
-        btn.textContent = 'Show';
-    }
-}
+// Password toggle
+document.getElementById("togglePasswordBtn")?.addEventListener("click", function () {
+    const input = document.getElementById("password");
+    const eye = this.querySelector(".icon-eye");
+    const eyeOff = this.querySelector(".icon-eye-off");
+    const showing = input.type === "text";
+
+    input.type = showing ? "password" : "text";
+    eye.hidden = !showing;
+    eyeOff.hidden = showing;
+    this.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+});
+
+// In register():
+const btn = document.getElementById("regBtn");
+const btnText = btn.querySelector(".btn-text");
+const btnLoader = btn.querySelector(".btn-loader");
+
+btn.disabled = true;
+btnText.hidden = true;
+btnLoader.hidden = false;
+
+// On error / finish:
+btn.disabled = false;
+btnText.hidden = false;
+btnLoader.hidden = true;
 
 document.addEventListener('keydown', e => {
     if (e.key === 'Enter') register();

@@ -2,13 +2,14 @@ const API_URL = window.location.origin + "/api";
 
 document.getElementById("togglePasswordBtn")?.addEventListener("click", function () {
     const input = document.getElementById("password");
-    if (input.type === "password") {
-        input.type = "text";
-        this.textContent = "Hide";
-    } else {
-        input.type = "password";
-        this.textContent = "Show";
-    }
+    const eye = this.querySelector(".icon-eye");
+    const eyeOff = this.querySelector(".icon-eye-off");
+    const showing = input.type === "text";
+
+    input.type = showing ? "password" : "text";
+    eye.hidden = !showing;
+    eyeOff.hidden = showing;
+    this.setAttribute("aria-label", showing ? "Show password" : "Hide password");
 });
 
 document.addEventListener("keydown", e => {
@@ -83,3 +84,4 @@ function clearAlert() {
     el.className = "alert";
     el.textContent = "";
 }
+
