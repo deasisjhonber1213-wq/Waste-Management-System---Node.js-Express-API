@@ -1,14 +1,16 @@
 :root {
     --glow: #4ade80;
+    --glow-soft: #86efac;
     --glow-dim: rgba(74, 222, 128, 0.12);
-    --glow-mid: rgba(74, 222, 128, 0.35);
-    --border: rgba(74, 222, 128, 0.16);
-    --border-strong: rgba(74, 222, 128, 0.28);
+    --glow-mid: rgba(74, 222, 128, 0.32);
+    --border: rgba(74, 222, 128, 0.18);
+    --border-strong: rgba(74, 222, 128, 0.38);
     --text: #e8f7ed;
     --muted: #7aaa88;
     --danger: #f87171;
-    --surface: rgba(4, 12, 7, 0.55);
-    --surface-focus: rgba(4, 14, 8, 0.75);
+    --surface: rgba(6, 16, 10, 0.62);
+    --surface-focus: rgba(8, 20, 12, 0.82);
+    --card-bg: rgba(5, 14, 9, 0.72);
     --head: 'Inter', system-ui, sans-serif;
     --body: 'Inter', system-ui, sans-serif;
 }
@@ -27,7 +29,7 @@ html, body {
     color: var(--text);
 }
 
-/* Background */
+/* ── Background ── */
 .bg {
     position: fixed;
     inset: 0;
@@ -41,9 +43,9 @@ html, body {
     inset: 0;
     background: linear-gradient(
         165deg,
-        rgba(3, 8, 4, 0.45) 0%,
-        rgba(4, 12, 6, 0.62) 45%,
-        rgba(3, 8, 4, 0.88) 100%
+        rgba(3, 8, 4, 0.48) 0%,
+        rgba(4, 12, 6, 0.68) 50%,
+        rgba(2, 7, 4, 0.92) 100%
     );
 }
 
@@ -52,11 +54,11 @@ html, body {
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    opacity: 0.4;
+    opacity: 0.35;
     pointer-events: none;
 }
 
-/* Layout */
+/* ── Layout ── */
 .page {
     position: relative;
     z-index: 1;
@@ -70,47 +72,68 @@ html, body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(32px, 6vw, 64px) clamp(28px, 5vw, 72px);
-    background: linear-gradient(90deg, rgba(3, 8, 4, 0.55) 0%, rgba(3, 8, 4, 0.12) 100%);
+    padding: clamp(32px, 6vw, 72px) clamp(28px, 5vw, 80px);
+    background: linear-gradient(90deg, rgba(2, 7, 4, 0.58) 0%, rgba(2, 7, 4, 0.08) 100%);
 }
 
 .right {
-    width: min(440px, 100%);
+    width: min(460px, 100%);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(24px, 4vw, 40px);
-    background: rgba(4, 10, 5, 0.28);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    padding: clamp(24px, 4vw, 48px);
+    background: rgba(3, 9, 5, 0.32);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
     border-left: 1px solid var(--border);
     overflow-y: auto;
 }
 
+/* ── Card ── */
 .card {
     width: 100%;
-    max-width: 360px;
+    max-width: 380px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 28px 28px;
+    box-shadow:
+        0 0 0 1px rgba(74, 222, 128, 0.04),
+        0 24px 48px -12px rgba(0, 0, 0, 0.45),
+        0 8px 24px -8px rgba(0, 0, 0, 0.3);
+    animation: cardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Brand */
+@keyframes cardIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Brand ── */
 .brand-logo {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: clamp(36px, 5vw, 52px);
+    margin-bottom: clamp(36px, 5vw, 56px);
 }
 
 .brand-icon {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     background: var(--glow);
-    border-radius: 11px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 4px 16px rgba(74, 222, 128, 0.25);
+    box-shadow: 0 4px 18px rgba(74, 222, 128, 0.32);
 }
 
 .brand-icon svg {
@@ -121,24 +144,24 @@ html, body {
 
 .brand-name {
     font-family: var(--head);
-    font-size: 1.15rem;
+    font-size: 1.18rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
     color: var(--glow);
     line-height: 1.2;
 }
 
 .brand-name span {
     display: block;
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 500;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
-/* Mobile brand (shown only on small screens) */
+/* Mobile brand */
 .mobile-brand {
     display: none;
     text-align: center;
@@ -147,7 +170,7 @@ html, body {
 
 .mobile-brand .brand-logo {
     justify-content: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .mobile-brand-sub {
@@ -156,15 +179,15 @@ html, body {
     font-weight: 400;
 }
 
-/* Hero */
+/* ── Hero ── */
 .hero-headline {
     font-family: var(--head);
-    font-size: clamp(2.1rem, 3.8vw, 3.5rem);
+    font-size: clamp(2.15rem, 3.9vw, 3.55rem);
     font-weight: 800;
-    line-height: 0.98;
-    letter-spacing: -0.03em;
+    line-height: 0.97;
+    letter-spacing: -0.035em;
     color: var(--text);
-    margin-bottom: 18px;
+    margin-bottom: 20px;
 }
 
 .hero-headline em {
@@ -173,71 +196,73 @@ html, body {
 }
 
 .hero-sub {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 400;
     color: var(--muted);
     line-height: 1.7;
-    max-width: 360px;
-    margin-bottom: 36px;
+    max-width: 380px;
+    margin-bottom: 40px;
 }
 
 .hero-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 28px 36px;
+    gap: 28px 40px;
 }
 
 .stat-num {
     font-family: var(--head);
-    font-size: 1.65rem;
+    font-size: 1.7rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     color: var(--glow);
     line-height: 1.1;
 }
 
 .stat-lbl {
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    margin-top: 3px;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
 }
 
-/* Card text */
+/* ── Card header ── */
+.card-header {
+    margin-bottom: 28px;
+}
+
 .card-title {
     font-family: var(--head);
-    font-size: clamp(1.45rem, 2.5vw, 1.75rem);
+    font-size: 1.55rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
     color: var(--text);
     margin-bottom: 6px;
     line-height: 1.15;
 }
 
 .card-sub {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 400;
     color: var(--muted);
-    margin-bottom: 28px;
     line-height: 1.5;
 }
 
-/* Forms */
+/* ── Forms ── */
 .form-group {
-    margin-bottom: 14px;
-    position: relative;
+    margin-bottom: 16px;
 }
 
 .form-label {
     display: block;
-    font-size: 0.64rem;
+    font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 0.07em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 7px;
+    margin-bottom: 8px;
 }
 
 .input-wrap {
@@ -248,7 +273,7 @@ html, body {
 
 .input-icon {
     position: absolute;
-    left: 13px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
     width: 18px;
@@ -258,6 +283,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: color 0.2s;
 }
 
 .input-icon svg {
@@ -267,10 +293,10 @@ html, body {
 
 .form-input {
     width: 100%;
-    padding: 12px 14px 12px 42px;
+    padding: 13px 14px 13px 44px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     color: var(--text);
     font-family: var(--body);
     font-size: 0.9rem;
@@ -280,13 +306,22 @@ html, body {
 }
 
 .form-input::placeholder {
-    color: rgba(122, 170, 136, 0.42);
+    color: rgba(122, 170, 136, 0.4);
+}
+
+.form-input:hover {
+    border-color: rgba(74, 222, 128, 0.28);
 }
 
 .form-input:focus {
     border-color: var(--border-strong);
     background: var(--surface-focus);
     box-shadow: 0 0 0 3px var(--glow-dim);
+}
+
+.form-input:focus + .input-icon,
+.input-wrap:focus-within .input-icon {
+    color: var(--glow);
 }
 
 .password-wrapper .form-input {
@@ -302,8 +337,8 @@ html, body {
     border: none;
     color: var(--muted);
     cursor: pointer;
-    padding: 6px;
-    border-radius: 7px;
+    padding: 7px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -317,16 +352,22 @@ html, body {
 
 .toggle-password:hover {
     color: var(--text);
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.07);
 }
 
+.toggle-password:focus-visible {
+    outline: 2px solid var(--glow);
+    outline-offset: 2px;
+}
+
+/* ── Forgot ── */
 .forgot-row {
     text-align: right;
-    margin: -2px 0 14px;
+    margin: -4px 0 18px;
 }
 
 .forgot-link {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--muted);
     text-decoration: none;
     font-weight: 500;
@@ -337,59 +378,50 @@ html, body {
     color: var(--glow);
 }
 
-/* Buttons */
+/* ── Button ── */
 .btn {
     width: 100%;
-    padding: 13px 16px;
+    padding: 14px 16px;
     background: var(--glow);
     color: #060d08;
     font-family: var(--head);
-    font-size: 0.84rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-    margin-top: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 46px;
+    min-height: 48px;
+    box-shadow: 0 4px 16px rgba(74, 222, 128, 0.22);
 }
 
 .btn:hover:not(:disabled) {
-    background: #86efac;
+    background: var(--glow-soft);
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(74, 222, 128, 0.3);
+    box-shadow: 0 8px 28px rgba(74, 222, 128, 0.35);
 }
 
 .btn:active:not(:disabled) {
     transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(74, 222, 128, 0.2);
 }
 
 .btn:disabled {
-    opacity: 0.7;
+    opacity: 0.65;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
-.btn-secondary {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    margin-top: 10px;
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text);
-    border-color: var(--border-strong);
-    box-shadow: none;
-    transform: none;
+.btn:focus-visible {
+    outline: 2px solid var(--glow-soft);
+    outline-offset: 3px;
 }
 
 .btn-loader {
@@ -401,7 +433,7 @@ html, body {
 .spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(6, 13, 8, 0.22);
+    border: 2px solid rgba(6, 13, 8, 0.25);
     border-top-color: #060d08;
     border-radius: 50%;
     animation: spin 0.65s linear infinite;
@@ -411,17 +443,17 @@ html, body {
     to { transform: rotate(360deg); }
 }
 
-/* Divider / foot / alert */
+/* ── Divider ── */
 .divider {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin: 22px 0 16px;
+    gap: 14px;
+    margin: 24px 0 18px;
     color: var(--muted);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
 }
 
 .divider::before,
@@ -432,10 +464,10 @@ html, body {
     background: var(--border);
 }
 
+/* ── Footer ── */
 .card-foot {
     text-align: center;
-    margin-top: 18px;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     color: var(--muted);
 }
 
@@ -443,25 +475,28 @@ html, body {
     color: var(--glow);
     text-decoration: none;
     font-weight: 600;
+    transition: opacity 0.2s;
 }
 
 .card-foot a:hover {
+    opacity: 0.85;
     text-decoration: underline;
 }
 
+/* ── Alert ── */
 .alert {
-    padding: 11px 14px;
-    border-radius: 9px;
-    font-size: 0.78rem;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.8rem;
     font-weight: 500;
-    margin-top: 14px;
+    margin-top: 16px;
     line-height: 1.5;
     display: none;
 }
 
 .alert.error {
     background: rgba(248, 113, 113, 0.1);
-    border: 1px solid rgba(248, 113, 113, 0.28);
+    border: 1px solid rgba(248, 113, 113, 0.3);
     color: var(--danger);
     display: block;
 }
@@ -473,7 +508,7 @@ html, body {
     display: block;
 }
 
-/* Recovery steps */
+/* ── Recovery helpers (kept for other pages) ── */
 .step { display: none; }
 .step.active { display: block; }
 
@@ -485,47 +520,73 @@ html, body {
     padding-left: 14px !important;
 }
 
-/* Responsive */
+/* ── Responsive ── */
 @media (max-width: 960px) {
-    .left { display: none; }
+    .left {
+        display: none;
+    }
 
     .right {
         width: 100%;
         border-left: none;
-        background: rgba(3, 8, 4, 0.38);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: rgba(2, 7, 4, 0.42);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         align-items: flex-start;
-        padding: 36px 24px 48px;
+        padding: 40px 24px 56px;
     }
 
-    .mobile-brand { display: block; }
+    .mobile-brand {
+        display: block;
+    }
 
     .card {
         max-width: 400px;
         margin: 0 auto;
+        padding: 28px 24px 24px;
     }
 }
 
 @media (max-width: 480px) {
     .right {
-        padding: 28px 18px 40px;
-        background: rgba(3, 8, 4, 0.48);
+        padding: 28px 16px 40px;
+        background: rgba(2, 7, 4, 0.55);
     }
 
-    .card-title { font-size: 1.4rem; }
-    .card-sub { font-size: 0.78rem; margin-bottom: 22px; }
+    .card {
+        padding: 24px 18px 20px;
+        border-radius: 16px;
+    }
+
+    .card-title {
+        font-size: 1.4rem;
+    }
+
+    .card-sub {
+        font-size: 0.8rem;
+    }
 
     .form-input {
-        font-size: 16px; /* prevents iOS zoom */
-        padding-top: 13px;
-        padding-bottom: 13px;
+        font-size: 16px; /* prevent iOS zoom */
+        padding-top: 14px;
+        padding-bottom: 14px;
     }
 
-    .btn { min-height: 48px; }
+    .btn {
+        min-height: 50px;
+    }
 }
 
 @media (max-width: 360px) {
-    .right { padding: 22px 14px 32px; }
-    .card-title { font-size: 1.28rem; }
+    .right {
+        padding: 20px 12px 32px;
+    }
+
+    .card {
+        padding: 20px 14px 18px;
+    }
+
+    .card-title {
+        font-size: 1.28rem;
+    }
 }

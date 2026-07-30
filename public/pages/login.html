@@ -13,6 +13,7 @@
     <div class="bg"></div>
 
     <div class="page">
+        <!-- Left hero -->
         <div class="left">
             <div class="brand-logo">
                 <div class="brand-icon" aria-hidden="true">
@@ -38,6 +39,7 @@
                 Real-time garbage truck tracking, automated schedules, and community reporting — all in one platform for
                 residents, drivers, and administrators.
             </p>
+
             <div class="hero-stats">
                 <div>
                     <div class="stat-num">24/7</div>
@@ -54,8 +56,10 @@
             </div>
         </div>
 
+        <!-- Right form panel -->
         <div class="right">
             <div class="card">
+                <!-- Mobile brand -->
                 <div class="mobile-brand">
                     <div class="brand-logo">
                         <div class="brand-icon" aria-hidden="true">
@@ -74,8 +78,10 @@
                     <div class="mobile-brand-sub">Real-time tracking & reporting</div>
                 </div>
 
-                <div class="card-title">Welcome back</div>
-                <div class="card-sub">Sign in to access your portal.</div>
+                <div class="card-header">
+                    <h2 class="card-title">Welcome back</h2>
+                    <p class="card-sub">Sign in to access your portal</p>
+                </div>
 
                 <div class="form-group">
                     <label class="form-label" for="email">Email address</label>
@@ -105,13 +111,11 @@
                         <input type="password" id="password" class="form-input" placeholder="••••••••"
                             autocomplete="current-password">
                         <button type="button" id="togglePasswordBtn" class="toggle-password" aria-label="Show password">
-                            <!-- eye -->
                             <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
                                 <circle cx="12" cy="12" r="3" />
                             </svg>
-                            <!-- eye-off (hidden by default via JS) -->
                             <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden>
                                 <path d="M9.9 4.2A10.3 10.3 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.2 3.1" />
@@ -137,7 +141,7 @@
 
                 <div class="alert" id="alertBox" role="alert"></div>
 
-                <div class="divider">or</div>
+                <div class="divider"><span>or</span></div>
 
                 <div class="card-foot">
                     Don't have an account?

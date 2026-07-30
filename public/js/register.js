@@ -1,29 +1,42 @@
-const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
+const API_URL = window.location.origin + "/api";
+const selectedRole = "resident";
 
-const selectedRole = 'resident';
-
-// Stronger email regex (blocks obvious fakes like a@b.c)
-const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+const EMAIL_REGEX =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
 function isValidEmail(email) {
     if (!email || email.length > 254) return false;
     if (!EMAIL_REGEX.test(email)) return false;
-
-    // Extra checks
-    const [local, domain] = email.split('@');
-    if (!local || !domain) return false;
-    if (local.length > 64) return false;
-    if (domain.includes('..')) return false;
-    if (!domain.includes('.')) return false;
-
-    const tld = domain.split('.').pop();
-    if (!tld || tld.length < 2) return false;
-
-    return true;
+    const [local, domain] = email.split("@");
+    if (!local || !domain || local.length > 64) return false;
+    if (domain.includes("..") || !domain.includes(".")) return false;
+    const tld = domain.split(".").pop();
+    return tld && tld.length >= 2;
 }
 
-// Password toggle
+function setLoading(loading) {
+    const btn = document.getElementById("regBtn");
+    if (!btn) return;
+    const btnText = btn.querySelector(".btn-text");
+    const btnLoader = btn.querySelector(".btn-loader");
+    btn.disabled = loading;
+    if (btnText) btnText.hidden = loading;
+    if (btnLoader) btnLoader.hidden = !loading;
+}
+
+function showAlert(msg, type) {
+    const el = document.getElementById("alertBox");
+    el.textContent = msg;
+    el.className = "alert " + type;
+}
+
+function clearAlert() {
+    const el = document.getElementById("alertBox");
+    el.className = "alert";
+    el.textContent = "";
+}
+
+// Password show/hide
 document.getElementById("togglePasswordBtn")?.addEventListener("click", function () {
     const input = document.getElementById("password");
     const eye = this.querySelector(".icon-eye");
@@ -31,28 +44,16 @@ document.getElementById("togglePasswordBtn")?.addEventListener("click", function
     const showing = input.type === "text";
 
     input.type = showing ? "password" : "text";
-    eye.hidden = !showing;
-    eyeOff.hidden = showing;
+    if (eye) eye.hidden = !showing;
+    if (eyeOff) eyeOff.hidden = showing;
     this.setAttribute("aria-label", showing ? "Show password" : "Hide password");
 });
 
-// In register():
-const btn = document.getElementById("regBtn");
-const btnText = btn.querySelector(".btn-text");
-const btnLoader = btn.querySelector(".btn-loader");
-
-btn.disabled = true;
-btnText.hidden = true;
-btnLoader.hidden = false;
-
-// On error / finish:
-btn.disabled = false;
-btnText.hidden = false;
-btnLoader.hidden = true;
-
-document.addEventListener('keydown', e => {
-    if (e.key === 'Enter') register();
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") register();
 });
+
+document.getElementById("regBtn")?.addEventListener("click", register);
 
 async function register() {
     const name = document.getElementById("name").value.trim();
@@ -60,7 +61,6 @@ async function register() {
     const password = document.getElementById("password").value;
     const phone = document.getElementById("phone").value.trim();
     const address = document.getElementById("address").value.trim();
-    const btn = document.getElementById("regBtn");
 
     clearAlert();
 
@@ -85,60 +85,36 @@ async function register() {
         return;
     }
 
-    btn.disabled = true;
-    btn.textContent = "Creating account…";
+    setLoading(true);
 
     try {
-        console.log('📤 Sending registration request to:', API_URL + '/auth/register');
-
         const res = await fetch(API_URL + "/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password, phone, address, role: selectedRole })
+            body: JSON.stringify({
+                name,
+                email,
+                password,
+                phone,
+                address,
+                role: selectedRole,
+            }),
         });
 
         const data = await res.json();
-        console.log('📥 Response:', data);
 
         if (res.ok) {
             showAlert("Resident account created! Redirecting to login…", "success");
-            setTimeout(() => window.location = "login.html", 1800);
+            setTimeout(() => {
+                window.location.href = "/login";
+            }, 1800);
         } else {
-            // Backend returns { error: "..." }
             showAlert(data.error || data.message || "Registration failed. Please try again.", "error");
-            btn.disabled = false;
-            btn.textContent = "Create Account →";
+            setLoading(false);
         }
     } catch (err) {
-        console.error('❌ Registration error:', err);
+        console.error("Registration error:", err);
         showAlert("Connection error. Please try again.", "error");
-        btn.disabled = false;
-        btn.textContent = "Create Account →";
+        setLoading(false);
     }
 }
-
-function showAlert(msg, type) {
-    const el = document.getElementById("alertBox");
-    el.textContent = msg;
-    el.className = "alert " + type;
-}
-
-function clearAlert() {
-    const el = document.getElementById("alertBox");
-    el.className = "alert";
-    el.textContent = "";
-}
-
-async function testConnection() {
-    try {
-        const response = await fetch(API_URL + '/health');
-        if (response.ok) {
-            console.log('✅ API is reachable');
-        } else {
-            console.warn('⚠️ API returned:', response.status);
-        }
-    } catch (error) {
-        console.warn('⚠️ API not reachable:', error);
-    }
-}
-testConnection();

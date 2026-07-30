@@ -32,7 +32,6 @@ async function login() {
         return;
     }
 
-    // Loading state
     btn.disabled = true;
     btnText.hidden = true;
     btnLoader.hidden = false;
@@ -84,4 +83,3 @@ function clearAlert() {
     el.className = "alert";
     el.textContent = "";
 }
-
