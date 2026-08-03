@@ -6,11 +6,33 @@ document.getElementById("togglePasswordBtn")?.addEventListener("click", function
     const eyeOff = this.querySelector(".icon-eye-off");
     const showing = input.type === "text";
 
+    this.classList.remove("blink");
+    void this.offsetWidth;
+    this.classList.add("blink");
+
     input.type = showing ? "password" : "text";
-    eye.hidden = !showing;      // when showing password → hide the open eye
-    eyeOff.hidden = showing;    // when showing password → show the closed eye
+    if (eye) eye.hidden = !showing;
+    if (eyeOff) eyeOff.hidden = showing;
     this.setAttribute("aria-label", showing ? "Show password" : "Hide password");
 });
+
+function showAlert(html, type) {
+    const el = document.getElementById("alertBox");
+    el.innerHTML = html;
+    el.className = "alert " + type;
+}
+
+function clearAlert() {
+    const el = document.getElementById("alertBox");
+    el.className = "alert";
+    el.textContent = "";
+}
+
+function resetButton(btn, btnText, btnLoader) {
+    btn.disabled = false;
+    btnText.hidden = false;
+    btnLoader.hidden = true;
+}
 
 async function login() {
     const email = document.getElementById("email").value.trim().toLowerCase();
@@ -21,13 +43,11 @@ async function login() {
 
     clearAlert();
 
-    // Validate first – never enter loading state on empty fields
     if (!email || !password) {
         showAlert("Email and password are required.", "error");
         return;
     }
 
-    // Only now show loading
     btn.disabled = true;
     btnText.hidden = true;
     btnLoader.hidden = false;
@@ -53,6 +73,13 @@ async function login() {
                 else if (data.role === "driver") window.location = "/driver/dashboard";
                 else window.location = "/resident/dashboard";
             }, 900);
+        } else if (data.code === "EMAIL_NOT_VERIFIED") {
+            const verifyUrl = `/verify-email?email=${encodeURIComponent(data.email || email)}`;
+            showAlert(
+                `Your email isn't verified yet. <a href="${verifyUrl}">Verify it now →</a>`,
+                "info"
+            );
+            resetButton(btn, btnText, btnLoader);
         } else {
             showAlert(data.error || data.message || "Invalid credentials", "error");
             resetButton(btn, btnText, btnLoader);
@@ -64,27 +91,8 @@ async function login() {
     }
 }
 
-function resetButton(btn, btnText, btnLoader) {
-    btn.disabled = false;
-    btnText.hidden = false;
-    btnLoader.hidden = true;
-}
-
 document.addEventListener("keydown", e => {
     if (e.key === "Enter") login();
 });
 
 document.getElementById("loginBtn")?.addEventListener("click", login);
-
-
-function showAlert(msg, type) {
-    const el = document.getElementById("alertBox");
-    el.textContent = msg;
-    el.className = "alert " + type;
-}
-
-function clearAlert() {
-    const el = document.getElementById("alertBox");
-    el.className = "alert";
-    el.textContent = "";
-}

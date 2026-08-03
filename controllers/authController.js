@@ -3,92 +3,280 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { revokeToken } = require("../middleware/auth");
+const { sendMail } = require("../utils/mailer");
 
+const APP_URL = (process.env.APP_URL || "http://localhost:5000").replace(/\/$/, "");
+const EMAIL_REGEX =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
+// ---------- Helpers ----------
+function generatePin() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function generateToken() {
+    return crypto.randomBytes(32).toString("hex");
+}
+
+async function logAction(userId, action, req) {
+    try {
+        await db.query(
+            `INSERT INTO audit_logs (user_id, action, ip_address) VALUES (?, ?, ?)`,
+            [userId, action, req.ip || req.connection.remoteAddress]
+        );
+    } catch (err) {
+        console.error("Audit log error:", err);
+    }
+}
+
+// ===========================================================
+// REGISTER  →  creates an unverified account and emails a PIN
+// + a one-click verification link.
+// ===========================================================
 exports.register = async (req, res) => {
     const { name, email, password, role, phone, address } = req.body;
 
     if (!name || !email || !password) {
         return res.status(400).json({ error: "Name, email, and password are required" });
     }
-
     if (password.length < 8) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!EMAIL_REGEX.test(email)) {
         return res.status(400).json({ error: "Invalid email format" });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
-        const [existing] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
+        const [existing] = await db.query("SELECT id, email_verified FROM users WHERE email = ?", [cleanEmail]);
         if (existing.length > 0) {
+            if (!existing[0].email_verified) {
+                return res.status(409).json({
+                    error: "Email already registered but not verified",
+                    message: "That email already has a pending registration. Check your inbox or request a new code.",
+                    requiresVerification: true
+                });
+            }
             return res.status(409).json({ error: "Email already registered" });
         }
 
         const hashed = await bcrypt.hash(password, 10);
-
         const userId = `USER-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-        await db.query(
-            `INSERT INTO users (id, name, email, password, role, phone, address)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [userId, name, email, hashed, role || "resident", phone || null, address || null]
-        );
+        const pin = generatePin();
+        const token = generateToken();
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         await db.query(
-            `INSERT INTO audit_logs (user_id, action, ip_address) 
-             VALUES (?, ?, ?)`,
-            [userId, 'User registered', req.ip || req.connection.remoteAddress]
+            `INSERT INTO users (id, name, email, password, role, phone, address, email_verified, verify_pin, verify_token, verify_expires)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+            [userId, name, cleanEmail, hashed, role || "resident", phone || null, address || null, pin, token, expires]
         );
+
+        await logAction(userId, "User registered", req);
+
+        const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
+
+        try {
+            await sendMail({
+                to: cleanEmail,
+                subject: "Verify your SmartWaste account",
+                eyebrow: "Verify your email",
+                title: `Hi ${name.split(" ")[0]}, confirm it's you`,
+                intro: "Enter the code below on the verification page, or just tap the button — either one confirms your email. It expires in 24 hours.",
+                code: pin,
+                ctaText: "Verify Email",
+                ctaUrl: verifyUrl,
+                footnote: "If you didn't create a SmartWaste account, you can ignore this email."
+            });
+        } catch (mailErr) {
+            console.error("Verification email failed to send:", mailErr);
+            // Account still exists; user can use "resend code" on the verify page.
+        }
 
         res.status(201).json({
-            message: "Registered successfully",
-            userId: userId
+            message: "Account created. Check your email for a verification code.",
+            userId,
+            email: cleanEmail,
+            requiresVerification: true
         });
     } catch (err) {
-        console.error('Registration error:', err);
+        console.error("Registration error:", err);
         res.status(500).json({ error: "Registration failed" });
     }
 };
-// At top of authController.js (keep your existing requires)
-const nodemailer = require("nodemailer");
 
-// ---------- Email transporter ----------
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: process.env.SMTP_PORT || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,      // e.g. your Gmail
-        pass: process.env.SMTP_PASS       // App Password
+// ===========================================================
+// VERIFY EMAIL — via 6-digit PIN (called from the verify page)
+// ===========================================================
+exports.verifyEmailPin = async (req, res) => {
+    const { email, pin } = req.body;
+
+    if (!email || !pin) {
+        return res.status(400).json({ error: "Email and PIN are required" });
     }
-});
 
-// ---------- Helper: generate 6-digit PIN ----------
-function generatePin() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
+    try {
+        const [rows] = await db.query(
+            "SELECT id, email_verified, verify_pin, verify_expires FROM users WHERE email = ?",
+            [email.trim().toLowerCase()]
+        );
 
-// ---------- Request reset PIN ----------
-exports.forgotPassword = async (req, res) => {
+        if (rows.length === 0) {
+            return res.status(400).json({ error: "Invalid email or code" });
+        }
+
+        const user = rows[0];
+
+        if (user.email_verified) {
+            return res.json({ message: "Email already verified. You can sign in." });
+        }
+
+        if (!user.verify_pin || !user.verify_expires || new Date(user.verify_expires) < new Date()) {
+            return res.status(400).json({ error: "Code expired. Request a new one." });
+        }
+
+        if (user.verify_pin !== pin.trim()) {
+            return res.status(400).json({ error: "Incorrect code" });
+        }
+
+        await db.query(
+            `UPDATE users SET email_verified = 1, verify_pin = NULL, verify_token = NULL, verify_expires = NULL WHERE id = ?`,
+            [user.id]
+        );
+
+        await logAction(user.id, "Email verified", req);
+
+        res.json({ message: "Email verified! You can now sign in." });
+    } catch (err) {
+        console.error("Verify email error:", err);
+        res.status(500).json({ error: "Verification failed" });
+    }
+};
+
+// ===========================================================
+// VERIFY EMAIL — via link click (GET, from the email button)
+// ===========================================================
+exports.verifyEmailLink = async (req, res) => {
+    const { token, email } = req.query;
+
+    if (!token || !email) {
+        return res.redirect(`/verify-email?error=missing`);
+    }
+
+    try {
+        const [rows] = await db.query(
+            "SELECT id, email_verified, verify_token, verify_expires FROM users WHERE email = ?",
+            [String(email).trim().toLowerCase()]
+        );
+
+        if (rows.length === 0) {
+            return res.redirect(`/verify-email?error=invalid`);
+        }
+
+        const user = rows[0];
+
+        if (user.email_verified) {
+            return res.redirect(`/verify-email?verified=1`);
+        }
+
+        if (!user.verify_token || !user.verify_expires || new Date(user.verify_expires) < new Date()) {
+            return res.redirect(`/verify-email?error=expired&email=${encodeURIComponent(email)}`);
+        }
+
+        if (user.verify_token !== token) {
+            return res.redirect(`/verify-email?error=invalid`);
+        }
+
+        await db.query(
+            `UPDATE users SET email_verified = 1, verify_pin = NULL, verify_token = NULL, verify_expires = NULL WHERE id = ?`,
+            [user.id]
+        );
+
+        await logAction(user.id, "Email verified via link", req);
+
+        res.redirect(`/verify-email?verified=1`);
+    } catch (err) {
+        console.error("Verify link error:", err);
+        res.redirect(`/verify-email?error=server`);
+    }
+};
+
+// ===========================================================
+// RESEND VERIFICATION CODE
+// ===========================================================
+exports.resendVerification = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
         return res.status(400).json({ error: "Email is required" });
     }
 
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-    if (!emailRegex.test(email)) {
+    const generic = { message: "If that account exists and isn't verified yet, a new code was sent." };
+
+    try {
+        const [rows] = await db.query(
+            "SELECT id, name, email, email_verified FROM users WHERE email = ?",
+            [email.trim().toLowerCase()]
+        );
+
+        if (rows.length === 0 || rows[0].email_verified) {
+            return res.json(generic); // avoid account enumeration
+        }
+
+        const user = rows[0];
+        const pin = generatePin();
+        const token = generateToken();
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await db.query(
+            "UPDATE users SET verify_pin = ?, verify_token = ?, verify_expires = ? WHERE id = ?",
+            [pin, token, expires, user.id]
+        );
+
+        const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(user.email)}`;
+
+        await sendMail({
+            to: user.email,
+            subject: "Your new SmartWaste verification code",
+            eyebrow: "Verify your email",
+            title: `Hi ${(user.name || "there").split(" ")[0]}, here's your new code`,
+            intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
+            code: pin,
+            ctaText: "Verify Email",
+            ctaUrl: verifyUrl
+        });
+
+        await logAction(user.id, "Verification code resent", req);
+
+        res.json(generic);
+    } catch (err) {
+        console.error("Resend verification error:", err);
+        res.status(500).json({ error: "Failed to resend code" });
+    }
+};
+
+// ===========================================================
+// FORGOT PASSWORD — request a reset PIN
+// ===========================================================
+exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+    }
+    if (!EMAIL_REGEX.test(email)) {
         return res.status(400).json({ error: "Invalid email format" });
     }
 
-    try {
-        const [rows] = await db.query("SELECT id, name, email FROM users WHERE email = ?", [email.toLowerCase()]);
+    const generic = { message: "If that email exists, a PIN has been sent." };
 
-        // Always return success to avoid email enumeration
+    try {
+        const [rows] = await db.query("SELECT id, name, email FROM users WHERE email = ?", [email.trim().toLowerCase()]);
+
         if (rows.length === 0) {
-            return res.json({ message: "If that email exists, a PIN has been sent." });
+            return res.json(generic); // avoid email enumeration
         }
 
         const user = rows[0];
@@ -100,48 +288,33 @@ exports.forgotPassword = async (req, res) => {
             [pin, expires, user.id]
         );
 
-        // Send email
-        await transporter.sendMail({
-            from: `"SmartWaste" <${process.env.SMTP_USER}>`,
+        await sendMail({
             to: user.email,
             subject: "SmartWaste – Password Reset PIN",
-            html: `
-                <div style="font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #0a120c; color: #e2f5e8; border-radius: 12px;">
-                    <h2 style="color: #4ade80; margin: 0 0 12px;">Password Reset</h2>
-                    <p style="color: #7aaa88; font-size: 14px; line-height: 1.6;">
-                        Hi ${user.name || "there"},<br>
-                        Use the PIN below to reset your SmartWaste password. It expires in <strong>15 minutes</strong>.
-                    </p>
-                    <div style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #4ade80; text-align: center; padding: 20px; background: rgba(74,222,128,0.1); border-radius: 10px; margin: 20px 0;">
-                        ${pin}
-                    </div>
-                    <p style="color: #7aaa88; font-size: 12px;">
-                        If you did not request this, you can safely ignore this email.
-                    </p>
-                </div>
-            `
+            eyebrow: "Password reset",
+            title: "Reset your password",
+            intro: `Hi ${(user.name || "there").split(" ")[0]}, use the code below to set a new password. It expires in 15 minutes.`,
+            code: pin
         });
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, ip_address) VALUES (?, ?, ?)`,
-            [user.id, "Password reset PIN requested", req.ip || req.connection.remoteAddress]
-        );
+        await logAction(user.id, "Password reset PIN requested", req);
 
-        res.json({ message: "If that email exists, a PIN has been sent." });
+        res.json(generic);
     } catch (err) {
         console.error("Forgot password error:", err);
         res.status(500).json({ error: "Failed to process request" });
     }
 };
 
-// ---------- Verify PIN + set new password ----------
+// ===========================================================
+// RESET PASSWORD — verify PIN + set new password
+// ===========================================================
 exports.resetPassword = async (req, res) => {
     const { email, pin, newPassword } = req.body;
 
     if (!email || !pin || !newPassword) {
         return res.status(400).json({ error: "Email, PIN, and new password are required" });
     }
-
     if (newPassword.length < 8) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
@@ -149,7 +322,7 @@ exports.resetPassword = async (req, res) => {
     try {
         const [rows] = await db.query(
             "SELECT id, reset_pin, reset_pin_expires, reset_attempts FROM users WHERE email = ?",
-            [email.toLowerCase()]
+            [email.trim().toLowerCase()]
         );
 
         if (rows.length === 0) {
@@ -158,35 +331,28 @@ exports.resetPassword = async (req, res) => {
 
         const user = rows[0];
 
-        // Too many attempts
         if (user.reset_attempts >= 5) {
             return res.status(429).json({ error: "Too many attempts. Request a new PIN." });
         }
 
-        // Expired or missing
         if (!user.reset_pin || !user.reset_pin_expires || new Date(user.reset_pin_expires) < new Date()) {
             return res.status(400).json({ error: "PIN expired or invalid. Request a new one." });
         }
 
-        // Wrong PIN
         if (user.reset_pin !== pin.trim()) {
             await db.query("UPDATE users SET reset_attempts = reset_attempts + 1 WHERE id = ?", [user.id]);
             return res.status(400).json({ error: "Invalid PIN" });
         }
 
-        // Success – update password & clear PIN
         const hashed = await bcrypt.hash(newPassword, 10);
         await db.query(
-            `UPDATE users 
+            `UPDATE users
              SET password = ?, reset_pin = NULL, reset_pin_expires = NULL, reset_attempts = 0, password_updated_at = NOW()
              WHERE id = ?`,
             [hashed, user.id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, ip_address) VALUES (?, ?, ?)`,
-            [user.id, "Password reset completed", req.ip || req.connection.remoteAddress]
-        );
+        await logAction(user.id, "Password reset completed", req);
 
         res.json({ message: "Password updated successfully. You can now sign in." });
     } catch (err) {
@@ -195,6 +361,9 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
+// ===========================================================
+// LOGIN
+// ===========================================================
 exports.login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -203,28 +372,19 @@ exports.login = async (req, res) => {
     }
 
     try {
-        console.log('🔍 Login attempt for email:', email);
-
-        const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
-        console.log('📊 Query result rows:', rows.length);
+        const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email.trim().toLowerCase()]);
 
         if (rows.length === 0) {
-            console.log('❌ User not found:', email);
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
         const user = rows[0];
-        console.log('👤 User found:', user.id, user.email, user.role);
-
         const match = await bcrypt.compare(password, user.password);
-        console.log('🔐 Password match:', match);
 
         if (!match) {
-            console.log('❌ Password mismatch for:', email);
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
-        // Check if account is locked
         if (user.locked_at && new Date(user.locked_at) > new Date(Date.now() - 30 * 60000)) {
             return res.status(403).json({
                 error: "Account locked",
@@ -232,61 +392,47 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Generate token
-        const token = jwt.sign(
-            {
-                id: user.id,
-                role: user.role,
-                name: user.name,
+        if (!user.email_verified) {
+            return res.status(403).json({
+                error: "Email not verified",
+                message: "Please verify your email before signing in.",
+                code: "EMAIL_NOT_VERIFIED",
                 email: user.email
-            },
+            });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, role: user.role, name: user.name, email: user.email },
             process.env.JWT_SECRET || "secret",
             { expiresIn: "24h" }
         );
 
-        // Update last login
         await db.query(
             "UPDATE users SET last_login = NOW(), last_ip = ? WHERE id = ?",
             [req.ip || req.connection.remoteAddress, user.id]
         );
 
-        console.log('✅ Login successful for:', email);
-
         res.json({
             token,
             role: user.role,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }
         });
     } catch (err) {
-        console.error('❌ Login error:', err);
-        console.error('Stack trace:', err.stack);
+        console.error("Login error:", err);
         res.status(500).json({
             error: "Login failed",
-            message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+            message: process.env.NODE_ENV === "development" ? err.message : "Internal server error"
         });
     }
 };
 
 exports.logout = async (req, res) => {
     try {
-        if (req.token) {
-            revokeToken(req.token);
-        }
-
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, ip_address) 
-             VALUES (?, ?, ?)`,
-            [req.user.id, 'User logged out', req.ip || req.connection.remoteAddress]
-        );
-
+        if (req.token) revokeToken(req.token);
+        await logAction(req.user.id, "User logged out", req);
         res.json({ message: "Logged out successfully" });
     } catch (err) {
-        console.error('Logout error:', err);
+        console.error("Logout error:", err);
         res.status(500).json({ error: "Logout failed" });
     }
 };
@@ -297,17 +443,12 @@ exports.changePassword = async (req, res) => {
     if (!currentPassword || !newPassword) {
         return res.status(400).json({ error: "Current and new password required" });
     }
-
     if (newPassword.length < 8) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
 
     try {
-        const [rows] = await db.query(
-            "SELECT password FROM users WHERE id = ?",
-            [req.user.id]
-        );
-
+        const [rows] = await db.query("SELECT password FROM users WHERE id = ?", [req.user.id]);
         const user = rows[0];
         const match = await bcrypt.compare(currentPassword, user.password);
 
@@ -321,15 +462,11 @@ exports.changePassword = async (req, res) => {
             [hashed, req.user.id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, ip_address) 
-             VALUES (?, ?, ?)`,
-            [req.user.id, 'Password changed', req.ip || req.connection.remoteAddress]
-        );
+        await logAction(req.user.id, "Password changed", req);
 
         res.json({ message: "Password changed successfully" });
     } catch (err) {
-        console.error('Password change error:', err);
+        console.error("Password change error:", err);
         res.status(500).json({ error: "Password change failed" });
     }
 };
@@ -342,7 +479,7 @@ exports.getProfile = async (req, res) => {
         );
         res.json(user);
     } catch (err) {
-        console.error('Get profile error:', err);
+        console.error("Get profile error:", err);
         res.status(500).json({ error: "Failed to get profile" });
     }
 };
@@ -353,18 +490,14 @@ exports.updateProfile = async (req, res) => {
     try {
         await db.query(
             "UPDATE users SET name=?, phone=?, address=? WHERE id=?",
-            [name, req.user.phone || null, address || null, req.user.id]
+            [name, phone || null, address || null, req.user.id]
         );
 
-        await db.query(
-            `INSERT INTO audit_logs (user_id, action, ip_address) 
-             VALUES (?, ?, ?)`,
-            [req.user.id, 'Profile updated', req.ip || req.connection.remoteAddress]
-        );
+        await logAction(req.user.id, "Profile updated", req);
 
         res.json({ message: "Profile updated successfully" });
     } catch (err) {
-        console.error('Profile update error:', err);
+        console.error("Profile update error:", err);
         res.status(500).json({ error: "Profile update failed" });
     }
 };

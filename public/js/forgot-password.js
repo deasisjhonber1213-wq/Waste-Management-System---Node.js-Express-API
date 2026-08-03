@@ -26,16 +26,16 @@ function clearAlert() {
     el.textContent = "";
 }
 
-function togglePw(btn) {
+document.getElementById("toggleNewPasswordBtn")?.addEventListener("click", function () {
     const input = document.getElementById("newPassword");
-    if (input.type === "password") {
-        input.type = "text";
-        btn.textContent = "Hide";
-    } else {
-        input.type = "password";
-        btn.textContent = "Show";
-    }
-}
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    this.textContent = showing ? "Show" : "Hide";
+});
+
+document.getElementById("pin")?.addEventListener("input", function () {
+    this.value = this.value.replace(/\D/g, "").slice(0, 6);
+});
 
 async function sendPin() {
     const email = document.getElementById("email").value.trim().toLowerCase();
@@ -96,17 +96,13 @@ async function resetPassword() {
         const res = await fetch(API_URL + "/auth/reset-password", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: currentEmail,
-                pin,
-                newPassword
-            })
+            body: JSON.stringify({ email: currentEmail, pin, newPassword })
         });
         const data = await res.json();
 
         if (res.ok) {
             showAlert(data.message || "Password updated!", "success");
-            setTimeout(() => window.location = "/login", 1800);
+            setTimeout(() => (window.location = "/login"), 1800);
         } else {
             showAlert(data.error || "Failed to reset password.", "error");
             setLoading(btn, false);
@@ -125,8 +121,7 @@ document.getElementById("resendBtn")?.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        if (document.getElementById("step1").classList.contains("active")) sendPin();
-        else resetPassword();
-    }
+    if (e.key !== "Enter") return;
+    if (document.getElementById("step1").classList.contains("active")) sendPin();
+    else resetPassword();
 });

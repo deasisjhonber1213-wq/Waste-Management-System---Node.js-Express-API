@@ -36,16 +36,14 @@ function clearAlert() {
     el.textContent = "";
 }
 
-// Password show/hide + blink
 document.getElementById("togglePasswordBtn")?.addEventListener("click", function () {
     const input = document.getElementById("password");
     const eye = this.querySelector(".icon-eye");
     const eyeOff = this.querySelector(".icon-eye-off");
     const showing = input.type === "text";
 
-    // Trigger blink animation
     this.classList.remove("blink");
-    void this.offsetWidth;          // force reflow so animation can restart
+    void this.offsetWidth;
     this.classList.add("blink");
 
     input.type = showing ? "password" : "text";
@@ -69,26 +67,11 @@ async function register() {
 
     clearAlert();
 
-    if (!name) {
-        showAlert("Full name is required.", "error");
-        return;
-    }
-    if (!email) {
-        showAlert("Email address is required.", "error");
-        return;
-    }
-    if (!isValidEmail(email)) {
-        showAlert("Please enter a valid email address (e.g. you@example.com).", "error");
-        return;
-    }
-    if (!password) {
-        showAlert("Password is required.", "error");
-        return;
-    }
-    if (password.length < 8) {
-        showAlert("Password must be at least 8 characters.", "error");
-        return;
-    }
+    if (!name) return showAlert("Full name is required.", "error");
+    if (!email) return showAlert("Email address is required.", "error");
+    if (!isValidEmail(email)) return showAlert("Please enter a valid email address (e.g. you@example.com).", "error");
+    if (!password) return showAlert("Password is required.", "error");
+    if (password.length < 8) return showAlert("Password must be at least 8 characters.", "error");
 
     setLoading(true);
 
@@ -96,23 +79,21 @@ async function register() {
         const res = await fetch(API_URL + "/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name,
-                email,
-                password,
-                phone,
-                address,
-                role: selectedRole,
-            }),
+            body: JSON.stringify({ name, email, password, phone, address, role: selectedRole })
         });
 
         const data = await res.json();
 
         if (res.ok) {
-            showAlert("Resident account created! Redirecting to login…", "success");
+            showAlert("Account created! Check your email for a verification code…", "success");
             setTimeout(() => {
-                window.location.href = "/login";
-            }, 1800);
+                window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+            }, 1400);
+        } else if (data.requiresVerification) {
+            showAlert(data.message || "That email is already registered but not verified.", "info");
+            setTimeout(() => {
+                window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+            }, 1400);
         } else {
             showAlert(data.error || data.message || "Registration failed. Please try again.", "error");
             setLoading(false);

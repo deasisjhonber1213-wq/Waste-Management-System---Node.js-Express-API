@@ -1,18 +1,28 @@
 const express = require("express");
 const router = express.Router();
-const controller = require("../controllers/authController");
+const authController = require("../controllers/authController");
 const { protect } = require("../middleware/auth");
 
-// Public
-router.post("/register", controller.register);
-router.post("/login", controller.login);
-router.post("/forgot-password", controller.forgotPassword);
-router.post("/reset-password", controller.resetPassword);
+// NOTE: merge these with any routes your existing authRoutes.js already had
+// (this file only lists what authController.js currently exports).
 
-// Protected
-router.post("/logout", protect, controller.logout);
-router.post("/change-password", protect, controller.changePassword);
-router.get("/profile", protect, controller.getProfile);
-router.put("/profile", protect, controller.updateProfile);
+// ---------- Public ----------
+router.post("/register", authController.register);
+router.post("/login", authController.login);
+
+// Email verification
+router.post("/verify-email", authController.verifyEmailPin);        // { email, pin }
+router.get("/verify-email/confirm", authController.verifyEmailLink); // ?token=&email=  (clicked from email)
+router.post("/resend-verification", authController.resendVerification); // { email }
+
+// Password recovery
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/reset-password", authController.resetPassword);
+
+// ---------- Authenticated ----------
+router.post("/logout", protect, authController.logout);
+router.post("/change-password", protect, authController.changePassword);
+router.get("/profile", protect, authController.getProfile);
+router.put("/profile", protect, authController.updateProfile);
 
 module.exports = router;
