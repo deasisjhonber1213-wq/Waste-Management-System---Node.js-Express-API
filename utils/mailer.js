@@ -1,76 +1,124 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: process.env.SMTP_PORT || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    }
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false, // true for 465, false for 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+  // 🔥 Force IPv4 – fixes ENETUNREACH on Railway
+  family: 4,
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 /**
- * Renders a small branded HTML email shell so every SmartWaste email
- * (verification, reset PIN, etc.) looks consistent.
- *
- * @param {Object} opts
- * @param {string} opts.eyebrow   Small label above the title, e.g. "Verify your email"
- * @param {string} opts.title     Big heading, e.g. "Confirm it's you"
- * @param {string} opts.intro     One or two sentences of body copy
- * @param {string} [opts.code]    Optional PIN/code to display in a big box
- * @param {string} [opts.ctaText] Optional button label
- * @param {string} [opts.ctaUrl]  Optional button link
- * @param {string} [opts.footnote] Small muted text at the bottom
+ * Modern branded HTML email template for SmartWaste
  */
 function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote }) {
-    return `
-  <div style="background:#050b07;padding:32px 16px;font-family:Inter,Arial,sans-serif;">
-    <div style="max-width:480px;margin:0 auto;background:#0a1710;border:1px solid rgba(74,222,128,0.18);border-radius:16px;padding:32px 28px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
-        <div style="width:34px;height:34px;background:#4ade80;border-radius:9px;display:inline-block;text-align:center;line-height:34px;font-weight:800;color:#060d08;font-size:15px;">S</div>
-        <div style="font-weight:800;font-size:15px;letter-spacing:-0.02em;color:#4ade80;">SmartWaste</div>
-      </div>
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+</head>
+<body style="margin:0;padding:0;background:#050b07;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#050b07;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width:520px;background:#0c1610;border:1px solid rgba(74,222,128,0.15);border-radius:20px;overflow:hidden;">
+          
+          <!-- Header / Logo -->
+          <tr>
+            <td style="padding:28px 32px 20px;background:linear-gradient(180deg, rgba(74,222,128,0.08) 0%, transparent 100%);">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="width:40px;height:40px;background:#4ade80;border-radius:11px;text-align:center;vertical-align:middle;">
+                    <span style="font-size:18px;font-weight:800;color:#060d08;line-height:40px;">S</span>
+                  </td>
+                  <td style="padding-left:12px;">
+                    <div style="font-size:16px;font-weight:800;color:#4ade80;letter-spacing:-0.3px;">SmartWaste</div>
+                    <div style="font-size:11px;color:#5c8a6a;margin-top:1px;">Jose Dalman Waste Monitoring</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#4ade80;margin-bottom:8px;">
-        ${eyebrow}
-      </div>
-      <h1 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#e8f7ed;letter-spacing:-0.02em;">
-        ${title}
-      </h1>
-      <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#8fb89b;">
-        ${intro}
-      </p>
+          <!-- Body -->
+          <tr>
+            <td style="padding:8px 32px 32px;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#4ade80;margin-bottom:10px;">
+                ${eyebrow || ""}
+              </div>
+              
+              <h1 style="margin:0 0 14px;font-size:24px;font-weight:800;color:#e8f7ed;letter-spacing:-0.4px;line-height:1.25;">
+                ${title}
+              </h1>
+              
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.65;color:#8fb89b;">
+                ${intro}
+              </p>
 
-      ${code ? `
-      <div style="font-size:30px;font-weight:800;letter-spacing:7px;color:#4ade80;text-align:center;padding:18px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.25);border-radius:12px;margin:0 0 20px;">
-        ${code}
-      </div>` : ""}
+              ${code ? `
+              <!-- PIN Code Box -->
+              <div style="background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);border-radius:14px;padding:22px 16px;text-align:center;margin:0 0 24px;">
+                <div style="font-size:12px;font-weight:600;color:#5c8a6a;margin-bottom:8px;letter-spacing:0.5px;">YOUR VERIFICATION CODE</div>
+                <div style="font-size:34px;font-weight:800;letter-spacing:8px;color:#4ade80;font-family:'Courier New',monospace;">
+                  ${code}
+                </div>
+                <div style="font-size:12px;color:#5c8a6a;margin-top:10px;">Expires in 24 hours</div>
+              </div>
+              ` : ""}
 
-      ${ctaUrl ? `
-      <div style="text-align:center;margin:0 0 20px;">
-        <a href="${ctaUrl}" style="display:inline-block;background:#4ade80;color:#060d08;font-weight:700;font-size:13px;letter-spacing:0.03em;text-decoration:none;padding:13px 28px;border-radius:10px;">
-          ${ctaText || "Continue"}
-        </a>
-      </div>` : ""}
+              ${ctaUrl ? `
+              <!-- CTA Button -->
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="${ctaUrl}" 
+                   style="display:inline-block;background:#4ade80;color:#060d08;font-weight:700;font-size:14px;
+                          text-decoration:none;padding:14px 32px;border-radius:12px;
+                          box-shadow:0 4px 14px rgba(74,222,128,0.25);">
+                  ${ctaText || "Continue"}
+                </a>
+              </div>
+              ` : ""}
 
-      <p style="margin:0;font-size:12px;line-height:1.6;color:#5c8a6a;">
-        ${footnote || "If you didn't request this, you can safely ignore this email."}
-      </p>
-    </div>
-    <p style="text-align:center;margin:18px 0 0;font-size:11px;color:#3d5c47;">
-      SmartWaste · Jose Dalman, Zamboanga del Norte
-    </p>
-  </div>`;
+              <p style="margin:0;font-size:13px;line-height:1.6;color:#5c8a6a;">
+                ${footnote || "If you didn't request this, you can safely ignore this email."}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 32px;background:#080f0b;border-top:1px solid rgba(74,222,128,0.08);">
+              <p style="margin:0;font-size:12px;color:#3d5c47;text-align:center;line-height:1.5;">
+                SmartWaste · Jose Dalman, Zamboanga del Norte<br>
+                <span style="color:#2d4635;">This is an automated message. Please do not reply.</span>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 async function sendMail({ to, subject, ...templateOpts }) {
-    return transporter.sendMail({
-        from: `"SmartWaste" <${process.env.SMTP_USER}>`,
-        to,
-        subject,
-        html: renderEmail(templateOpts)
-    });
+  return transporter.sendMail({
+    from: `"SmartWaste" <${process.env.SMTP_USER}>`,
+    to,
+    subject,
+    html: renderEmail(templateOpts)
+  });
 }
 
 module.exports = { transporter, sendMail };
