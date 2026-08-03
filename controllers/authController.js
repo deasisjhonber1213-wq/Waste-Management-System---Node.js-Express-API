@@ -49,7 +49,12 @@ exports.register = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-        const [existing] = await db.query("SELECT id, email_verified FROM users WHERE email = ?", [cleanEmail]);
+        // Check if email already exists
+        const [existing] = await db.query(
+            "SELECT id, email_verified FROM users WHERE email = ?",
+            [cleanEmail]
+        );
+
         if (existing.length > 0) {
             if (!existing[0].email_verified) {
                 return res.status(409).json({
@@ -62,18 +67,31 @@ exports.register = async (req, res) => {
         }
 
         const hashed = await bcrypt.hash(password, 10);
-        const userId = `USER-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-
         const pin = generatePin();
         const token = generateToken();
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        await db.query(
-            `INSERT INTO users (id, name, email, password, role, phone, address, email_verified, verify_pin, verify_token, verify_expires)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-            [userId, name, cleanEmail, hashed, role || "resident", phone || null, address || null, pin, token, expires]
+        // ✅ Let MySQL auto-generate the integer ID
+        const [result] = await db.query(
+            `INSERT INTO users 
+             (name, email, password, role, phone, address, email_verified, verify_pin, verify_token, verify_expires)
+             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+            [
+                name,
+                cleanEmail,
+                hashed,
+                role || "resident",
+                phone || null,
+                address || null,
+                pin,
+                token,
+                expires
+            ]
         );
 
+        const userId = result.insertId;   // ← real auto-increment ID
+
+        // Log the action
         await logAction(userId, "User registered", req);
 
         const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
@@ -92,7 +110,7 @@ exports.register = async (req, res) => {
             });
         } catch (mailErr) {
             console.error("Verification email failed to send:", mailErr);
-            // Account still exists; user can use "resend code" on the verify page.
+            // Account still exists; user can use "resend code" later
         }
 
         res.status(201).json({
