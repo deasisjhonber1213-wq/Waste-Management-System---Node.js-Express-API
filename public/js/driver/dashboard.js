@@ -187,8 +187,7 @@ function restoreProgressState(assignmentId) {
         progressIndex = Math.min(state.progressIndex, drawnCoords.length - 1);
         trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
         progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
-        // Do NOT call markMRFPassed here — keys are restored above; UI is applied below.
-        // Calling it without a truck position would incorrectly rely on index alone.
+        markMRFPassed(progressIndex);
     }
 
     if (state.truckLat && state.truckLng && dMarker) {
@@ -665,17 +664,12 @@ function markStopsReachedUpTo(pt, idxLimit) {
     });
 }
 
-function markMRFPassed(idxLimit, truckPt) {
-    // Require physical proximity (~120 m). Starting near the end of a route
-    // must NOT auto-mark every earlier MRF just because progressIndex is high.
+function markMRFPassed(idxLimit) {
     mrfStops.forEach((m, i) => {
         const key = m._key;
         if (reachedMrfKeys.has(key)) return;
-
-        if (drawnCoords.length && m._routeIdx != null && m._routeIdx > idxLimit + 2) return;
-
-        const nearEnough = truckPt && truckPt.distanceTo(L.latLng(m.lat, m.lng)) < 120;
-        if (!nearEnough) return;
+        if (m._routeIdx == null || drawnCoords.length === 0) return;
+        if (m._routeIdx > idxLimit + 2) return;
 
         reachedMrfKeys.add(key);
         toast(`Passed MRF: ${m.name}`, "success");
@@ -707,7 +701,7 @@ function resyncRouteProgress(lat, lng) {
     trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
     progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
     markStopsReachedUpTo(pt, progressIndex);
-    markMRFPassed(progressIndex, pt);
+    markMRFPassed(progressIndex);
 }
 
 function showRouteFromData(routeData) {
@@ -777,9 +771,16 @@ function showRouteFromData(routeData) {
         const isPassed = reachedMrfKeys.has(m._key);
         const icon = L.divIcon({
             className: "",
-            html: `<div class="mrf-wrap ${isPassed ? 'passed' : ''}" id="mrfWrap${i}"><div class="mrf-pulse-ring"></div><div class="mrf-pin ${isPassed ? 'passed' : ''}" id="mrfPin${i}">${isPassed ? '<span style="font-size:14px;font-weight:800">✓</span>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9v.01M15 9v.01M9 15v.01M15 15v.01"/></svg>'}</div></div>`,
-            iconSize: [42, 42],
-            iconAnchor: [21, 21]
+            html: `<div class="mrf-wrap ${isPassed ? 'passed' : ''}" id="mrfWrap${i}">
+    <div class="mrf-pulse-ring"></div>
+    <div class="mrf-pin ${isPassed ? 'passed' : ''}" id="mrfPin${i}">
+        ${isPassed
+                    ? '<span style="font-size:14px;font-weight:800">✓</span>'
+                    : '<span style="font-size:15px">🏭</span>'}
+    </div>
+</div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
         });
         const marker = L.marker([m.lat, m.lng], { icon, zIndexOffset: 600 })
             .addTo(dMap)
@@ -872,17 +873,15 @@ function setMarker(lat, lng, accuracy) {
 
     if (accCircle) { dMap.removeLayer(accCircle); accCircle = null; }
     if (accuracy && accuracy < 150) {
-        // Cap circle radius so a huge accuracy bubble doesn't dominate the map
-        const radius = Math.min(accuracy, 80);
         const color = accuracy < 20 ? "#2dd4a0" : accuracy < 60 ? "#f5a623" : "#ff5e5e";
-        accCircle = L.circle([lat, lng], { radius, color, weight: 1.5, fillOpacity: .07 }).addTo(dMap);
+        accCircle = L.circle([lat, lng], { radius: accuracy, color, weight: 1.5, fillOpacity: .07 }).addTo(dMap);
     }
 
     const icon = L.divIcon({
         className: "",
-        html: `<div class="truck-marker"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0d0f12" stroke-width="2"><path d="M7 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M17 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M5 15H3V7a1 1 0 0 1 1-1h10l3 4v5h-2"/><path d="M9 6v4h7"/></svg></div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
+        html: `<div class="truck-marker"><span style="font-size:14px">🚛</span></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
     });
 
     if (dMarker) {
@@ -926,7 +925,7 @@ function updateRouteProgress(lat, lng) {
         saveProgressState();
     }
     markStopsReachedUpTo(dPt, progressIndex);
-    markMRFPassed(progressIndex, dPt);
+    markMRFPassed(progressIndex);
 }
 
 async function loadResidents() {
@@ -940,9 +939,9 @@ async function loadResidents() {
             const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
             const icon = L.divIcon({
                 className: "",
-                html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}">R</div>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
+                html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
             });
             if (residentMarkers[r.id]) {
                 residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon);
@@ -997,23 +996,12 @@ function buildIssuePopup(r) {
     const img = r.image_url
         ? `<img src="${r.image_url}" style="width:100%;max-height:110px;object-fit:cover;border-radius:8px;margin:6px 0" onerror="this.style.display='none'">`
         : '';
-    const status = r.status || 'pending';
-    const workingBtn = status === 'pending'
-        ? `<button onclick="markIssueStatus(${r.id},'in_progress')"
-                    style="width:100%;padding:7px;border-radius:8px;border:1px solid rgba(91,156,246,.4);background:rgba(91,156,246,.12);color:#5b9cf6;font-weight:700;font-size:.68rem;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;margin-bottom:6px;">
-                    WORKING ON IT
-                </button>`
-        : '';
     return `<div style="min-width:210px">
                 <strong style="color:${color};font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;">${label}</strong>
                 ${img}
                 <div style="font-size:.75rem;color:#c7d0da;margin:6px 0;line-height:1.5;">${desc}</div>
-                <div style="font-size:.62rem;color:#7a8499;margin-bottom:8px;">
-                    ${r.created_at ? fmtDate(r.created_at) : ''}
-                    · <span style="color:${status === 'in_progress' ? '#5b9cf6' : '#f5a623'}">${status.replace('_', ' ')}</span>
-                </div>
-                ${workingBtn}
-                <button onclick="markIssueStatus(${r.id},'resolved')"
+                <div style="font-size:.62rem;color:#7a8499;margin-bottom:8px;">${r.created_at ? fmtDate(r.created_at) : ''}</div>
+                <button onclick="markIssueResolved(${r.id})"
                     style="width:100%;padding:7px;border-radius:8px;border:1px solid rgba(45,212,160,.4);background:rgba(45,212,160,.12);color:#2dd4a0;font-weight:700;font-size:.68rem;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;">
                     MARK RESOLVED
                 </button>
@@ -1067,31 +1055,18 @@ function locateIssue(id) {
     }, 150);
 }
 
-async function markIssueStatus(id, status) {
+async function markIssueResolved(id) {
     try {
-        await api('PATCH', `/reports/${id}/status`, { status });
-        if (status === 'resolved') {
-            toast('Issue marked as resolved', 'success');
-            allIssues = allIssues.filter(r => r.id !== id);
-            if (dMap) dMap.closePopup();
-        } else if (status === 'in_progress') {
-            toast('Marked as in progress', 'success');
-            const item = allIssues.find(r => r.id === id);
-            if (item) item.status = 'in_progress';
-        } else {
-            toast(`Status updated to ${status}`, 'success');
-        }
+        await api('PATCH', `/reports/${id}/status`, { status: 'resolved' });
+        toast('Issue marked as resolved', 'success');
+        allIssues = allIssues.filter(r => r.id !== id);
         renderIssueMarkers();
         renderIssuesListPanel();
         updateIssuesBadge();
+        if (dMap) dMap.closePopup();
     } catch (e) {
         toast(e.message || 'Failed to update report', 'error');
     }
-}
-
-// Back-compat alias used by older HTML/onclick handlers
-async function markIssueResolved(id) {
-    return markIssueStatus(id, 'resolved');
 }
 
 function renderIssuesListPanel() {
@@ -1137,10 +1112,9 @@ function renderIssuesListPanel() {
                     </div>
                     <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch;">
                         <button class="btn btn-ghost" style="padding:8px 14px;font-size:.65rem" onclick="locateIssue(${r.id})">Go</button>
-                        ${(r.status || 'pending') === 'pending' ? `<button class="btn btn-ghost" style="padding:8px 14px;font-size:.65rem;border-color:rgba(91,156,246,.4);color:var(--blue)" onclick="markIssueStatus(${r.id},'in_progress')">Working</button>` : ''}
-                        <button class="btn btn-success" style="padding:8px 14px;font-size:.65rem" onclick="markIssueStatus(${r.id},'resolved')">Done</button>
+                        <button class="btn btn-success" style="padding:8px 14px;font-size:.65rem" onclick="markIssueResolved(${r.id})">Done</button>
                     </div>
-                    <div class="report-ts" style="width:100%;text-align:left;margin-top:-6px;">${r.created_at ? fmtDate(r.created_at) : ''} · ${(r.status || 'pending').replace('_', ' ')}</div>
+                    <div class="report-ts" style="width:100%;text-align:left;margin-top:-6px;">${r.created_at ? fmtDate(r.created_at) : ''}</div>
                  </div>`;
     }).join('');
 }
@@ -1160,7 +1134,6 @@ function startGPS() {
         return;
     }
     gpsActive = true;
-    try { localStorage.setItem('driver_gps_preferred', '1'); } catch (_) { }
     const btn = document.getElementById("gpsToggle");
     btn.classList.add("on");
     btn.setAttribute("aria-pressed", "true");
@@ -1178,21 +1151,12 @@ function startGPS() {
             emitLocation(lat, lng, accuracy);
         },
         (err) => {
-            // Only stop on permanent permission denial.
-            // Transient errors (timeout / unavailable) keep tracking —
-            // e.g. Messenger or battery optimizers briefly blocking GPS.
             if (err.code === 1) {
                 toast("Enable GPS permissions", "error");
                 stopGPS();
-                return;
-            }
-            if (err.code === 2) {
-                toast("GPS signal weak — keep moving or go outdoors", "info");
-            } else if (err.code === 3) {
-                console.warn("GPS timeout — will retry");
             }
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
 
     if (gpsInterval) clearInterval(gpsInterval);
@@ -1211,7 +1175,6 @@ function startGPS() {
 
 function stopGPS() {
     gpsActive = false;
-    try { localStorage.setItem('driver_gps_preferred', '0'); } catch (_) { }
     if (gpsWatchId) {
         navigator.geolocation.clearWatch(gpsWatchId);
         gpsWatchId = null;
@@ -1383,11 +1346,6 @@ function renderAssignment(data) {
 
 async function updateStatus(id, status) {
     emitStatusUpdate(id, status);
-    // Auto-start GPS when the driver begins a route
-    if (status === 'in_progress' && !gpsActive) {
-        startGPS();
-        toast('GPS started for this route', 'success');
-    }
 }
 
 async function loadStats() {
@@ -1553,14 +1511,7 @@ updateThemeIcon(document.documentElement.getAttribute('data-theme') || 'light');
 document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
 
 connectWebSocket();
-loadToday().then(() => {
-    // Resume GPS if user preferred it on, or if a route is already in progress
-    const preferred = localStorage.getItem('driver_gps_preferred') === '1';
-    const hasActiveRoute = todaysAssignments.some(a => a.status === 'in_progress');
-    if (!gpsActive && (preferred || hasActiveRoute)) {
-        startGPS();
-    }
-}).catch(() => { });
+loadToday();
 loadProfile();
 
 setInterval(() => {
@@ -1589,7 +1540,6 @@ window.toast = toast;
 window.toggleIssueMarkers = toggleIssueMarkers;
 window.locateIssue = locateIssue;
 window.markIssueResolved = markIssueResolved;
-window.markIssueStatus = markIssueStatus;
 
 (function attachNewReportListener() {
     const tryAttach = () => {
