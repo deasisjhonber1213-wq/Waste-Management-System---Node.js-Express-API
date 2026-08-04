@@ -6,15 +6,15 @@ dns.setDefaultResultOrder("ipv4first");
 
 let transporter = null;
 
-if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
   transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_SECURE === "true",
     family: 4, // belt-and-suspenders: force IPv4 at the socket level too
     auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     }
   });
 
