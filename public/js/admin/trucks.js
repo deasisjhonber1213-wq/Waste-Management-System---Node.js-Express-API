@@ -14,7 +14,7 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 
 const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
+console.log('API URL:', API_URL);
 
 function getToken() {
     return localStorage.getItem('token');
@@ -114,7 +114,7 @@ function toggleFleetMapSatellite() {
     isFleetMapSatellite = !isFleetMapSatellite;
     applyTile(fleetMap, fleetTiles, isFleetMapSatellite);
     const btn = document.getElementById('fleetSatBtn');
-    btn.innerHTML = isFleetMapSatellite ? '🌍 Map' : '🛰️ Satellite';
+    btn.innerHTML = isFleetMapSatellite ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Map` : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg> Satellite`;
     btn.classList.toggle('active', isFleetMapSatellite);
     showToast(isFleetMapSatellite ? "Satellite view" : "Dark map view", "info");
 }
@@ -192,7 +192,7 @@ async function loadTrucks() {
         document.getElementById("truckCount").textContent =
             `${allTrucks.length} truck${allTrucks.length !== 1 ? "s" : ""}`;
         document.getElementById("mapTruckCount").textContent =
-            `📍 ${allTrucks.filter(t => t.latitude != null && t.longitude != null).length} trucks on map`;
+            `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${allTrucks.filter(t => t.latitude != null && t.longitude != null).length} trucks on map`;
         renderTruckList(allTrucks);
         renderFleetMap(allTrucks);
         if (selectedTruck) {
@@ -232,8 +232,8 @@ function renderTruckList(data) {
                         </div>
                     </div>
                     <div class="truck-meta">
-                        <span class="badge badge-gray">📅 ${fmtDate(t.created_at)}</span>
-                        <span class="badge badge-gold">🆔 #${t.id}</span>
+                        <span class="badge badge-gray"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${fmtDate(t.created_at)}</span>
+                        <span class="badge badge-gold"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2"/><path d="M15 12h2"/><path d="M7 16h10"/></svg> #${t.id}</span>
                     </div>
                 </div>`;
     }).join('');
@@ -257,31 +257,31 @@ function selectTruck(id) {
 
 function renderDetail(truck) {
     document.getElementById('detailActions').innerHTML = `
-                <button class="btn btn-outline btn-sm" onclick="openEditModal(${truck.id})">✏️ Edit</button>
-                <button class="btn btn-outline btn-sm" onclick="openLocModal(${truck.id})">📍 Location</button>
-                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${truck.id},'${escHtml(truck.plate_number)}')">🗑️ Delete</button>
+                <button class="btn btn-outline btn-sm" onclick="openEditModal(${truck.id})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit</button>
+                <button class="btn btn-outline btn-sm" onclick="openLocModal(${truck.id})"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location</button>
+                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${truck.id},'${escHtml(truck.plate_number)}')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>
             `;
 
     const freshness = freshnessClass(truck.location_updated_at);
     const detailMapHtml = (truck.latitude != null && truck.longitude != null) ? `
                 <div style="margin-top:12px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                        <span class="text-muted text-mono" style="font-size:0.65rem;">📍 TRUCK LOCATION</span>
-                        <button class="btn btn-outline btn-sm" onclick="centerTruckOnMap(${truck.id})" style="padding:3px 10px;font-size:0.65rem;">🎯 Center on Map</button>
+                        <span class="text-muted text-mono" style="font-size:0.65rem;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> TRUCK LOCATION</span>
+                        <button class="btn btn-outline btn-sm" onclick="centerTruckOnMap(${truck.id})" style="padding:3px 10px;font-size:0.65rem;">Center on Map</button>
                     </div>
                     <div id="truckDetailMap"></div>
                 </div>
-            ` : `<div style="margin-top:12px;color:var(--text2);font-size:0.8rem;padding:12px;background:var(--bg3);border-radius:8px;text-align:center;">📍 No location data for this truck</div>`;
+            ` : `<div style="margin-top:12px;color:var(--text2);font-size:0.8rem;padding:12px;background:var(--bg3);border-radius:8px;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> No location data for this truck</div>`;
 
     document.getElementById('truckDetailBody').innerHTML = `
                 <div>
                     <div class="detail-zone-name">🚛 ${escHtml(truck.plate_number)}</div>
                     <div class="detail-desc">${escHtml(truck.model || "No model specified.")}</div>
                     <div class="detail-stats">
-                        <div class="detail-stat">📍 <span class="num">${truck.latitude != null ? Number(truck.latitude).toFixed(6) : "—"}</span></div>
-                        <div class="detail-stat">📍 <span class="num">${truck.longitude != null ? Number(truck.longitude).toFixed(6) : "—"}</span></div>
-                        <div class="detail-stat">🕒 <span class="num ${freshness}">${fmtDateTime(truck.location_updated_at)}</span></div>
-                        <div class="detail-stat">📅 <span class="num">${fmtDate(truck.created_at)}</span></div>
+                        <div class="detail-stat"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span class="num">${truck.latitude != null ? Number(truck.latitude).toFixed(6) : "—"}</span></div>
+                        <div class="detail-stat"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span class="num">${truck.longitude != null ? Number(truck.longitude).toFixed(6) : "—"}</span></div>
+                        <div class="detail-stat"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <span class="num ${freshness}">${fmtDateTime(truck.location_updated_at)}</span></div>
+                        <div class="detail-stat"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <span class="num">${fmtDate(truck.created_at)}</span></div>
                     </div>
                     ${detailMapHtml}
                 </div>

@@ -3,14 +3,14 @@ function showToast(message, type) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
-    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const icons = { success: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>', error: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>', info: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>' };
 
     const toast = document.createElement('div');
     toast.className = `toast ${type || 'info'}`;
     toast.innerHTML = `
-                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <span class="toast-icon">${icons[type] || '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'}</span>
                 <span>${message}</span>
-                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+                <button class="toast-close" onclick="this.parentElement.remove()"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             `;
 
     container.appendChild(toast);
@@ -75,7 +75,7 @@ function handleImageUpload(event) {
 
         document.getElementById('annImg').value = imageData;
         document.getElementById('removeImageBtn').style.display = 'inline-flex';
-        document.getElementById('fileNameDisplay').textContent = `📎 ${file.name}`;
+        document.getElementById('fileNameDisplay').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${file.name}`;
 
         showToast("Image uploaded successfully", "success");
     };
@@ -122,7 +122,7 @@ async function executeDelete(id) {
 }
 
 const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
+console.log('API URL:', API_URL);
 
 function getToken() {
     return localStorage.getItem('token');
@@ -189,12 +189,12 @@ async function loadAnnouncements() {
         document.getElementById("annCount").textContent = data.length;
         const grid = document.getElementById("annGrid");
         if (!data.length) {
-            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📢</div><div class="empty-state-text">No announcements yet. Create one above!</div></div>';
+            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div><div class="empty-state-text">No announcements yet. Create one above!</div></div>';
             return;
         }
         grid.innerHTML = data.map(a => `
                     <div class="ann-card">
-                        ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder">📢</div>`}
+                        ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" alt="" onerror="this.style.display='none'">` : `<div class="ann-card-img-placeholder"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>`}
                         <div class="ann-card-body">
                             <div class="ann-card-meta">
                                 <span class="ann-card-date">${fmtDate(a.created_at)}</span>
@@ -202,11 +202,11 @@ async function loadAnnouncements() {
                             </div>
                             <div class="ann-card-title">${escHtml(a.title)}</div>
                             <div class="ann-card-msg">${escHtml(a.message)}</div>
-                            ${a.pickup_date ? `<div class="ann-card-pickup">📅 Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
+                            ${a.pickup_date ? `<div class="ann-card-pickup">Pickup: ${fmtDate(a.pickup_date)}</div>` : ""}
                         </div>
                         <div class="ann-card-footer">
                             <span class="badge badge-gold">Published</span>
-                            <button class="btn btn-danger btn-sm" onclick="confirmDelete(${a.id}, '${escHtml(a.title)}')">🗑 Delete</button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmDelete(${a.id}, '${escHtml(a.title)}')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>
                         </div>
                     </div>`).join("");
     } catch {
@@ -272,11 +272,11 @@ function updateThemeUI(toggle, theme) {
     const knob = toggle.querySelector('.theme-knob');
 
     if (theme === 'dark') {
-        if (icon) icon.textContent = '☀️';
+        if (icon) icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
         if (label) label.textContent = 'Light Mode';
         if (knob) knob.style.transform = 'translateX(16px)';
     } else {
-        if (icon) icon.textContent = '🌙';
+        if (icon) icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
         if (label) label.textContent = 'Dark Mode';
         if (knob) knob.style.transform = 'translateX(0)';
     }

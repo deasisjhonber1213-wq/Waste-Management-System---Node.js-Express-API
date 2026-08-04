@@ -15,7 +15,7 @@ window.closeModal = closeModal;
 
 // ---- API ----
 const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
+console.log('API URL:', API_URL);
 
 function getToken() {
     return localStorage.getItem('token');
@@ -183,11 +183,11 @@ async function loadRoutes() {
         const res = await API.get('/admin/routes');
         if (!res.ok) throw new Error();
         allRoutes = await res.json();
-        console.log('📋 Loaded routes:', allRoutes.length);
+        console.log('Loaded routes:', allRoutes.length);
         renderRouteList(allRoutes);
         document.getElementById('routeCount').textContent = allRoutes.length;
     } catch (error) {
-        console.error('❌ Failed to load routes:', error);
+        console.error('Failed to load routes:', error);
         showToast('Failed to load routes', 'error');
     }
 }
@@ -196,7 +196,7 @@ function renderRouteList(data) {
     const c = document.getElementById('routeList');
     if (!data.length) {
         c.innerHTML = `<div class="empty-state">
-                    <div class="empty-state-icon">🗺️</div>
+                    <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
                     <div class="empty-state-text">No routes yet</div>
                     <button class="btn btn-gold btn-sm" onclick="openAddModal()" style="margin-top:12px;">+ Add First Route</button>
                 </div>`;
@@ -207,12 +207,12 @@ function renderRouteList(data) {
         const isActive = selectedRoute?.id === r.id;
         const total = road.length + pins.length + mrf.length;
         return `<div class="route-card ${isActive ? 'active' : ''}" onclick="selectRoute(${r.id})">
-                    <div class="route-name">📍 ${escHtml(r.zone_name)}</div>
+                    <div class="route-name"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${escHtml(r.zone_name)}</div>
                     <div class="route-desc">${escHtml(r.description || 'No description')}</div>
                     <div class="route-meta">
-                        <span class="badge badge-gray">📅 ${fmtDate(r.created_at)}</span>
-                        <span class="badge badge-gold">🛣️ ${road.length}</span>
-                        <span class="badge badge-gold">📍 ${pins.length}</span>
+                        <span class="badge badge-gray"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${fmtDate(r.created_at)}</span>
+                        <span class="badge badge-gold"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L8 5"/><path d="M16 5l4 14"/><path d="M12 5v14"/><path d="M8 12h8"/></svg> ${road.length}</span>
+                        <span class="badge badge-gold"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${pins.length}</span>
                         <span class="badge badge-gold">🏭 ${mrf.length}</span>
                     </div>
                 </div>`;
@@ -241,8 +241,8 @@ function renderDetail(route) {
     const hasAny = road.length || pins.length || mrf.length;
 
     document.getElementById('detailActions').innerHTML = `
-                <button class="btn btn-outline btn-sm" onclick="openEditModal(${route.id})">✏️ Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${route.id},'${escHtml(route.zone_name)}')">🗑️ Delete</button>
+                <button class="btn btn-outline btn-sm" onclick="openEditModal(${route.id})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${route.id},'${escHtml(route.zone_name)}')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>
             `;
 
     const listHtml = [
@@ -268,10 +268,10 @@ function renderDetail(route) {
                     <div class="detail-zone-name">${escHtml(route.zone_name)}</div>
                     <div class="detail-desc">${escHtml(route.description || 'No description.')}</div>
                     <div class="detail-stats">
-                        <div class="detail-stat">🛣️ <span class="num">${road.length}</span> Road vertices</div>
-                        <div class="detail-stat">📍 <span class="num">${pins.length}</span> Stops</div>
+                        <div class="detail-stat"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L8 5"/><path d="M16 5l4 14"/><path d="M12 5v14"/><path d="M8 12h8"/></svg> <span class="num">${road.length}</span> Road vertices</div>
+                        <div class="detail-stat"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span class="num">${pins.length}</span> Stops</div>
                         <div class="detail-stat">🏭 <span class="num">${mrf.length}</span> MRF stops</div>
-                        <div class="detail-stat">📅 <span class="num">${fmtDate(route.created_at)}</span></div>
+                        <div class="detail-stat"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <span class="num">${fmtDate(route.created_at)}</span></div>
                     </div>
                     ${hasAny ? `
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -339,7 +339,7 @@ function toggleDetailMapSatellite() {
     isDetailMapSatellite = !isDetailMapSatellite;
     applyTile(detailMap, detailTiles, isDetailMapSatellite);
     const btn = document.getElementById('detailMapSatBtn');
-    if (btn) btn.innerHTML = isDetailMapSatellite ? '🌍 Map' : '🛰️ Satellite';
+    if (btn) btn.innerHTML = isDetailMapSatellite ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Map` : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg> Satellite`;
 }
 
 function scheduleMapInit(fn) {
@@ -348,7 +348,7 @@ function scheduleMapInit(fn) {
 
 function openAddModal() {
     isEditingId = null;
-    document.getElementById('modalHeading').textContent = '🗺️ Add Route / Zone';
+    document.getElementById('modalHeading').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Add Route / Zone`;
     document.getElementById('rZone').value = '';
     document.getElementById('rDesc').value = '';
     openModal('addRouteModal');
@@ -362,7 +362,7 @@ function openEditModal(id) {
     const route = allRoutes.find(r => r.id === id);
     if (!route) return;
     isEditingId = id;
-    document.getElementById('modalHeading').textContent = '✏️ Edit Route';
+    document.getElementById('modalHeading').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit Route`;
     document.getElementById('rZone').value = route.zone_name;
     document.getElementById('rDesc').value = route.description || '';
     openModal('addRouteModal');
@@ -631,7 +631,7 @@ function toggleMarkingMapSatellite() {
     isMarkingMapSatellite = !isMarkingMapSatellite;
     applyTile(markingMap, markingTiles, isMarkingMapSatellite);
     const btn = document.getElementById('markingMapSatBtn');
-    btn.innerHTML = isMarkingMapSatellite ? '🌍 Map' : '🛰️ Satellite';
+    btn.innerHTML = isMarkingMapSatellite ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Map` : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg> Satellite`;
     btn.classList.toggle('active', isMarkingMapSatellite);
 }
 
@@ -652,7 +652,7 @@ function updateUI() {
         pinN = pinPoints.length,
         mrfN = mrfPoints.length;
     document.getElementById('wpCountLabel').textContent =
-        `🛣️ ${roadN} road · 📍 ${pinN} stop${pinN !== 1 ? 's' : ''} · 🏭 ${mrfN} MRF`;
+        `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L8 5"/><path d="M16 5l4 14"/><path d="M12 5v14"/><path d="M8 12h8"/></svg> ${roadN} road · <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${pinN} stop${pinN !== 1 ? 's' : ''} · 🏭 ${mrfN} MRF`;
     document.getElementById('layerSummary').innerHTML = `
                 <span><span class="dot" style="background:#60a5fa;"></span> ${roadN} road vertex${roadN !== 1 ? 'es' : ''}</span>
                 <span><span class="dot" style="background:var(--gold);"></span> ${pinN} stop${pinN !== 1 ? 's' : ''}</span>
@@ -722,7 +722,7 @@ async function saveRoute() {
         const fresh = allRoutes.find(r => r.zone_name === zone);
         if (fresh) selectRoute(fresh.id);
     } catch (err) {
-        console.error('❌ Save error:', err);
+        console.error('Save error:', err);
         showToast(err.message || 'Failed to save route', 'error');
     }
 }
@@ -743,7 +743,7 @@ async function confirmDeleteRoute() {
         selectedRoute = null;
         document.getElementById('routeDetailBody').innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">🗺️</div>
+                        <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
                         <div class="empty-state-text">Select a route</div>
                     </div>`;
         document.getElementById('detailActions').innerHTML = '';
@@ -767,7 +767,7 @@ async function loadMRFLocations() {
         const res = await API.get('/admin/mrf-locations');
         if (!res.ok) throw new Error();
         globalMRFLocations = await res.json();
-        console.log('📋 Loaded MRF locations:', globalMRFLocations.length);
+        console.log('Loaded MRF locations:', globalMRFLocations.length);
     } catch (err) {
         console.error('Failed to load MRF locations:', err);
         globalMRFLocations = [];
@@ -795,7 +795,7 @@ function renderFacilityReferenceLayer(map, layerKey, opts = {}) {
         if (opts.allowUse) {
             popupHtml += `<br><button onclick="addMRFMarker(${f.latitude},${f.longitude}); markingMap.closePopup();"
                         style="margin-top:6px;width:100%;padding:6px;border-radius:6px;border:1px solid #14b8a6;background:rgba(20,184,166,.14);color:#14b8a6;font-weight:700;font-size:.65rem;cursor:pointer;">
-                        📌 Use as MRF Stop Here
+                        Use as MRF Stop Here
                     </button>`;
         }
         marker.bindPopup(popupHtml, { maxWidth: 240 });
@@ -859,11 +859,11 @@ function updateMRFPickHint() {
     if (!hint) return;
     if (mrfPendingLatLng) {
         hint.innerHTML =
-            `📍 Pin at <span class="text-mono" style="color:var(--gold);">${mrfPendingLatLng.lat.toFixed(5)}, ${mrfPendingLatLng.lng.toFixed(5)}</span> — drag to fine-tune, then Save`;
+            `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Pin at <span class="text-mono" style="color:var(--gold);">${mrfPendingLatLng.lat.toFixed(5)}, ${mrfPendingLatLng.lng.toFixed(5)}</span> — drag to fine-tune, then Save`;
         hint.style.borderColor = 'var(--gold)';
         hint.style.background = 'rgba(201,146,30,0.06)';
     } else {
-        hint.innerHTML = `📍 No pin placed yet. Tap "My Location" or click the map.`;
+        hint.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> No pin placed yet. Tap "My Location" or click the map.`;
         hint.style.borderColor = 'var(--border2)';
         hint.style.background = 'var(--bg3)';
     }
@@ -883,7 +883,7 @@ function toggleMRFPickSatellite() {
     isMRFPickSatellite = !isMRFPickSatellite;
     applyTile(mrfPickMap, mrfPickTiles, isMRFPickSatellite);
     const btn = document.getElementById('mrfPickSatBtn');
-    btn.innerHTML = isMRFPickSatellite ? '🌍 Map' : '🛰️ Satellite';
+    btn.innerHTML = isMRFPickSatellite ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Map` : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg> Satellite`;
     btn.classList.toggle('active', isMRFPickSatellite);
 }
 
@@ -895,7 +895,7 @@ function mrfGotoMyLocation() {
 
     const btn = document.getElementById('mrfMyLocationBtn');
     if (btn) {
-        btn.textContent = '⏳ Getting…';
+        btn.textContent = 'Getting…';
         btn.disabled = true;
     }
 
@@ -936,10 +936,10 @@ function mrfGotoMyLocation() {
 
             placeMRFPendingPin({ lat: latitude, lng: longitude });
 
-            showToast(`📍 Location captured ±${Math.round(accuracy || 30)}m`, 'success');
+            showToast(`<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location captured ±${Math.round(accuracy || 30)}m`, 'success');
 
             if (btn) {
-                btn.textContent = '📍 My Location';
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> My Location`;
                 btn.disabled = false;
                 btn.classList.add('active');
             }
@@ -948,7 +948,7 @@ function mrfGotoMyLocation() {
             console.warn('Geolocation error:', err);
             showToast('Could not get location. Click the map manually.', 'error');
             if (btn) {
-                btn.textContent = '📍 My Location';
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> My Location`;
                 btn.disabled = false;
             }
         },
@@ -973,7 +973,7 @@ async function saveMRFLocation() {
 
     const btn = document.querySelector('#mrfManageModal .btn-gold');
     if (btn) {
-        btn.textContent = '⏳ Saving…';
+        btn.textContent = 'Saving…';
         btn.disabled = true;
     }
 
@@ -987,7 +987,7 @@ async function saveMRFLocation() {
 
         if (!res.ok) throw new Error();
 
-        showToast(`✅ Facility "${name}" saved!`, 'success');
+        showToast(`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Facility "${name}" saved!`, 'success');
 
         document.getElementById('mrfName').value = '';
         document.getElementById('mrfAddress').value = '';
@@ -1009,7 +1009,7 @@ async function saveMRFLocation() {
         if (detailMap) renderFacilityReferenceLayer(detailMap, 'detail');
 
         if (btn) {
-            btn.textContent = '💾 Save Facility Location';
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Facility Location`;
             btn.disabled = false;
         }
 
@@ -1019,7 +1019,7 @@ async function saveMRFLocation() {
         console.error('Save MRF error:', err);
         showToast('Failed to save facility', 'error');
         if (btn) {
-            btn.textContent = '💾 Save Facility Location';
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Facility Location`;
             btn.disabled = false;
         }
     }
@@ -1043,11 +1043,11 @@ function renderMRFList() {
                 <div class="mrf-list-item">
                     <div style="flex:1;min-width:0;">
                         <div class="mrf-name">🏭 ${escHtml(f.name)}</div>
-                        ${f.address ? `<div class="mrf-addr">📍 ${escHtml(f.address)}</div>` : ''}
+                        ${f.address ? `<div class="mrf-addr"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${escHtml(f.address)}</div>` : ''}
                         <div class="mrf-coords">${Number(f.latitude).toFixed(5)}, ${Number(f.longitude).toFixed(5)}</div>
-                        <div class="mrf-created">📅 ${fmtDate(f.created_at)}</div>
+                        <div class="mrf-created"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${fmtDate(f.created_at)}</div>
                     </div>
-                    <button class="mrf-del-btn" onclick="deleteMRFLocation(${f.id}, this)" title="Delete facility">🗑</button>
+                    <button class="mrf-del-btn" onclick="deleteMRFLocation(${f.id}, this)" title="Delete facility"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                 </div>
             `).join('');
 }
@@ -1055,14 +1055,14 @@ function renderMRFList() {
 function deleteMRFLocation(id, btn) {
     if (btn.dataset.confirm !== '1') {
         btn.dataset.confirm = '1';
-        btn.textContent = '⚠️';
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
         btn.classList.add('confirming');
         btn.title = 'Click again to confirm delete';
         clearTimeout(btn._resetTimer);
         btn._resetTimer = setTimeout(() => {
             if (btn.dataset.confirm === '1') {
                 btn.dataset.confirm = '0';
-                btn.textContent = '🗑';
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
                 btn.classList.remove('confirming');
             }
         }, 3000);

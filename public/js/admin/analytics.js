@@ -1,6 +1,6 @@
 
 const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
+console.log('API URL:', API_URL);
 
 function getToken() {
     return localStorage.getItem('token');
@@ -104,7 +104,7 @@ async function loadAnalytics() {
             throw new Error(`HTTP ${res.status}`);
         }
         const data = await res.json();
-        console.log('📊 Analytics data:', data);
+        console.log('Analytics data:', data);
 
         let reportData = [];
         if (Array.isArray(data)) {
@@ -150,7 +150,7 @@ async function loadAnalytics() {
         const metricRows = document.getElementById("metricRows");
         if (metricRows) {
             if (!reportData.length) {
-                metricRows.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No data yet</div></div>';
+                metricRows.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="empty-state-text">No data yet</div></div>';
             } else {
                 metricRows.innerHTML = reportData.map((d, i) => {
                     const val = Number(d.total || d.count || 0);

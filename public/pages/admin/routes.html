@@ -18,30 +18,27 @@
 
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-            <div class="sidebar-logo-icon">♻</div>
+            <div class="sidebar-logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
             <div class="sidebar-logo-text">Jose Dalman WM<span>Admin Panel</span></div>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-section-label">Overview</div>
-            <a href="/dashboard" class="nav-item"><span class="nav-icon">⬡</span>Dashboard</a>
-
+            <a href="/dashboard" class="nav-item"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span>Dashboard</a>
             <div class="nav-section-label">Management</div>
-            <a href="/users" class="nav-item"><span class="nav-icon">👥</span>Users</a>
+            <a href="/users" class="nav-item"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Users</a>
             <a href="/trucks" class="nav-item"><span class="nav-icon">🚛</span>Trucks</a>
-            <a href="/routes" class="nav-item active"><span class="nav-icon">🗺️</span>Routes</a>
-            <a href="/schedules" class="nav-item"><span class="nav-icon">📅</span>Schedules</a>
-
+            <a href="/routes" class="nav-item active"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></span>Routes</a>
+            <a href="/schedules" class="nav-item"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Schedules</a>
             <div class="nav-section-label">Community</div>
-            <a href="/reports" class="nav-item"><span class="nav-icon">⚠️</span>Reports</a>
-            <a href="/announcements" class="nav-item"><span class="nav-icon">📢</span>Announcements</a>
-
+            <a href="/reports" class="nav-item"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Reports</a>
+            <a href="/announcements" class="nav-item"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>Announcements</a>
             <div class="nav-section-label">Analytics</div>
-            <a href="/analytics" class="nav-item"><span class="nav-icon">📊</span>Analytics</a>
+            <a href="/analytics" class="nav-item"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Analytics</a>
 
             <div class="nav-section-label"
                 style="margin-top:20px;border-top:1px solid var(--border2);padding-top:16px;">Preferences</div>
             <button class="theme-toggle" id="themeToggleBtn">
-                <span class="theme-icon">🌙</span>
+                <span class="theme-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
                 <span class="theme-label">Dark Mode</span>
                 <span class="theme-switch">
                     <span class="theme-knob"></span>
@@ -57,7 +54,7 @@
                 </div>
             </div>
             <button type="button" class="sidebar-logout" style="margin-top:10px;display:flex;"
-                onclick="openModal('logoutConfirmModal')">⎋ &nbsp;Logout</button>
+                onclick="openModal('logoutConfirmModal')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> &nbsp;Logout</button>
         </div>
     </aside>
 
@@ -77,12 +74,11 @@
     <main class="main">
 
         <div class="routes-layout">
-            <!-- Left: Route List -->
             <div>
                 <div class="panel">
                     <div class="panel-header">
                         <div class="panel-title">
-                            <div class="panel-title-icon">🗺️</div>Zones / Routes
+                            <div class="panel-title-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>Zones / Routes
                         </div>
                         <span class="badge badge-gold" id="routeCount">0</span>
                     </div>
@@ -93,25 +89,24 @@
                     </div>
                     <div style="padding:0 14px 14px;" id="routeList">
                         <div class="empty-state">
-                            <div class="empty-state-icon">🗺️</div>
+                            <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
                             <div class="empty-state-text">Loading routes...</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right: Route Details -->
             <div>
                 <div class="panel">
                     <div class="panel-header">
                         <div class="panel-title">
-                            <div class="panel-title-icon">📋</div>Route Details
+                            <div class="panel-title-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>Route Details
                         </div>
                         <div id="detailActions" style="display:flex;gap:6px;"></div>
                     </div>
                     <div class="panel-body" id="routeDetailBody">
                         <div class="empty-state">
-                            <div class="empty-state-icon">🗺️</div>
+                            <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div>
                             <div class="empty-state-text">Select a route</div>
                             <div style="font-size:0.75rem;color:var(--text3);margin-top:4px;">Click any zone on the left
                             </div>
@@ -123,12 +118,11 @@
 
     </main>
 
-    <!-- Add/Edit Route Modal -->
     <div class="modal-overlay" id="addRouteModal">
         <div class="modal modal-lg">
             <div class="modal-header">
-                <div class="modal-title" id="modalHeading">🗺️ Add Route / Zone</div>
-                <button class="modal-close" onclick="closeModal('addRouteModal')">✕</button>
+                <div class="modal-title" id="modalHeading" style="display:flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Add Route / Zone</div>
+                <button class="modal-close" onclick="closeModal('addRouteModal')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="modal-body">
                 <div class="form-grid form-grid-2" style="margin-bottom:14px;">
@@ -144,9 +138,9 @@
 
                 <div class="mode-hint">
                     <strong>How to use this map:</strong>
-                    Use <strong>🛣️ Road layer</strong> to click &amp; draw the road path — drag vertices to reshape,
+                    Use <strong><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L8 5"/><path d="M16 5l4 14"/><path d="M12 5v14"/><path d="M8 12h8"/></svg> Road layer</strong> to click &amp; draw the road path — drag vertices to reshape,
                     drag ghost dots to add mid-points, right-click a vertex to delete it.
-                    Use <strong>📍 Pin layer</strong> to drop numbered collection stop markers anywhere.
+                    Use <strong><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Pin layer</strong> to drop numbered collection stop markers anywhere.
                     Use <strong>🏭 Mark MRF Stop</strong> to manually stamp an MRF facility — right-click any placed MRF
                     stop to remove it.
                     The dashed teal circles are your saved <strong>real MRF facility locations</strong> (managed via
@@ -157,11 +151,11 @@
                 <div class="layer-pills">
                     <div class="layer-pill active-road" id="pillRoad" onclick="setActiveLayer('road')">
                         <div class="pill-dot" style="background:#60a5fa;"></div>
-                        🛣️ Road Path
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L8 5"/><path d="M16 5l4 14"/><path d="M12 5v14"/><path d="M8 12h8"/></svg> Road Path
                     </div>
                     <div class="layer-pill" id="pillPin" onclick="setActiveLayer('pin')">
                         <div class="pill-dot" style="background:var(--gold);"></div>
-                        📍 Pin Stops
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Pin Stops
                     </div>
                     <button class="map-tool-btn" id="btnMarkMRF" onclick="markMRFManual()"
                         style="background:rgba(251,191,36,0.12);border-color:#fbbf24;color:#fbbf24;margin-left:auto;">
@@ -170,13 +164,13 @@
                 </div>
 
                 <div class="map-toolbar">
-                    <button class="map-tool-btn" onclick="undoLast()">↩ Undo</button>
-                    <button class="map-tool-btn" onclick="clearMRFStopsOnly()">🗑 Clear MRF Stops</button>
-                    <button class="map-tool-btn" onclick="clearAll()">🗑 Clear All</button>
+                    <button class="map-tool-btn" onclick="undoLast()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Undo</button>
+                    <button class="map-tool-btn" onclick="clearMRFStopsOnly()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear MRF Stops</button>
+                    <button class="map-tool-btn" onclick="clearAll()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear All</button>
                     <span id="wpCountLabel" style="font-size:0.7rem;color:var(--text2);"></span>
                     <button class="map-tool-btn" id="markingMapSatBtn" onclick="toggleMarkingMapSatellite()"
-                        style="margin-left:auto;">🛰️ Satellite</button>
-                    <button class="map-tool-btn" onclick="gotoMyLocation()">🎯 My Location</button>
+                        style="margin-left:auto;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg> Satellite</button>
+                    <button class="map-tool-btn" onclick="gotoMyLocation()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> My Location</button>
                 </div>
 
                 <div class="route-map-wrap">
@@ -188,24 +182,23 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('addRouteModal')">Cancel</button>
-                <button class="btn btn-gold" onclick="saveRoute()">💾 Save Route</button>
+                <button class="btn btn-gold" onclick="saveRoute()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Route</button>
             </div>
         </div>
     </div>
 
-    <!-- Delete Route Modal -->
     <div class="modal-overlay" id="deleteRouteModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🗑️ Delete Route</div>
-                <button class="modal-close" onclick="closeModal('deleteRouteModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);display:flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete Route</div>
+                <button class="modal-close" onclick="closeModal('deleteRouteModal')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="deleteRouteId">
                 <p style="color:var(--text2);">You are about to permanently delete:</p>
                 <div style="font-weight:700;color:var(--gold);margin:10px 0;font-family:var(--mono);font-size:1.1rem;"
                     id="deleteRouteName">—</div>
-                <div class="badge badge-red" style="display:block;text-align:center;padding:10px;">⚠️ This cannot be
+                <div class="badge badge-red" style="display:block;text-align:center;padding:10px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> This cannot be
                     undone.</div>
             </div>
             <div class="modal-footer">
@@ -215,25 +208,24 @@
         </div>
     </div>
 
-    <!-- MRF Facilities Modal -->
     <div class="modal-overlay" id="mrfManageModal">
         <div class="modal modal-lg">
             <div class="modal-header">
                 <div class="modal-title">🏭 MRF Facility Locations</div>
-                <button class="modal-close" onclick="closeModal('mrfManageModal')">✕</button>
+                <button class="modal-close" onclick="closeModal('mrfManageModal')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="modal-body">
                 <div class="mode-hint" style="background:rgba(45,212,160,0.06);border-color:rgba(45,212,160,0.2);">
-                    <strong>📍 How to mark an MRF facility:</strong>
+                    <strong><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> How to mark an MRF facility:</strong>
                     <ol style="margin:6px 0 0 18px;padding:0;line-height:1.8;">
                         <li>Stand at the actual MRF facility location</li>
-                        <li>Tap <strong>📍 My Location</strong> — your GPS position appears as a pulsing blue dot</li>
+                        <li>Tap <strong><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> My Location</strong> — your GPS position appears as a pulsing blue dot</li>
                         <li>Enter the facility <strong>Name</strong> (required)</li>
-                        <li>Tap <strong>💾 Save Facility Location</strong></li>
+                        <li>Tap <strong><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Facility Location</strong></li>
                         <li>Repeat for each MRF facility you visit</li>
                     </ol>
                     <div style="margin-top:6px;color:var(--text3);font-size:0.7rem;">
-                        💡 You can also click the map manually if you can't be there in person. Drag the pin to
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg> You can also click the map manually if you can't be there in person. Drag the pin to
                         fine-tune.
                     </div>
                 </div>
@@ -250,10 +242,10 @@
                         </div>
                         <div id="mrfPickHint"
                             style="font-size:.72rem;color:var(--text2);margin-bottom:10px;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border2);">
-                            📍 No pin placed yet. Tap "My Location" or click the map.
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> No pin placed yet. Tap "My Location" or click the map.
                         </div>
                         <button class="btn btn-gold w-full" onclick="saveMRFLocation()"
-                            style="margin-bottom:18px;min-height:44px;">💾 Save Facility Location</button>
+                            style="margin-bottom:18px;min-height:44px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Facility Location</button>
 
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                             <div class="form-label" style="margin-bottom:0;">SAVED FACILITIES</div>
@@ -265,11 +257,11 @@
                     </div>
                     <div>
                         <div class="map-toolbar" style="padding:6px 0;">
-                            <button class="map-tool-btn" id="mrfPickSatBtn" onclick="toggleMRFPickSatellite()">🛰️
+                            <button class="map-tool-btn" id="mrfPickSatBtn" onclick="toggleMRFPickSatellite()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>
                                 Satellite</button>
                             <button class="map-tool-btn active" id="mrfMyLocationBtn" onclick="mrfGotoMyLocation()"
-                                style="border-color:#3b82f6;color:#3b82f6;">📍 My Location</button>
-                            <button class="map-tool-btn" onclick="clearMRFPick()">✕ Clear Pin</button>
+                                style="border-color:#3b82f6;color:#3b82f6;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> My Location</button>
+                            <button class="map-tool-btn" onclick="clearMRFPick()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Clear Pin</button>
                         </div>
                         <div class="route-map-wrap">
                             <div id="mrfPickMap"></div>
@@ -277,7 +269,7 @@
                         <div
                             style="margin-top:6px;font-size:.65rem;color:var(--text3);display:flex;gap:12px;flex-wrap:wrap;">
                             <span>🔵 Pulsing dot = your GPS location</span>
-                            <span>📍 Pin = facility position</span>
+                            <span><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Pin = facility position</span>
                             <span>🏭 Teal markers = saved facilities</span>
                         </div>
                     </div>
@@ -289,12 +281,11 @@
         </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
     <div class="modal-overlay" id="logoutConfirmModal">
         <div class="modal" style="max-width:400px;">
             <div class="modal-header">
-                <div class="modal-title" style="color:var(--red);">🚪 Confirm Logout</div>
-                <button class="modal-close" onclick="closeModal('logoutConfirmModal')">✕</button>
+                <div class="modal-title" style="color:var(--red);display:flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/><line x1="10" y1="12" x2="10" y2="12.01"/></svg> Confirm Logout</div>
+                <button class="modal-close" onclick="closeModal('logoutConfirmModal')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="modal-body">
                 <p style="color:var(--text2);">Are you sure you want to log out of the admin panel?</p>

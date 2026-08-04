@@ -1,6 +1,6 @@
 
 const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
+console.log('API URL:', API_URL);
 
 function getToken() { return localStorage.getItem('token'); }
 
@@ -90,7 +90,7 @@ async function loadChart() {
 
         if (reportData.length === 0) {
             document.getElementById('reportChart').parentElement.innerHTML =
-                '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">No report data available</div></div>';
+                '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="empty-state-text">No report data available</div></div>';
             return;
         }
 
@@ -125,7 +125,7 @@ async function loadChart() {
     } catch (err) {
         console.error('Chart error:', err);
         document.getElementById('reportChart').parentElement.innerHTML =
-            '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon">📊</div><div class="empty-state-text">Failed to load chart data</div></div>';
+            '<div class="empty-state" style="padding:40px 20px;"><div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="empty-state-text">Failed to load chart data</div></div>';
     }
 }
 
@@ -144,7 +144,7 @@ async function loadRecentReports() {
         }
 
         if (!reports.length) {
-            el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">📭</span><div class="empty-state-text">No reports yet</div></div>';
+            el.innerHTML = '<div class="empty-state"><span class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span><div class="empty-state-text">No reports yet</div></div>';
             return;
         }
 
@@ -160,7 +160,7 @@ async function loadRecentReports() {
     } catch (err) {
         console.error('Recent reports error:', err);
         document.getElementById("recentReports").innerHTML =
-            '<div class="empty-state"><span class="empty-state-icon">⚠️</span><div class="empty-state-text">Failed to load reports</div></div>';
+            '<div class="empty-state"><span class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><div class="empty-state-text">Failed to load reports</div></div>';
     }
 }
 

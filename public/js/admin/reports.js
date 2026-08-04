@@ -1,5 +1,5 @@
 const API_URL = window.location.origin + '/api';
-console.log('📡 API URL:', API_URL);
+console.log('API URL:', API_URL);
 
 function getToken() {
     return localStorage.getItem('token');
@@ -211,7 +211,7 @@ function toggleSat() {
     applyTile(reportMap, reportTiles, isSat);
     const btn = document.getElementById('satBtn');
     if (btn) {
-        btn.innerHTML = isSat ? '🌍 Map' : '🛰️ Satellite';
+        btn.innerHTML = isSat ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Map` : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg> Satellite`;
         btn.classList.toggle('active', isSat);
     }
 }
@@ -264,7 +264,7 @@ function buildReportPopupHtml(r) {
                             <span>${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</span>
                             <span>${fmtDate(r.created_at)}</span>
                         </div>
-                        <button class="rp-popup-btn" onclick="viewReport(${r.id})">📋 Full Details</button>
+                        <button class="rp-popup-btn" onclick="viewReport(${r.id})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Full Details</button>
                     </div>`;
 }
 
@@ -294,11 +294,11 @@ function renderResidentPins(residents) {
             .bindPopup(`
                             <div>
                                 <strong style="color:#60a5fa;">👤 ${escHtml(r.name || 'Resident')}</strong><br>
-                                <span style="font-size:0.7rem;">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
+                                <span style="font-size:0.7rem;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><br>
                                 <span style="font-size:0.65rem;color:${isRecent ? '#4ade80' : '#7a8499'}">
                                     Last seen: ${fmtTime(r.location_updated_at)}
                                 </span>
-                                <button class="rp-popup-btn" style="margin-top:6px;" onclick="viewResident(${r.id})">👁 View Details</button>
+                                <button class="rp-popup-btn" style="margin-top:6px;" onclick="viewResident(${r.id})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> View Details</button>
                             </div>
                         `, { maxWidth: 260 });
 
@@ -349,7 +349,7 @@ async function loadReports() {
             allReports = [];
         }
 
-        console.log('📊 Reports loaded:', allReports.length);
+        console.log('Reports loaded:', allReports.length);
         updateStatCards(allReports);
         applyFilters();
     } catch (err) {
@@ -408,11 +408,11 @@ function renderResidentList() {
                             <div class="resident-info">
                                 <div class="resident-name">${escHtml(r.name || 'Resident')}</div>
                                 <div class="resident-loc-time">
-                                    📍 ${latStr}, ${lngStr}<br>
-                                    🕐 ${fmtTime(r.location_updated_at)} ${isRecent ? '<span style="color:#4ade80;">(Active)</span>' : ''}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${latStr}, ${lngStr}<br>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${fmtTime(r.location_updated_at)} ${isRecent ? '<span style="color:#4ade80;">(Active)</span>' : ''}
                                 </div>
                             </div>
-                            <div style="font-size:1.2rem;">📍</div>
+                            <div style="font-size:1.2rem;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
                         </div>
                     `;
     }).join('');
@@ -444,15 +444,15 @@ function renderTable(data) {
                 <td class="table-mono table-muted">${String(i + 1).padStart(2, '0')}</td>
                 <td><span class="badge ${TYPE_BADGE[r.type] || 'badge-gray'}">${(TYPE_LABEL[r.type] || r.type).replace(/_/g, ' ')}</span></td>
                 <td style="max-width:180px;color:var(--text2);font-size:0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.description || '—')}">
-                    ${hasLoc ? '<span title="Has location" style="margin-right:4px;font-size:0.7rem;">📍</span>' : ''}${escHtml(r.description || '—')}
+                    ${hasLoc ? '<span title="Has location" style="margin-right:4px;display:inline-flex;align-items:center;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>' : ''}${escHtml(r.description || '—')}
                 </td>
                 <td class="table-muted" style="font-size:0.7rem;">${r.resident_name ? escHtml(r.resident_name) : (r.user_id ? `User #${r.user_id}` : 'Anonymous')}</td>
                 <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
                 <td><span class="badge ${STATUS_BADGE[r.status] || 'badge-gray'}">${STATUS_LABEL[r.status] || r.status || 'pending'}</span></td>
                 <td style="text-align:center;">${hasImage ? `<img src="${r.image_url}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${r.image_url}')" onerror="this.style.display='none'" loading="lazy">` : '—'}</td>
                 <td style="text-align:center;display:flex;gap:4px;justify-content:center;">
-                    <button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'>👁</button>
-                    ${r.status !== 'resolved' ? `<button class="btn btn-outline btn-sm btn-icon" title="Mark resolved" onclick='event.stopPropagation();resolveReport(${r.id})'>✅</button>` : ''}
+                    <button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    ${r.status !== 'resolved' ? `<button class="btn btn-outline btn-sm btn-icon" title="Mark resolved" onclick='event.stopPropagation();resolveReport(${r.id})'><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></button>` : ''}
                 </td>
              </tr>`;
     }).join('');
@@ -484,7 +484,7 @@ function viewReport(id) {
                             </div>
                             <button class="btn btn-outline btn-sm" style="margin-top:6px;"
                                     onclick="closeModal('viewReportModal');flyToReport(${r.id})">
-                                🗺️ Show on Map
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Show on Map
                             </button>
                         </div>` :
         '<div style="color:var(--text3);">No location provided</div>';
@@ -550,11 +550,11 @@ function viewResident(id) {
                             <div>
                                 <div class="form-label">Location</div>
                                 <div style="font-family:var(--mono);font-size:0.8rem;color:var(--text2);">
-                                    📍 ${latStr}, ${lngStr}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${latStr}, ${lngStr}
                                 </div>
                                 <button class="btn btn-outline btn-sm" style="margin-top:6px;"
                                         onclick="closeModal('viewResidentModal');flyToResident(${r.id})">
-                                    🗺️ Show on Map
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg> Show on Map
                                 </button>
                             </div>
                             <div>
