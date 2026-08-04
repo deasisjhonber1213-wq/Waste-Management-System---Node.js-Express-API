@@ -73,13 +73,6 @@ async function login() {
                 else if (data.role === "driver") window.location = "/driver/dashboard";
                 else window.location = "/resident/dashboard";
             }, 900);
-        } else if (data.code === "EMAIL_NOT_VERIFIED") {
-            const verifyUrl = `/verify-email?email=${encodeURIComponent(data.email || email)}`;
-            showAlert(
-                `Your email isn't verified yet. <a href="${verifyUrl}">Verify it now →</a>`,
-                "info"
-            );
-            resetButton(btn, btnText, btnLoader);
         } else {
             showAlert(data.error || data.message || "Invalid credentials", "error");
             resetButton(btn, btnText, btnLoader);
