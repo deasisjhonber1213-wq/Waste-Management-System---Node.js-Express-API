@@ -1,34 +1,30 @@
-const nodemailer = require("nodemailer");
-const dns = require("dns");
+// ---------- Brevo transactional email (HTTPS API, not SMTP) ----------
+// Railway's Free/Trial/Hobby plans block outbound SMTP ports (465/587)
+// entirely, so raw SMTP (Gmail SMTP, Resend-as-SMTP, etc.) cannot work
+// there. Brevo's API runs over plain HTTPS (port 443), which is always
+// allowed, and only requires verifying a single sender EMAIL ADDRESS
+// (via a confirmation link Brevo emails you) -- no domain/DNS needed.
+//
+// Setup:
+//   1. Sign up at https://www.brevo.com (free tier: 300 emails/day)
+//   2. Dashboard -> Senders, Domains & Dedicated IPs -> Senders -> Add a sender
+//      -> enter the email you want to send from -> click the confirmation
+//      link Brevo emails to that address.
+//   3. Dashboard -> Settings -> SMTP & API -> API Keys -> Generate a new API key
+//
+// Set these in Railway -> Variables:
+//   BREVO_API_KEY      = the API key from step 3
+//   BREVO_SENDER_EMAIL  = the exact address you verified in step 2
+//   BREVO_SENDER_NAME   = optional display name (defaults to "SmartWaste")
 
-dns.setDefaultResultOrder("ipv4first");
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
+const brevoConfigured = Boolean(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL);
 
-let transporter = null;
-
-if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_SECURE === "true",
-    family: 4, // belt-and-suspenders: force IPv4 at the socket level too
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
-
-  // Verify connection/credentials on startup so bad creds show up
-  // immediately in the logs instead of failing silently on first send.
-  transporter.verify((err) => {
-    if (err) {
-      console.error("❌ Gmail SMTP connection failed:", err.message);
-    } else {
-      console.log("✅ Gmail SMTP ready to send emails");
-    }
-  });
+if (!brevoConfigured) {
+  console.error("❌ BREVO_API_KEY / BREVO_SENDER_EMAIL is missing. Email not configured.");
 } else {
-  console.error("❌ GMAIL_USER / GMAIL_APP_PASSWORD is missing. Email not configured.");
+  console.log(`✅ Brevo email API configured (sending as ${process.env.BREVO_SENDER_EMAIL})`);
 }
 
 /**
@@ -127,17 +123,42 @@ function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote })
 }
 
 async function sendMail({ to, subject, ...templateOpts }) {
-  if (!transporter) {
-    console.error("❌ Email transporter not configured. Email not sent.");
-    throw new Error("Email service not configured (missing GMAIL_USER/GMAIL_APP_PASSWORD)");
+  if (!brevoConfigured) {
+    console.error("❌ Brevo not configured. Email not sent.");
+    throw new Error("Email service not configured (missing BREVO_API_KEY/BREVO_SENDER_EMAIL)");
   }
 
-  return transporter.sendMail({
-    from: `"SmartWaste" <${process.env.GMAIL_USER}>`,
-    to,
+  const payload = {
+    sender: {
+      name: process.env.BREVO_SENDER_NAME || "SmartWaste",
+      email: process.env.BREVO_SENDER_EMAIL
+    },
+    to: [{ email: to }],
     subject,
-    html: renderEmail(templateOpts)
+    htmlContent: renderEmail(templateOpts)
+  };
+
+  const res = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "api-key": process.env.BREVO_API_KEY
+    },
+    body: JSON.stringify(payload)
   });
+
+  if (!res.ok) {
+    let details;
+    try {
+      details = await res.json();
+    } catch {
+      details = await res.text();
+    }
+    throw new Error(`Brevo send failed (${res.status}): ${JSON.stringify(details)}`);
+  }
+
+  return res.json();
 }
 
 module.exports = { sendMail };
