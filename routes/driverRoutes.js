@@ -10,9 +10,13 @@ router.patch('/assignment/:id/progress', auth.protect, driverController.updateRo
 router.get('/schedule', auth.protect, driverController.getMySchedule);
 router.post('/location', auth.protect, driverController.updateMyLocation);
 router.get('/location/history', auth.protect, driverController.getLocationHistory);
+
+router.get('/reports/open', auth.protect, driverController.getOpenReports);
+router.patch('/reports/:id/status', auth.protect, driverController.updateReportStatus);
+router.get('/reports', auth.protect, driverController.getMyReports);
 router.post('/reports', auth.protect, driverController.submitReport);
 router.post('/reports/quick', auth.protect, driverController.createQuickReport);
-router.get('/reports', auth.protect, driverController.getMyReports);
+
 router.get('/announcements', auth.protect, driverController.getAnnouncements);
 router.get('/trips', auth.protect, driverController.getTripHistory);
 router.get('/profile', auth.protect, driverController.getProfile);
@@ -23,9 +27,5 @@ router.get('/route-waypoints', auth.protect, driverController.getRouteWaypoints)
 router.get('/notifications', auth.protect, driverController.getNotifications);
 router.patch('/notifications/:notification_id/read', auth.protect, driverController.markNotificationRead);
 router.get('/online', auth.protect, driverController.getConnectedDrivers);
-router.get('/reports/open', auth.protect, driverController.getOpenReports);
-router.patch('/reports/:id/status', auth.protect, driverController.updateReportStatus);
-router.get("/reports", ctrl.getMyReports);
-router.post("/reports", ctrl.submitReport);
 
 module.exports = router;
