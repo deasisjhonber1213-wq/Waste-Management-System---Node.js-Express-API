@@ -9,6 +9,15 @@ const APP_URL = (process.env.APP_URL || "http://localhost:5000").replace(/\/$/, 
 const EMAIL_REGEX =
     /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
+// ===========================================================
+// TEMPORARY: email verification is disabled for now.
+// - register() marks accounts as verified immediately, skips sending
+//   the verification email entirely.
+// - login() no longer blocks on email_verified.
+// To re-enable later: restore the original register()/login() logic
+// (send PIN + link, check email_verified before allowing login).
+// ===========================================================
+
 // ---------- Helpers ----------
 function generatePin() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -30,8 +39,8 @@ async function logAction(userId, action, req) {
 }
 
 // ===========================================================
-// REGISTER  →  creates an unverified account and emails a PIN
-// + a one-click verification link.
+// REGISTER  →  creates an account that is immediately usable.
+// (Email verification temporarily disabled — no PIN/link sent.)
 // ===========================================================
 exports.register = async (req, res) => {
     const { name, email, password, role, phone, address } = req.body;
@@ -51,73 +60,40 @@ exports.register = async (req, res) => {
     try {
         // Check if email already exists
         const [existing] = await db.query(
-            "SELECT id, email_verified FROM users WHERE email = ?",
+            "SELECT id FROM users WHERE email = ?",
             [cleanEmail]
         );
 
         if (existing.length > 0) {
-            if (!existing[0].email_verified) {
-                return res.status(409).json({
-                    error: "Email already registered but not verified",
-                    message: "That email already has a pending registration. Check your inbox or request a new code.",
-                    requiresVerification: true
-                });
-            }
             return res.status(409).json({ error: "Email already registered" });
         }
 
         const hashed = await bcrypt.hash(password, 10);
-        const pin = generatePin();
-        const token = generateToken();
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        // ✅ Let MySQL auto-generate the integer ID
+        // ✅ email_verified = 1 immediately — verification disabled for now
         const [result] = await db.query(
             `INSERT INTO users 
              (name, email, password, role, phone, address, email_verified, verify_pin, verify_token, verify_expires)
-             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, 1, NULL, NULL, NULL)`,
             [
                 name,
                 cleanEmail,
                 hashed,
                 role || "resident",
                 phone || null,
-                address || null,
-                pin,
-                token,
-                expires
+                address || null
             ]
         );
 
-        const userId = result.insertId;   // ← real auto-increment ID
+        const userId = result.insertId;
 
-        // Log the action
         await logAction(userId, "User registered", req);
 
-        const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
-
-        try {
-            await sendMail({
-                to: cleanEmail,
-                subject: "Verify your SmartWaste account",
-                eyebrow: "Verify your email",
-                title: `Hi ${name.split(" ")[0]}, confirm it's you`,
-                intro: "Enter the code below on the verification page, or just tap the button — either one confirms your email. It expires in 24 hours.",
-                code: pin,
-                ctaText: "Verify Email",
-                ctaUrl: verifyUrl,
-                footnote: "If you didn't create a SmartWaste account, you can ignore this email."
-            });
-        } catch (mailErr) {
-            console.error("Verification email failed to send:", mailErr);
-            // Account still exists; user can use "resend code" later
-        }
-
         res.status(201).json({
-            message: "Account created. Check your email for a verification code.",
+            message: "Account created. You can now sign in.",
             userId,
             email: cleanEmail,
-            requiresVerification: true
+            requiresVerification: false
         });
     } catch (err) {
         console.error("Registration error:", err);
@@ -126,7 +102,7 @@ exports.register = async (req, res) => {
 };
 
 // ===========================================================
-// VERIFY EMAIL — via 6-digit PIN (called from the verify page)
+// VERIFY EMAIL — via 6-digit PIN (kept for when verification is re-enabled)
 // ===========================================================
 exports.verifyEmailPin = async (req, res) => {
     const { email, pin } = req.body;
@@ -174,7 +150,7 @@ exports.verifyEmailPin = async (req, res) => {
 };
 
 // ===========================================================
-// VERIFY EMAIL — via link click (GET, from the email button)
+// VERIFY EMAIL — via link click (kept for when verification is re-enabled)
 // ===========================================================
 exports.verifyEmailLink = async (req, res) => {
     const { token, email } = req.query;
@@ -222,7 +198,7 @@ exports.verifyEmailLink = async (req, res) => {
 };
 
 // ===========================================================
-// RESEND VERIFICATION CODE
+// RESEND VERIFICATION CODE (kept for when verification is re-enabled)
 // ===========================================================
 exports.resendVerification = async (req, res) => {
     const { email } = req.body;
@@ -268,7 +244,6 @@ exports.resendVerification = async (req, res) => {
             });
         } catch (mailErr) {
             console.error("Resend verification email failed:", mailErr);
-            // still return success so the user isn't blocked
         }
 
         await logAction(user.id, "Verification code resent", req);
@@ -279,8 +254,6 @@ exports.resendVerification = async (req, res) => {
         res.status(500).json({ error: "Failed to resend code" });
     }
 };
-
-
 
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
@@ -384,7 +357,7 @@ exports.resetPassword = async (req, res) => {
 };
 
 // ===========================================================
-// LOGIN
+// LOGIN  (email_verified check removed — verification disabled for now)
 // ===========================================================
 exports.login = async (req, res) => {
     const { email, password } = req.body;
@@ -414,14 +387,7 @@ exports.login = async (req, res) => {
             });
         }
 
-        if (!user.email_verified) {
-            return res.status(403).json({
-                error: "Email not verified",
-                message: "Please verify your email before signing in.",
-                code: "EMAIL_NOT_VERIFIED",
-                email: user.email
-            });
-        }
+        // Email verification check removed for now — accounts are usable immediately.
 
         const token = jwt.sign(
             { id: user.id, role: user.role, name: user.name, email: user.email },

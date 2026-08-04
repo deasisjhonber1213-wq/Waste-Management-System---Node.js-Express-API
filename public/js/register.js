@@ -85,14 +85,9 @@ async function register() {
         const data = await res.json();
 
         if (res.ok) {
-            showAlert("Account created! Check your email for a verification code…", "success");
+            showAlert("Account created! Redirecting to sign in…", "success");
             setTimeout(() => {
-                window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
-            }, 1400);
-        } else if (data.requiresVerification) {
-            showAlert(data.message || "That email is already registered but not verified.", "info");
-            setTimeout(() => {
-                window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+                window.location.href = `/login`;
             }, 1400);
         } else {
             showAlert(data.error || data.message || "Registration failed. Please try again.", "error");
