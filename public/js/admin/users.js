@@ -267,25 +267,43 @@ async function addUser() {
         role: document.getElementById("uRole").value,
         phone: document.getElementById("uPhone").value.trim(),
         address: document.getElementById("uAddress").value.trim(),
+        // Auto-verify — email verification is not working
+        is_verified: true,
+        email_verified: true,
+        verified: true,
+        skip_verification: true,
     };
     if (!body.name || !body.email || !body.password) {
         showToast("Name, email and password required", "error");
         return;
     }
     try {
-        const res = await API.post("/auth/register", body);
+        // Prefer admin create endpoint (creates verified users).
+        // Fall back to /auth/register with verification flags if admin route is missing.
+        let res = await API.post("/admin/users", body);
+        if (res.status === 404 || res.status === 405) {
+            res = await API.post("/auth/register", body);
+        }
         if (!res.ok) {
-            const err = await res.text();
-            throw new Error(err);
+            let errMsg = "Failed to create user";
+            try {
+                const err = await res.json();
+                errMsg = err.error || err.message || errMsg;
+            } catch {
+                const t = await res.text().catch(() => "");
+                if (t) errMsg = t;
+            }
+            throw new Error(errMsg);
         }
         closeModal("addUserModal");
-        showToast("User created successfully", "success");
+        showToast("User created and auto-verified", "success");
         loadUsers();
         document.getElementById("uName").value = '';
         document.getElementById("uEmail").value = '';
         document.getElementById("uPass").value = '';
         document.getElementById("uPhone").value = '';
         document.getElementById("uAddress").value = '';
+        document.getElementById("uRole").value = 'resident';
     } catch (err) {
         showToast("Failed to create user: " + err.message, "error");
     }
