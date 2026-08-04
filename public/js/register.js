@@ -75,6 +75,8 @@ async function register() {
 
     setLoading(true);
 
+
+
     try {
         const res = await fetch(API_URL + "/auth/register", {
             method: "POST",

@@ -1,21 +1,4 @@
-// ---------- Brevo transactional email (HTTPS API, not SMTP) ----------
-// Railway's Free/Trial/Hobby plans block outbound SMTP ports (465/587)
-// entirely, so raw SMTP (Gmail SMTP, Resend-as-SMTP, etc.) cannot work
-// there. Brevo's API runs over plain HTTPS (port 443), which is always
-// allowed, and only requires verifying a single sender EMAIL ADDRESS
-// (via a confirmation link Brevo emails you) -- no domain/DNS needed.
-//
-// Setup:
-//   1. Sign up at https://www.brevo.com (free tier: 300 emails/day)
-//   2. Dashboard -> Senders, Domains & Dedicated IPs -> Senders -> Add a sender
-//      -> enter the email you want to send from -> click the confirmation
-//      link Brevo emails to that address.
-//   3. Dashboard -> Settings -> SMTP & API -> API Keys -> Generate a new API key
-//
-// Set these in Railway -> Variables:
-//   BREVO_API_KEY      = the API key from step 3
-//   BREVO_SENDER_EMAIL  = the exact address you verified in step 2
-//   BREVO_SENDER_NAME   = optional display name (defaults to "SmartWaste")
+
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
