@@ -1,21 +1,12 @@
-const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  },
-  family: 4,
-  tls: {
-    rejectUnauthorized: false
-  }
-});
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
+/**
+ * Modern branded HTML email template for SmartWaste
+ */
 function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote }) {
   return `
 <!DOCTYPE html>
@@ -64,7 +55,6 @@ function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote })
               </p>
 
               ${code ? `
-              <!-- PIN Code Box -->
               <div style="background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);border-radius:14px;padding:22px 16px;text-align:center;margin:0 0 24px;">
                 <div style="font-size:12px;font-weight:600;color:#5c8a6a;margin-bottom:8px;letter-spacing:0.5px;">YOUR VERIFICATION CODE</div>
                 <div style="font-size:34px;font-weight:800;letter-spacing:8px;color:#4ade80;font-family:'Courier New',monospace;">
@@ -75,7 +65,6 @@ function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote })
               ` : ""}
 
               ${ctaUrl ? `
-              <!-- CTA Button -->
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="${ctaUrl}" 
                    style="display:inline-block;background:#4ade80;color:#060d08;font-weight:700;font-size:14px;
@@ -111,8 +100,13 @@ function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote })
 }
 
 async function sendMail({ to, subject, ...templateOpts }) {
+  if (!resend) {
+    console.error("❌ RESEND_API_KEY is missing. Email not sent.");
+    throw new Error("Email service not configured (missing RESEND_API_KEY)");
+  }
+
   return resend.emails.send({
-    from: "SmartWaste <onboarding@resend.dev>",
+    from: "SmartWaste <onboarding@resend.dev>",   // change later when you verify your domain
     to,
     subject,
     html: renderEmail(templateOpts)
