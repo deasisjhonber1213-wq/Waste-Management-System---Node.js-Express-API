@@ -1,8 +1,28 @@
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+let transporter = null;
+
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+
+  // Verify connection/credentials on startup so bad creds show up
+  // immediately in the logs instead of failing silently on first send.
+  transporter.verify((err) => {
+    if (err) {
+      console.error("❌ Gmail SMTP connection failed:", err.message);
+    } else {
+      console.log("✅ Gmail SMTP ready to send emails");
+    }
+  });
+} else {
+  console.error("❌ GMAIL_USER / GMAIL_APP_PASSWORD is missing. Email not configured.");
+}
 
 /**
  * Modern branded HTML email template for SmartWaste
@@ -100,13 +120,13 @@ function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote })
 }
 
 async function sendMail({ to, subject, ...templateOpts }) {
-  if (!resend) {
-    console.error("❌ RESEND_API_KEY is missing. Email not sent.");
-    throw new Error("Email service not configured (missing RESEND_API_KEY)");
+  if (!transporter) {
+    console.error("❌ Email transporter not configured. Email not sent.");
+    throw new Error("Email service not configured (missing GMAIL_USER/GMAIL_APP_PASSWORD)");
   }
 
-  return resend.emails.send({
-    from: "SmartWaste <onboarding@resend.dev>",   // change later when you verify your domain
+  return transporter.sendMail({
+    from: `"SmartWaste" <${process.env.GMAIL_USER}>`,
     to,
     subject,
     html: renderEmail(templateOpts)
