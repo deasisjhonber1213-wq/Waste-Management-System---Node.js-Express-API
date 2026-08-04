@@ -6,10 +6,7 @@ document.getElementById("togglePasswordBtn")?.addEventListener("click", function
     const eyeOff = this.querySelector(".icon-eye-off");
     const showing = input.type === "text";
 
-    this.classList.remove("blink");
-    void this.offsetWidth;
-    this.classList.add("blink");
-
+    // Clean toggle — no blink animation
     input.type = showing ? "password" : "text";
     if (eye) eye.hidden = !showing;
     if (eyeOff) eyeOff.hidden = showing;
