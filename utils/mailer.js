@@ -1,23 +1,21 @@
 const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // true for 465, false for 587
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
   },
-  // 🔥 Force IPv4 – fixes ENETUNREACH on Railway
   family: 4,
   tls: {
     rejectUnauthorized: false
   }
 });
 
-/**
- * Modern branded HTML email template for SmartWaste
- */
 function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote }) {
   return `
 <!DOCTYPE html>
@@ -113,12 +111,12 @@ function renderEmail({ eyebrow, title, intro, code, ctaText, ctaUrl, footnote })
 }
 
 async function sendMail({ to, subject, ...templateOpts }) {
-  return transporter.sendMail({
-    from: `"SmartWaste" <${process.env.SMTP_USER}>`,
+  return resend.emails.send({
+    from: "SmartWaste <onboarding@resend.dev>",
     to,
     subject,
     html: renderEmail(templateOpts)
   });
 }
 
-module.exports = { transporter, sendMail };
+module.exports = { sendMail };

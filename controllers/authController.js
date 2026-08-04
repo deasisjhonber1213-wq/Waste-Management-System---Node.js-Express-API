@@ -255,29 +255,33 @@ exports.resendVerification = async (req, res) => {
 
         const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(user.email)}`;
 
-        await sendMail({
-            to: user.email,
-            subject: "Your new SmartWaste verification code",
-            eyebrow: "Verify your email",
-            title: `Hi ${(user.name || "there").split(" ")[0]}, here's your new code`,
-            intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
-            code: pin,
-            ctaText: "Verify Email",
-            ctaUrl: verifyUrl
-        });
+        try {
+            await sendMail({
+                to: user.email,
+                subject: "Your new SmartWaste verification code",
+                eyebrow: "Verify your email",
+                title: `Hi ${(user.name || "there").split(" ")[0]}, here's your new code`,
+                intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
+                code: pin,
+                ctaText: "Verify Email",
+                ctaUrl: verifyUrl
+            });
+        } catch (mailErr) {
+            console.error("Resend verification email failed:", mailErr);
+            // still return success so the user isn't blocked
+        }
 
         await logAction(user.id, "Verification code resent", req);
-
         res.json(generic);
+
     } catch (err) {
         console.error("Resend verification error:", err);
         res.status(500).json({ error: "Failed to resend code" });
     }
 };
 
-// ===========================================================
-// FORGOT PASSWORD — request a reset PIN
-// ===========================================================
+
+
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
