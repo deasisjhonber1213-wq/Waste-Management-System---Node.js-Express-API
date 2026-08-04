@@ -25,5 +25,7 @@ router.patch('/notifications/:notification_id/read', auth.protect, driverControl
 router.get('/online', auth.protect, driverController.getConnectedDrivers);
 router.get('/reports/open', auth.protect, driverController.getOpenReports);
 router.patch('/reports/:id/status', auth.protect, driverController.updateReportStatus);
+router.get("/reports", ctrl.getMyReports);
+router.post("/reports", ctrl.submitReport);
 
 module.exports = router;

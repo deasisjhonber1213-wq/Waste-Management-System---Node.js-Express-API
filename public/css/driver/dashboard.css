@@ -38,26 +38,26 @@
     --bg: #0d0f12;
     --bg2: #131720;
     --bg3: #1a1f2e;
-    --panel: #1e2435;
+    --panel: #161b26;
     --border: rgba(255, 255, 255, .06);
-    --border2: rgba(255, 255, 255, .12);
+    --border2: rgba(255, 255, 255, .10);
     --amber: #f5a623;
     --amber2: #ffc355;
-    --amber-dim: rgba(245, 166, 35, .1);
-    --amber-mid: rgba(245, 166, 35, .3);
+    --amber-dim: rgba(245, 166, 35, .10);
+    --amber-mid: rgba(245, 166, 35, .28);
     --green: #2dd4a0;
-    --green-dim: rgba(45, 212, 160, .1);
+    --green-dim: rgba(45, 212, 160, .12);
     --red: #ff5e5e;
-    --red-dim: rgba(255, 94, 94, .1);
+    --red-dim: rgba(255, 94, 94, .12);
     --blue: #5b9cf6;
-    --blue-dim: rgba(91, 156, 246, .1);
+    --blue-dim: rgba(91, 156, 246, .12);
     --gray: #3d4558;
     --gray-dim: rgba(61, 69, 88, .35);
     --text: #e8ecf2;
-    --text2: #7a8499;
-    --text3: #3d4558;
-    --modal-overlay: rgba(0, 0, 0, .7);
-    --shadow-hover: 0 8px 28px rgba(0, 0, 0, .4);
+    --text2: #9aa3b5;
+    --text3: #5c6578;
+    --modal-overlay: rgba(0, 0, 0, .75);
+    --shadow-hover: 0 8px 28px rgba(0, 0, 0, .45);
 }
 
 html {
@@ -1986,20 +1986,27 @@ textarea.form-control {
 }
 
 .leaflet-container {
-    background: #131720 !important;
+    background: var(--bg2) !important;
     z-index: 0 !important;
 }
-
-.leaflet-control-container {
-    z-index: 10 !important;
+.leaflet-popup-content-wrapper {
+    background: var(--panel) !important;
+    border: 1px solid var(--border2) !important;
+    border-radius: 10px !important;
+    box-shadow: var(--shadow-hover) !important;
+    color: var(--text) !important;
 }
 
-.leaflet-popup {
-    z-index: 50 !important;
+.leaflet-popup-tip {
+    background: var(--panel) !important;
 }
 
-.leaflet-routing-container {
-    display: none !important;
+.leaflet-popup-content {
+    color: var(--text) !important;
+    font-family: var(--mono) !important;
+    font-size: 12px !important;
+    margin: 10px 14px !important;
+    font-weight: 500;
 }
 
 .leaflet-popup-content-wrapper {

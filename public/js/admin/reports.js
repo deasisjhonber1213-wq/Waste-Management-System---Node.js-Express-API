@@ -1,4 +1,3 @@
-
 const API_URL = window.location.origin + '/api';
 console.log('📡 API URL:', API_URL);
 
@@ -28,40 +27,34 @@ const API = {
 const STATUS_LABEL = { pending: 'Pending', in_progress: 'In Progress', resolved: 'Resolved', rejected: 'Rejected' };
 const STATUS_BADGE = { pending: 'badge-gold', in_progress: 'badge-blue', resolved: 'badge-green', rejected: 'badge-red' };
 
+const TYPE_COLOR = {
+    missed_pickup: '#ffc13c',
+    overflowing_bin: '#4ade80',
+    illegal_dumping: '#f87171'
+};
+const TYPE_BADGE = {
+    missed_pickup: 'badge-gold',
+    overflowing_bin: 'badge-green',
+    illegal_dumping: 'badge-red'
+};
+const TYPE_LABEL = {
+    missed_pickup: 'Missed Pickup',
+    overflowing_bin: 'Overflowing Bin',
+    illegal_dumping: 'Illegal Dumping'
+};
+
+// ── State (must be declared before any function that uses them) ──
+let allReports = [];
+let allResidents = [];
+let filtered = [];
+let activeDateFilter = 'all';
 let activeStatusFilter = 'all';
-
-function setStatusFilter(s) {
-    activeStatusFilter = s;
-    ['all', 'pending', 'in_progress', 'resolved', 'rejected'].forEach(k => {
-        document.getElementById(`pill-status-${k}`).classList.toggle('active', k === s);
-    });
-    applyFilters();
-}
-window.setStatusFilter = setStatusFilter;
-
-// inside applyFilters(), add status matching:
-filtered = reports.filter(r => {
-    const matchQ = !q || (r.description || '').toLowerCase().includes(q);
-    const matchTp = !tp || r.type === tp;
-    const matchDt = inDateRange(r, activeDateFilter);
-    const matchSt = activeStatusFilter === 'all' || r.status === activeStatusFilter;
-    return matchQ && matchTp && matchDt && matchSt;
-});
-
-
-
-async function resolveReport(id) {
-    try {
-        const res = await API.put(`/admin/reports/${id}/status`, { status: 'resolved' });
-        if (!res.ok) throw new Error();
-        showToast('Report marked resolved', 'success');
-        await loadReports();
-    } catch {
-        showToast('Failed to update report', 'error');
-    }
-}
-window.resolveReport = resolveReport;
-
+let activeTab = 'reports';
+let reportMap = null;
+let reportTiles = null;
+let isSat = false;
+let reportMarkers = [];
+let residentMarkers = [];
 
 function checkAuth() {
     const token = getToken();
@@ -80,33 +73,6 @@ function doLogout() {
     }, 500);
 }
 window.doLogout = doLogout;
-
-let allReports = [];
-let allResidents = [];
-let filtered = [];
-let activeDateFilter = 'all';
-let activeTab = 'reports';
-let reportMap = null;
-let reportTiles = null;
-let isSat = false;
-let reportMarkers = [];
-let residentMarkers = [];
-
-const TYPE_COLOR = {
-    missed_pickup: '#ffc13c',
-    overflowing_bin: '#4ade80',
-    illegal_dumping: '#f87171'
-};
-const TYPE_BADGE = {
-    missed_pickup: 'badge-gold',
-    overflowing_bin: 'badge-green',
-    illegal_dumping: 'badge-red'
-};
-const TYPE_LABEL = {
-    missed_pickup: 'Missed Pickup',
-    overflowing_bin: 'Overflowing Bin',
-    illegal_dumping: 'Illegal Dumping'
-};
 
 function fmtDate(d) {
     if (!d) return '—';
@@ -139,13 +105,77 @@ function inDateRange(r, filter) {
     return true;
 }
 
+function setStatusFilter(s) {
+    activeStatusFilter = s;
+    ['all', 'pending', 'in_progress', 'resolved', 'rejected'].forEach(k => {
+        const el = document.getElementById(`pill-status-${k}`);
+        if (el) el.classList.toggle('active', k === s);
+    });
+    applyFilters();
+}
+window.setStatusFilter = setStatusFilter;
+
+function setDateFilter(f) {
+    activeDateFilter = f;
+    ['all', 'today', 'week', 'month'].forEach(k => {
+        const el = document.getElementById(`pill-${k}`);
+        if (el) el.classList.toggle('active', k === f);
+    });
+    applyFilters();
+}
+window.setDateFilter = setDateFilter;
+
+function applyFilters() {
+    const searchEl = document.getElementById('searchInput');
+    const typeEl = document.getElementById('typeFilter');
+    const q = searchEl ? searchEl.value.toLowerCase() : '';
+    const tp = typeEl ? typeEl.value : '';
+    const reports = Array.isArray(allReports) ? allReports : [];
+
+    filtered = reports.filter(r => {
+        const matchQ = !q || (r.description || '').toLowerCase().includes(q);
+        const matchTp = !tp || r.type === tp;
+        const matchDt = inDateRange(r, activeDateFilter);
+        const matchSt = activeStatusFilter === 'all' || r.status === activeStatusFilter;
+        return matchQ && matchTp && matchDt && matchSt;
+    });
+
+    renderTable(filtered);
+    renderMapPins(filtered);
+    renderResidentPins(allResidents);
+
+    const visibleEl = document.getElementById('visibleCount');
+    if (visibleEl) visibleEl.textContent = filtered.length;
+
+    const totalPins = reportMarkers.length + residentMarkers.length;
+    const pinEl = document.getElementById('mapPinCount');
+    if (pinEl) {
+        pinEl.textContent =
+            `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+    }
+}
+window.applyFilters = applyFilters;
+
+async function resolveReport(id) {
+    try {
+        const res = await API.put(`/admin/reports/${id}/status`, { status: 'resolved' });
+        if (!res.ok) throw new Error();
+        showToast('Report marked resolved', 'success');
+        await loadReports();
+    } catch {
+        showToast('Failed to update report', 'error');
+    }
+}
+window.resolveReport = resolveReport;
+
 function fitAllPins() {
     const allPins = [...reportMarkers, ...residentMarkers];
-    if (allPins.length) {
+    if (allPins.length && reportMap) {
         const bounds = L.latLngBounds(allPins.map(p => p.marker.getLatLng()));
         reportMap.fitBounds(bounds.pad(0.15));
     }
 }
+window.fitAllPins = fitAllPins;
 
 function initReportMap() {
     if (reportMap) return;
@@ -171,18 +201,24 @@ function applyTile(map, tiles, sat) {
     if (sat) {
         tiles.sat.addTo(map);
         tiles.label.addTo(map);
-    } else { tiles.dark.addTo(map); }
+    } else {
+        tiles.dark.addTo(map);
+    }
 }
 
 function toggleSat() {
     isSat = !isSat;
     applyTile(reportMap, reportTiles, isSat);
     const btn = document.getElementById('satBtn');
-    btn.innerHTML = isSat ? '🌍 Map' : '🛰️ Satellite';
-    btn.classList.toggle('active', isSat);
+    if (btn) {
+        btn.innerHTML = isSat ? '🌍 Map' : '🛰️ Satellite';
+        btn.classList.toggle('active', isSat);
+    }
 }
+window.toggleSat = toggleSat;
 
 function renderMapPins(data) {
+    if (!reportMap) return;
     reportMarkers.forEach(({ marker }) => reportMap.removeLayer(marker));
     reportMarkers = [];
 
@@ -233,10 +269,11 @@ function buildReportPopupHtml(r) {
 }
 
 function renderResidentPins(residents) {
+    if (!reportMap) return;
     residentMarkers.forEach(({ marker }) => reportMap.removeLayer(marker));
     residentMarkers = [];
 
-    const withLoc = residents.filter(r => r.latitude != null && r.longitude != null);
+    const withLoc = (residents || []).filter(r => r.latitude != null && r.longitude != null);
 
     withLoc.forEach(r => {
         const icon = L.divIcon({
@@ -269,8 +306,11 @@ function renderResidentPins(residents) {
     });
 
     const totalPins = reportMarkers.length + residentMarkers.length;
-    document.getElementById('mapPinCount').textContent =
-        `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+    const pinEl = document.getElementById('mapPinCount');
+    if (pinEl) {
+        pinEl.textContent =
+            `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+    }
 }
 
 function updateAllMapPins() {
@@ -281,17 +321,19 @@ function updateAllMapPins() {
 
 function flyToReport(id) {
     const entry = reportMarkers.find(m => m.id === id);
-    if (!entry) return;
+    if (!entry || !reportMap) return;
     reportMap.flyTo(entry.marker.getLatLng(), 17, { duration: 0.8 });
     setTimeout(() => entry.marker.openPopup(), 900);
 }
+window.flyToReport = flyToReport;
 
 function flyToResident(id) {
     const entry = residentMarkers.find(m => m.id === id);
-    if (!entry) return;
+    if (!entry || !reportMap) return;
     reportMap.flyTo(entry.marker.getLatLng(), 15, { duration: 0.8 });
     setTimeout(() => entry.marker.openPopup(), 900);
 }
+window.flyToResident = flyToResident;
 
 async function loadReports() {
     try {
@@ -329,8 +371,10 @@ async function loadResidents() {
             allResidents = [];
         }
 
-        document.getElementById('c-residents').textContent = allResidents.length;
-        document.getElementById('residentCount').textContent = allResidents.length;
+        const cRes = document.getElementById('c-residents');
+        const rCount = document.getElementById('residentCount');
+        if (cRes) cRes.textContent = allResidents.length;
+        if (rCount) rCount.textContent = allResidents.length;
         renderResidentList();
         updateAllMapPins();
     } catch (err) {
@@ -342,6 +386,8 @@ async function loadResidents() {
 
 function renderResidentList() {
     const container = document.getElementById('residentList');
+    if (!container) return;
+
     if (!allResidents.length) {
         container.innerHTML =
             '<div style="text-align:center;padding:32px;color:var(--text2)">No active residents found</div>';
@@ -374,47 +420,21 @@ function renderResidentList() {
 
 function updateStatCards(data) {
     const reports = Array.isArray(data) ? data : [];
-    document.getElementById('c-missed').textContent = reports.filter(r => r.type === 'missed_pickup').length;
-    document.getElementById('c-overflow').textContent = reports.filter(r => r.type === 'overflowing_bin').length;
-    document.getElementById('c-illegal').textContent = reports.filter(r => r.type === 'illegal_dumping').length;
-}
-
-function setDateFilter(f) {
-    activeDateFilter = f;
-    ['all', 'today', 'week', 'month'].forEach(k => {
-        document.getElementById(`pill-${k}`).classList.toggle('active', k === f);
-    });
-    applyFilters();
-}
-
-function applyFilters() {
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    const tp = document.getElementById('typeFilter').value;
-    const reports = Array.isArray(allReports) ? allReports : [];
-
-    filtered = reports.filter(r => {
-        const matchQ = !q || (r.description || '').toLowerCase().includes(q);
-        const matchTp = !tp || r.type === tp;
-        const matchDt = inDateRange(r, activeDateFilter);
-        const matchSt = activeStatusFilter === 'all' || r.status === activeStatusFilter;   // ADD THIS
-        return matchQ && matchTp && matchDt && matchSt;   // ADD matchSt HERE
-    });
-
-    renderTable(filtered);
-    renderMapPins(filtered);
-    renderResidentPins(allResidents);
-    document.getElementById('visibleCount').textContent = filtered.length;
-
-    const totalPins = reportMarkers.length + residentMarkers.length;
-    document.getElementById('mapPinCount').textContent =
-        `${totalPins} total (${reportMarkers.length} reports, ${residentMarkers.length} residents)`;
+    const cMissed = document.getElementById('c-missed');
+    const cOverflow = document.getElementById('c-overflow');
+    const cIllegal = document.getElementById('c-illegal');
+    if (cMissed) cMissed.textContent = reports.filter(r => r.type === 'missed_pickup').length;
+    if (cOverflow) cOverflow.textContent = reports.filter(r => r.type === 'overflowing_bin').length;
+    if (cIllegal) cIllegal.textContent = reports.filter(r => r.type === 'illegal_dumping').length;
 }
 
 function renderTable(data) {
     const tbody = document.getElementById('reportsBody');
+    if (!tbody) return;
+
     if (!data.length) {
         tbody.innerHTML =
-            `<tr><td colspan="8"><div class="empty-state">...</div></td></tr>`;  // colspan 7→8
+            `<tr><td colspan="8"><div class="empty-state" style="text-align:center;padding:32px;color:var(--text2)">No reports match the current filters</div></td></tr>`;
         return;
     }
     tbody.innerHTML = data.map((r, i) => {
@@ -437,7 +457,6 @@ function renderTable(data) {
              </tr>`;
     }).join('');
 }
-
 
 function viewReport(id) {
     const r = allReports.find(x => x.id === id);
@@ -470,7 +489,10 @@ function viewReport(id) {
                         </div>` :
         '<div style="color:var(--text3);">No location provided</div>';
 
-    document.getElementById('reportModalBody').innerHTML = `
+    const body = document.getElementById('reportModalBody');
+    if (!body) return;
+
+    body.innerHTML = `
                         <div style="display:flex;flex-direction:column;gap:16px;">
                             <div>
                                 <div class="form-label">Type</div>
@@ -499,6 +521,7 @@ function viewReport(id) {
                         </div>`;
     openModal('viewReportModal');
 }
+window.viewReport = viewReport;
 
 function viewResident(id) {
     const r = allResidents.find(x => x.id === id);
@@ -512,7 +535,10 @@ function viewResident(id) {
     const latStr = lat != null && !isNaN(lat) ? lat.toFixed(6) : '—';
     const lngStr = lng != null && !isNaN(lng) ? lng.toFixed(6) : '—';
 
-    document.getElementById('residentModalBody').innerHTML = `
+    const body = document.getElementById('residentModalBody');
+    if (!body) return;
+
+    body.innerHTML = `
                         <div style="display:flex;flex-direction:column;gap:16px;">
                             <div style="display:flex;align-items:center;gap:12px;">
                                 <div style="width:50px;height:50px;background:var(--blue-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</div>
@@ -542,6 +568,7 @@ function viewResident(id) {
                         </div>`;
     openModal('viewResidentModal');
 }
+window.viewResident = viewResident;
 
 function switchTab(tab) {
     activeTab = tab;
@@ -549,24 +576,35 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
     if (tab === 'reports') {
-        document.querySelector('.tab-btn:first-child').classList.add('active');
-        document.getElementById('reports-tab').classList.add('active');
+        const btn = document.querySelector('.tab-btn:first-child');
+        if (btn) btn.classList.add('active');
+        const content = document.getElementById('reports-tab');
+        if (content) content.classList.add('active');
     } else {
-        document.querySelector('.tab-btn:last-child').classList.add('active');
-        document.getElementById('residents-tab').classList.add('active');
+        const btn = document.querySelector('.tab-btn:last-child');
+        if (btn) btn.classList.add('active');
+        const content = document.getElementById('residents-tab');
+        if (content) content.classList.add('active');
         renderResidentList();
     }
 }
+window.switchTab = switchTab;
 
 function openLightbox(src) {
-    document.getElementById('lightboxImg').src = src;
-    document.getElementById('lightbox').classList.add('open');
+    const img = document.getElementById('lightboxImg');
+    const box = document.getElementById('lightbox');
+    if (img) img.src = src;
+    if (box) box.classList.add('open');
 }
+window.openLightbox = openLightbox;
 
 function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-    document.getElementById('lightboxImg').src = '';
+    const box = document.getElementById('lightbox');
+    const img = document.getElementById('lightboxImg');
+    if (box) box.classList.remove('open');
+    if (img) img.src = '';
 }
+window.closeLightbox = closeLightbox;
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
@@ -575,16 +613,20 @@ async function loadAdminProfile() {
         const res = await API.get('/admin/profile');
         if (res.ok) {
             const d = await res.json();
-            document.getElementById('adminName').textContent = d.name || 'Admin';
+            const nameEl = document.getElementById('adminName');
+            if (nameEl) nameEl.textContent = d.name || 'Admin';
         }
     } catch { }
 }
 
+// Expose remaining helpers
 Object.assign(window, {
-    viewReport, viewResident, flyToReport, flyToResident, openLightbox, closeLightbox,
-    setDateFilter, applyFilters, toggleSat, switchTab, fitAllPins
+    viewReport, viewResident, flyToReport, flyToResident,
+    openLightbox, closeLightbox, setDateFilter, setStatusFilter,
+    applyFilters, toggleSat, switchTab, fitAllPins, resolveReport
 });
 
+// Boot
 initReportMap();
 loadAdminProfile();
 loadReports();
