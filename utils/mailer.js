@@ -1,13 +1,20 @@
 const nodemailer = require("nodemailer");
+const dns = require("dns");
+
+dns.setDefaultResultOrder("ipv4first");
+
 
 let transporter = null;
 
-if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
   transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    family: 4, // belt-and-suspenders: force IPv4 at the socket level too
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD
     }
   });
 
