@@ -194,9 +194,14 @@ tileRoadOverlay = L.tileLayer(
     'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, opacity: 0.8, pane: 'overlayPane' }
 );
 
+// v2 = proximity-based MRF/stop checks. Old unversioned saves marked every
+// MRF from path index alone and must be discarded.
+const PROGRESS_STATE_VERSION = 2;
+
 function saveProgressState() {
     if (!currentAssignmentId) return;
     const state = {
+        v: PROGRESS_STATE_VERSION,
         assignmentId: currentAssignmentId,
         progressIndex: progressIndex,
         mrfPassed: mrfStops.map(m => m._passed || false),
@@ -219,6 +224,13 @@ function loadProgressState() {
         const raw = localStorage.getItem(`resident_progress_${currentAssignmentId}`);
         if (!raw) return null;
         const state = JSON.parse(raw);
+
+        // Discard pre-v2 state (path-index auto-checked all MRFs).
+        if (state.v !== PROGRESS_STATE_VERSION) {
+            localStorage.removeItem(`resident_progress_${currentAssignmentId}`);
+            return null;
+        }
+
         if (Date.now() - state.lastUpdated > 2 * 60 * 60 * 1000) {
             localStorage.removeItem(`resident_progress_${currentAssignmentId}`);
             return null;
@@ -235,35 +247,38 @@ function restoreProgressState() {
         progressIndex = Math.min(state.progressIndex, drawnCoords.length - 1);
         trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
         progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
-        // Do NOT call markMRFPassed here — MRFs are only marked by real
-        // truck proximity (or already restored from state.mrfPassed below).
     }
 
-    state.mrfPassed.forEach((passed, i) => {
-        if (passed && mrfStops[i]) {
-            mrfStops[i]._passed = true;
-            const wrap = document.getElementById(`mrfWrap${i}`);
-            const pin = document.getElementById(`mrfPin${i}`);
-            if (wrap) wrap.classList.add('passed');
-            if (pin) { pin.classList.add('passed'); pin.innerHTML = '<span style="font-size:14px">✓</span>'; }
-        }
-    });
-
-    state.stopDone.forEach((done, i) => {
-        if (done) {
-            const pin = document.getElementById(`resStop${i}`);
-            if (pin && !pin.classList.contains('done')) {
-                pin.classList.add('done');
-                pin.textContent = '✓';
+    if (Array.isArray(state.mrfPassed)) {
+        state.mrfPassed.forEach((passed, i) => {
+            if (passed && mrfStops[i]) {
+                mrfStops[i]._passed = true;
+                const wrap = document.getElementById(`mrfWrap${i}`);
+                const pin = document.getElementById(`mrfPin${i}`);
+                if (wrap) wrap.classList.add('passed');
+                if (pin) { pin.classList.add('passed'); pin.innerHTML = '<span style="font-size:14px">✓</span>'; }
             }
-        }
-    });
+        });
+    }
 
+    if (Array.isArray(state.stopDone)) {
+        state.stopDone.forEach((done, i) => {
+            if (done) {
+                const pin = document.getElementById(`resStop${i}`);
+                if (pin && !pin.classList.contains('done')) {
+                    pin.classList.add('done');
+                    pin.textContent = '✓';
+                }
+            }
+        });
+    }
+
+    // Restore truck marker only — do not re-run updateRouteProgress (avoids
+    // re-evaluating proximity against a restored trail index).
     if (state.truckLat && state.truckLng && truckMarker) {
         truckMarker.setLatLng([state.truckLat, state.truckLng]);
         truckLat = state.truckLat;
         truckLng = state.truckLng;
-        updateRouteProgress(state.truckLat, state.truckLng);
     }
 
     return true;
@@ -480,18 +495,18 @@ function markMRFPassed(pt) {
 function updateRouteProgress(lat, lng) {
     if (!drawnCoords.length || !progressPolyline || !trailPolyline) return;
     const current = L.latLng(lat, lng);
+    // Follow the path from the start outward. Only look a short window
+    // ahead of progressIndex so a truck GPS fix near the end cannot jump
+    // the entire trail (and previously all MRFs).
     let nearest = progressIndex;
     let minDist = Infinity;
-    const start = Math.max(0, progressIndex - 5);
-    for (let i = start; i < drawnCoords.length; i++) {
+    const start = Math.max(0, progressIndex - 3);
+    const end = Math.min(drawnCoords.length, progressIndex + 40);
+    for (let i = start; i < end; i++) {
         const d = current.distanceTo(drawnCoords[i]);
         if (d < minDist) { minDist = d; nearest = i; }
-        if (d > minDist + 200 && i > progressIndex + 10) break;
     }
 
-    // Only advance the driven trail when the truck is close to the path.
-    // Prevents a truck near the end of the path from auto-completing
-    // the whole route and every MRF along it.
     if (nearest > progressIndex && minDist <= PATH_SNAP_MAX_M) {
         progressIndex = nearest;
         trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
