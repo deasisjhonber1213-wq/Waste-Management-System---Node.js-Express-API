@@ -2343,3 +2343,117 @@
             padding: 0.3rem 0.5rem;
         }
     }
+    /* ══════════════ SCROLL UI ══════════════ */
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-mid) transparent;
+}
+
+/* Chrome / Edge / Safari */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gold-mid);
+    border-radius: 99px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Sidebar / nested panels — slightly thinner */
+.sidebar-nav::-webkit-scrollbar,
+.modal-lg::-webkit-scrollbar,
+.wp-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb,
+.modal-lg::-webkit-scrollbar-thumb {
+    background: var(--gold-mid);
+    border-radius: 99px;
+}
+
+/* Soft fade at edges when content scrolls (optional polish) */
+.sidebar-nav {
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 12px,
+        #000 calc(100% - 12px),
+        transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 12px,
+        #000 calc(100% - 12px),
+        transparent 100%
+    );
+}
+
+/* Scroll-to-top button */
+#scrollTopBtn {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.5rem;
+    z-index: 950;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border-hi);
+    background: var(--bg-1);
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity 0.25s var(--ease), transform 0.25s var(--ease),
+                background 0.2s, filter 0.2s;
+}
+
+#scrollTopBtn.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+#scrollTopBtn:hover {
+    background: var(--gold-dim);
+    filter: brightness(1.05);
+}
+
+/* Keep clear of sidebar on desktop */
+@media (min-width: 1025px) {
+    #scrollTopBtn {
+        right: 1.5rem;
+    }
+}
+
+@media (max-width: 600px) {
+    #scrollTopBtn {
+        right: 1rem;
+        bottom: 1.1rem;
+        width: 40px;
+        height: 40px;
+    }
+}

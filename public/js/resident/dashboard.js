@@ -1356,6 +1356,21 @@ async function submitReport(type, desc) {
         }
     }
 }
+(function initScrollTop() {
+    const btn = document.getElementById('scrollTopBtn');
+    if (!btn) return;
+
+    const onScroll = () => {
+        btn.classList.toggle('show', window.scrollY > 320);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+})();
 
 function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
