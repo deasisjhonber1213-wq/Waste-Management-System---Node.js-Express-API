@@ -187,7 +187,8 @@ function restoreProgressState(assignmentId) {
         progressIndex = Math.min(state.progressIndex, drawnCoords.length - 1);
         trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
         progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
-        markMRFPassed(progressIndex);
+        // Do NOT call markMRFPassed here — MRFs are only marked by real
+        // proximity (or already restored from reachedMrfKeys above).
     }
 
     if (state.truckLat && state.truckLng && dMarker) {
@@ -640,20 +641,27 @@ function nearestRoadIndex(lat, lng) {
     return best;
 }
 
+// Proximity thresholds (meters). MRFs require a tighter check so the
+// driver must physically visit them — path progress alone is not enough.
+const STOP_REACH_RADIUS_M = 80;
+const MRF_REACH_RADIUS_M = 45;
+// How close the truck must be to the road path before we advance the trail.
+const PATH_SNAP_MAX_M = 120;
+
 function markStopsReachedUpTo(pt, idxLimit) {
+    if (!pt) return;
     pinStops.forEach((p, i) => {
         const key = p._key;
-        const alreadyDone = reachedStopKeys.has(key);
-        const withinRouteOrder = p._routeIdx == null || drawnCoords.length === 0 || p._routeIdx <= idxLimit + 2;
-        const nearEnough = pt && pt.distanceTo(L.latLng(p.lat, p.lng)) < 80;
+        if (reachedStopKeys.has(key)) return;
 
-        if (!alreadyDone && !(withinRouteOrder && nearEnough)) return;
+        // Require actual proximity. The driver must be near the stop —
+        // road-path progress alone never auto-completes a stop.
+        const nearEnough = pt.distanceTo(L.latLng(p.lat, p.lng)) < STOP_REACH_RADIUS_M;
+        if (!nearEnough) return;
 
-        if (!alreadyDone) {
-            reachedStopKeys.add(key);
-            if (nearEnough) toast(`Stop ${p.num} reached!`, "success");
-            saveProgressState();
-        }
+        reachedStopKeys.add(key);
+        toast(`Stop ${p.num} reached!`, "success");
+        saveProgressState();
 
         const el = document.getElementById(`wpNum${i}`);
         const row = document.getElementById(`wpItem${i}`);
@@ -664,12 +672,18 @@ function markStopsReachedUpTo(pt, idxLimit) {
     });
 }
 
-function markMRFPassed(idxLimit) {
+function markMRFPassed(pt, idxLimit) {
+    // MRFs are ONLY marked when the truck is physically near the facility.
+    // Road-path progress alone must never auto-complete an MRF (that was
+    // the bug when the driver started near the end of the path).
+    if (!pt) return;
+
     mrfStops.forEach((m, i) => {
         const key = m._key;
         if (reachedMrfKeys.has(key)) return;
-        if (m._routeIdx == null || drawnCoords.length === 0) return;
-        if (m._routeIdx > idxLimit + 2) return;
+
+        const dist = pt.distanceTo(L.latLng(m.lat, m.lng));
+        if (dist >= MRF_REACH_RADIUS_M) return;
 
         reachedMrfKeys.add(key);
         toast(`Passed MRF: ${m.name}`, "success");
@@ -697,11 +711,16 @@ function resyncRouteProgress(lat, lng) {
         const d = pt.distanceTo(drawnCoords[i]);
         if (d < minDist) { minDist = d; nearest = i; }
     }
-    progressIndex = nearest;
-    trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
-    progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+    // Only snap progress if the truck is reasonably near the road path.
+    // Being near the end of the path far away must not jump the trail
+    // or imply MRFs/stops were visited.
+    if (minDist <= PATH_SNAP_MAX_M) {
+        progressIndex = nearest;
+        trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
+        progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
+    }
     markStopsReachedUpTo(pt, progressIndex);
-    markMRFPassed(progressIndex);
+    markMRFPassed(pt, progressIndex);
 }
 
 function showRouteFromData(routeData) {
@@ -918,14 +937,17 @@ function updateRouteProgress(lat, lng) {
         if (d < minDist) { minDist = d; nearest = i; }
         if (d > minDist + 200 && i > progressIndex + 10) break;
     }
-    if (nearest > progressIndex) {
+    // Only advance the driven trail when the truck is close to the path.
+    // Prevents starting at/near the end of the path from auto-completing
+    // the whole route and every MRF along it.
+    if (nearest > progressIndex && minDist <= PATH_SNAP_MAX_M) {
         progressIndex = nearest;
         trailPolyline.setLatLngs(drawnCoords.slice(0, progressIndex + 1));
         progressPolyline.setLatLngs(drawnCoords.slice(progressIndex));
         saveProgressState();
     }
     markStopsReachedUpTo(dPt, progressIndex);
-    markMRFPassed(progressIndex);
+    markMRFPassed(dPt, progressIndex);
 }
 
 async function loadResidents() {
