@@ -1,4 +1,3 @@
-
 const token = localStorage.getItem('token');
 if (!token) window.location.href = '/login.html';
 
@@ -14,6 +13,31 @@ async function apiFetch(url, options = {}) {
     return res.json();
 }
 
+/* ══════════════ Small inline SVG icons (used for dynamically built strings) ══════════════
+   NOTE: the 🚛 (truck), 🏭 (MRF), and 🏠 (house) emoji used for map markers/popups are
+   intentionally left as emoji everywhere in this file, per design requirements. */
+const ICON_PIN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M12 22s7-7.58 7-13a7 7 0 1 0-14 0c0 5.42 7 13 7 13z"/><circle cx="12" cy="9" r="2.5"/></svg>';
+const ICON_RECYCLE = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
+const ICON_ZONE = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M12 22s7-7.58 7-13a7 7 0 1 0-14 0c0 5.42 7 13 7 13z"/><circle cx="12" cy="9" r="2.5"/></svg>';
+
+const TOAST_ICONS = {
+    success: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-opacity=".4"/><polyline points="8 12 11 15 16 9"/></svg>',
+    info: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-opacity=".4"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.5" r="0.7" fill="var(--blue)" stroke="none"/></svg>',
+    error: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-opacity=".4"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+};
+
+const TYPE_LABELS = { missed_pickup: 'Missed Pickup', illegal_dumping: 'Illegal Dumping', overflowing_bin: 'Overflowing Bin', other: 'Other Issue' };
+const TYPE_COLORS = { missed_pickup: 'var(--amber)', illegal_dumping: 'var(--red)', overflowing_bin: 'var(--success)', other: 'var(--blue)' };
+const TYPE_ICONS = {
+    missed_pickup: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>',
+    illegal_dumping: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14.3a2 2 0 0 0-3.4 0l-8 14.3A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    overflowing_bin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>',
+    other: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.5" r="0.6" fill="var(--blue)" stroke="none"/></svg>'
+};
+
+const SUN_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="6" y2="6"/><line x1="18" y1="18" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="6" y2="18"/><line x1="18" y1="6" x2="19.8" y2="4.2"/></svg>';
+const MOON_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
 function toggleTheme() {
     const html = document.documentElement;
     const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
@@ -23,14 +47,10 @@ function toggleTheme() {
 }
 
 function syncThemeButtons(theme) {
-    const icon = theme === 'light' ? '🌙' : '☀️';
-    document.querySelectorAll('.theme-btn').forEach(b => b.textContent = icon);
-    const dtt = document.getElementById('drawerThemeToggle');
-    if (dtt) {
-        dtt.classList.toggle('on', theme === 'light');
-        const label = dtt.querySelector('.dtt-label');
-        if (label) label.textContent = theme === 'light' ? 'Light Mode' : 'Dark Mode';
-    }
+    const icon = document.getElementById('themeToggleIcon');
+    const label = document.getElementById('themeToggleLabel');
+    if (icon) icon.innerHTML = theme === 'light' ? SUN_ICON : MOON_ICON;
+    if (label) label.textContent = theme === 'light' ? 'Light Mode' : 'Dark Mode';
 }
 
 function openModal(id) {
@@ -57,65 +77,75 @@ function switchTermsTab(tab, btn) {
     document.getElementById(tab === 'tos' ? 'tabTos' : 'tabPrivacy').classList.add('active');
 }
 
-const burgerBtn = document.getElementById('burgerBtn');
-const mobileDrawer = document.getElementById('mobileDrawer');
-const drawerBackdrop = document.getElementById('drawerBackdrop');
+/* ══════════════ Sidebar (mobile) ══════════════ */
+const hamburger = document.getElementById('hamburger');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-function openDrawer() {
-    mobileDrawer.classList.add('open');
-    drawerBackdrop.classList.add('open');
-    burgerBtn?.classList.add('open');
-    burgerBtn?.setAttribute('aria-expanded', 'true');
+function openSidebar() {
+    sidebar?.classList.add('open');
+    sidebarOverlay?.classList.add('open');
+    hamburger?.classList.add('open');
+    hamburger?.setAttribute('aria-expanded', 'true');
     document.body.style.overflow = 'hidden';
 }
 
-function closeDrawer() {
-    mobileDrawer.classList.remove('open');
-    drawerBackdrop.classList.remove('open');
-    burgerBtn?.classList.remove('open');
-    burgerBtn?.setAttribute('aria-expanded', 'false');
+function closeSidebar() {
+    sidebar?.classList.remove('open');
+    sidebarOverlay?.classList.remove('open');
+    hamburger?.classList.remove('open');
+    hamburger?.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
 }
 
-function toggleDrawer() {
-    if (mobileDrawer.classList.contains('open')) {
-        closeDrawer();
-    } else {
-        openDrawer();
-    }
+function toggleSidebar() {
+    if (sidebar?.classList.contains('open')) closeSidebar();
+    else openSidebar();
 }
 
-burgerBtn?.addEventListener('click', toggleDrawer);
-drawerBackdrop?.addEventListener('click', closeDrawer);
+hamburger?.addEventListener('click', toggleSidebar);
+sidebarOverlay?.addEventListener('click', closeSidebar);
 
-mobileDrawer?.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', closeDrawer);
+sidebar?.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', closeSidebar);
 });
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeDrawer();
+    if (e.key === 'Escape') closeSidebar();
 });
 
 window.addEventListener('resize', () => {
-    if (window.innerWidth > 900) closeDrawer();
+    if (window.innerWidth > 1024) closeSidebar();
 });
 
 let touchStartX = 0;
-mobileDrawer?.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-mobileDrawer?.addEventListener('touchend', e => {
+sidebar?.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+sidebar?.addEventListener('touchend', e => {
     const delta = e.changedTouches[0].clientX - touchStartX;
-    if (delta > 60) closeDrawer();
+    if (delta < -60) closeSidebar();
 }, { passive: true });
 
 document.addEventListener('DOMContentLoaded', () => {
     syncThemeButtons(document.documentElement.getAttribute('data-theme') || 'dark');
 });
 
+/* ══════════════ Reveal-on-scroll + nav scroll-spy ══════════════ */
 const io = new IntersectionObserver(
     entries => entries.forEach(e => e.isIntersecting && e.target.classList.add('in')),
     { threshold: 0.1 }
 );
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+const navItems = document.querySelectorAll('.nav-item[data-nav]');
+const navSections = Array.from(navItems).map(a => document.querySelector(a.getAttribute('href')));
+const spy = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const id = '#' + entry.target.id;
+        navItems.forEach(a => a.classList.toggle('active', a.getAttribute('href') === id));
+    });
+}, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+navSections.forEach(s => s && spy.observe(s));
 
 let map, markerLayer, tileStreet, tileSat, tileRoadOverlay;
 let currentTruckId, truckMarker, userMarker;
@@ -259,6 +289,7 @@ async function loadFallbackMRF() {
     try {
         const mrf = await apiFetch('/api/resident/mrf-location');
         if (!mrf || !mrf.latitude || !mrf.longitude) return;
+        // MRF marker: emoji left as-is by design
         const icon = L.divIcon({
             className: "",
             html: `<div class="mrf-wrap"><div class="mrf-pulse-ring"></div><div class="mrf-pin"><span style="font-size:15px">🏭</span></div></div>`,
@@ -347,7 +378,7 @@ function showRouteWithTrail(routeData) {
         }).addTo(map);
 
         trailPolyline = L.polyline([], {
-            color: "#4ade80",
+            color: "#d4a853",
             weight: 5,
             opacity: .85
         }).addTo(map);
@@ -372,7 +403,7 @@ function showRouteWithTrail(routeData) {
         });
         pinMarkers.push(
             L.marker([p.lat, p.lng], { icon, zIndexOffset: 300 })
-                .bindPopup(`<b>📍 Stop ${p.num}</b><br>${p.name}`)
+                .bindPopup(`<b>${ICON_PIN}Stop ${p.num}</b><br>${p.name}`)
                 .addTo(map)
         );
     });
@@ -384,6 +415,7 @@ function showRouteWithTrail(routeData) {
     }));
 
     mrfStops.forEach((m, i) => {
+        // MRF marker: emoji left as-is by design
         const icon = L.divIcon({
             className: "",
             html: `<div class="mrf-wrap" id="mrfWrap${i}"><div class="mrf-pulse-ring"></div><div class="mrf-pin" id="mrfPin${i}"><span style="font-size:15px">🏭</span></div></div>`,
@@ -426,7 +458,7 @@ function markMRFPassed(idxLimit) {
         if (wrap) wrap.classList.add('passed');
         if (pin) { pin.classList.add('passed'); pin.innerHTML = '<span style="font-size:14px">✓</span>'; }
         const marker = mrfMarkers[i];
-        if (marker) marker.setPopupContent(`<b style="color:#94a3b8">🏭 ${m.name}</b><br><span style="color:#4ade80">✓ Truck already passed</span>`);
+        if (marker) marker.setPopupContent(`<b style="color:#94a3b8">🏭 ${m.name}</b><br><span style="color:#34d399">✓ Truck already passed</span>`);
     });
 }
 
@@ -518,6 +550,7 @@ function placeTruckMarker(lat, lng, animate = true) {
             updateRouteProgress(lat, lng);
         }
     } else {
+        // Truck marker: emoji left as-is by design
         const icon = L.divIcon({
             className: "",
             html: `<div class="truck-marker"><span style="font-size:14px">🚛</span></div>`,
@@ -549,6 +582,7 @@ async function loadResidentLocations() {
         });
         list.forEach(r => {
             const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
+            // Resident (house) marker: emoji left as-is by design
             const icon = L.divIcon({
                 className: "",
                 html: `<div class="resident-pin ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
@@ -559,7 +593,7 @@ async function loadResidentLocations() {
                 residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon);
             } else {
                 residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon })
-                    .bindPopup(`<b style="color:#5b9cf6">🏠 ${r.name}</b><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`)
+                    .bindPopup(`<b style="color:#5b9cf6">🏠 ${r.name}</b><br><span style="color:${fresh ? '#34d399' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`)
                     .addTo(map);
             }
         });
@@ -577,6 +611,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 function updateDistanceHUD() {
     if (userLat === null || truckLat === null) return;
     const km = haversineKm(userLat, userLng, truckLat, truckLng);
+    // Truck emoji left as-is by design
     const distanceText = km < 1 ? `🚛 Truck is ~${Math.round(km * 1000)} m away` : `🚛 Truck is ~${km.toFixed(2)} km away`;
     const distanceEl = document.getElementById('distanceText');
     if (distanceEl) distanceEl.textContent = distanceText;
@@ -609,14 +644,13 @@ function placeUserMarker(lat, lng, accuracy) {
             iconAnchor: [7, 7]
         });
         userMarker = L.marker([lat, lng], { icon, zIndexOffset: 500 })
-            .bindPopup('<b>📍 You</b>')
+            .bindPopup(`<b>${ICON_PIN}You</b>`)
             .addTo(map);
     }
 
-
     const locInfo = document.getElementById('locationInfo');
     if (locInfo) {
-        locInfo.innerHTML = `<span>📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</span><span id="locAccuracy">±${Math.round(accuracy || 30)}m</span>`;
+        locInfo.innerHTML = `<span>${ICON_PIN}${lat.toFixed(5)}, ${lng.toFixed(5)}</span><span id="locAccuracy">±${Math.round(accuracy || 30)}m</span>`;
     }
     updateDistanceHUD();
 }
@@ -658,11 +692,10 @@ function toggleShareLocation() {
     if (sharingLocation) {
         if (btn) {
             btn.classList.add('active');
-            btn.textContent = '📤 On';
         }
         if (status) {
             status.textContent = 'Sharing: ON';
-            status.style.color = '#4ade80';
+            status.style.color = 'var(--gold)';
         }
 
         if (lastKnownLocation) {
@@ -696,13 +729,12 @@ function toggleShareLocation() {
                 }, { enableHighAccuracy: true, timeout: 8000 }
             );
         }, 15000);
-        showToast('📍 Location sharing ON');
+        showToast('Location sharing ON');
     } else {
         clearInterval(shareInterval);
         shareInterval = null;
         if (btn) {
             btn.classList.remove('active');
-            btn.textContent = '📤 Share';
         }
         if (status) {
             status.textContent = 'Sharing: OFF';
@@ -753,11 +785,11 @@ function renderSchedule() {
         const isToday = d.toDateString() === today;
         const isDone = s.status !== 'pending';
         const cls = isToday ? 'today' : isDone ? 'done' : 'upcoming';
-        const badge = isToday ? `<span class="badge" style="background:rgba(251,191,36,.15);color:var(--amber);border:1px solid rgba(251,191,36,.3);">Today</span>` :
+        const badge = isToday ? `<span class="badge" style="background:rgba(245,166,35,.15);color:var(--amber);border:1px solid rgba(245,166,35,.3);">Today</span>` :
             isDone ? `<span class="badge badge-done">${s.status}</span>` :
                 `<span class="badge badge-upcoming">Upcoming</span>`;
         const isLast = i === visible.length - 1;
-        return `<div class="timeline-item">
+        return `<div class="timeline-item" style="animation-delay:${i * 0.05}s">
                 <div class="tl-left">
                     <div class="tl-dot ${cls}"></div>
                     ${!isLast ? `<div class="tl-line"></div>` : ''}
@@ -772,8 +804,8 @@ function renderSchedule() {
                     </div>
                     <div class="tl-meta">
                         <span class="tl-meta-item">🚛 ${s.plate_number}</span>
-                        <span class="tl-meta-item">📍 ${s.zone_name}</span>
-                        <span class="tl-meta-item">♻ ${s.pickup_type}</span>
+                        <span class="tl-meta-item">${ICON_ZONE}${s.zone_name}</span>
+                        <span class="tl-meta-item">${ICON_RECYCLE}${s.pickup_type}</span>
                     </div>
                 </div>
             </div>`;
@@ -807,14 +839,14 @@ function renderAnnouncements() {
     const el = document.getElementById('announcementCards');
     const data = window._annData || [];
     const visible = annShowAll ? data : data.slice(0, ANN_LIMIT);
-    el.innerHTML = data.length ? visible.map(a => `
-            <div class="ann-card">
+    el.innerHTML = data.length ? visible.map((a, i) => `
+            <div class="ann-card" style="animation-delay:${i * 0.06}s">
                 ${a.image_url ? `<img class="ann-card-img" src="${a.image_url}" onerror="this.style.display='none'">` : ''}
                 <div class="ann-card-body">
                     <div class="ann-date">${a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</div>
                     <div class="ann-title">${a.title}</div>
                     <div class="ann-msg" style="-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">${a.message}</div>
-                    <button onclick="expandAnn(this)" style="background:none;border:none;color:var(--green);font-size:0.75rem;padding:4px 0;cursor:pointer;font-family:var(--ff-display)">Read more ›</button>
+                    <button onclick="expandAnn(this)" style="background:none;border:none;color:var(--gold);font-size:0.75rem;padding:4px 0;cursor:pointer;font-family:var(--ff-display)">Read more ›</button>
                 </div>
             </div>`).join('') : '<p style="color:var(--text-2);">No announcements yet.</p>';
     const btn = document.getElementById('annSeeAll');
@@ -852,11 +884,15 @@ function showCompletionBanner(cancelled) {
         box.classList.toggle('completed', !cancelled);
         box.classList.toggle('cancelled', !!cancelled);
     }
-    icon.textContent = cancelled ? '✕' : '✓';
+    if (icon) {
+        icon.innerHTML = cancelled
+            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    }
     title.textContent = cancelled ? 'Route Cancelled Today' : "Today's Collection Complete";
     sub.textContent = cancelled
         ? 'No pickup was completed for your zone today.'
-        : 'Thanks for keeping Jose Dalman clean ♻️';
+        : 'Thanks for keeping Jose Dalman clean';
 }
 
 function applyStatusToUI(status) {
@@ -891,7 +927,7 @@ async function loadTodayTruck() {
         routeStatus = data.status || (routeStarted ? 'in_progress' : 'pending');
 
         if (routeStatus === 'completed') {
-            statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--green)">· Collection complete ✓</span>`;
+            statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--success)">· Collection complete ✓</span>`;
             showCompletionBanner(false);
         } else if (routeStatus === 'cancelled') {
             statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--text-3)">· Route cancelled</span>`;
@@ -1013,11 +1049,11 @@ function connectResidentSocket() {
 
         if (data.status === 'in_progress' && prevStatus !== 'in_progress') {
             routeStarted = true;
-            showToast('🚛 Your collection truck is on the way!');
+            showToast('Your collection truck is on the way!');
             loadTodayTruck();
             pollTruckLocation();
         } else if (data.status === 'completed') {
-            showToast('✅ Today\'s pickup is complete!');
+            showToast('Today\'s pickup is complete!');
         } else if (data.status === 'cancelled') {
             showToast('Route cancelled for today', 'info');
         }
@@ -1028,13 +1064,17 @@ async function loadProfile() {
     try {
         const p = await apiFetch('/api/resident/profile');
         window._profile = p;
-        const nameEl = document.getElementById('navUserName');
-        const initialEl = document.getElementById('userInitial');
-        const drawerName = document.getElementById('drawerUserName');
         const displayName = p.name || 'Resident';
-        if (nameEl) nameEl.textContent = displayName;
-        if (initialEl) initialEl.textContent = displayName.trim().charAt(0).toUpperCase() || 'R';
-        if (drawerName) drawerName.textContent = displayName;
+        const initial = displayName.trim().charAt(0).toUpperCase() || 'R';
+
+        ['navUserName', 'navUserNameTop'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = displayName;
+        });
+        ['userInitial', 'userInitialTop'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = initial;
+        });
 
         const pName = document.getElementById('profileName');
         const pEmail = document.getElementById('profileEmail');
@@ -1044,10 +1084,10 @@ async function loadProfile() {
         if (pPhone) pPhone.value = p.phone || '';
     } catch (e) {
         console.warn('loadProfile failed', e);
-        const nameEl = document.getElementById('navUserName');
-        const drawerName = document.getElementById('drawerUserName');
-        if (nameEl) nameEl.textContent = 'Resident';
-        if (drawerName) drawerName.textContent = 'Resident';
+        ['navUserName', 'navUserNameTop'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = 'Resident';
+        });
     }
 }
 
@@ -1196,9 +1236,6 @@ function captureLocation() {
     );
 }
 
-const TYPE_LABELS = { missed_pickup: 'Missed Pickup', illegal_dumping: 'Illegal Dumping', overflowing_bin: 'Overflowing Bin', other: 'Other Issue' };
-const TYPE_ICONS = { missed_pickup: '🟡', illegal_dumping: '🔴', overflowing_bin: '🟢', other: '🔵' };
-
 function handleReportSubmit(e) {
     e.preventDefault();
     const type = document.getElementById('rtype')?.value;
@@ -1211,7 +1248,7 @@ function handleReportSubmit(e) {
     const modalIcon = document.getElementById('modalIcon');
     const modalTitle = document.getElementById('modalTitle');
     const modalMsg = document.getElementById('modalMsg');
-    if (modalIcon) modalIcon.textContent = TYPE_ICONS[type] || '📋';
+    if (modalIcon) modalIcon.innerHTML = TYPE_ICONS[type] || TYPE_ICONS.other;
     if (modalTitle) modalTitle.textContent = `Report: ${TYPE_LABELS[type]}`;
     if (modalMsg) modalMsg.textContent = `"${desc.slice(0, 120)}${desc.length > 120 ? '…' : ''}"`;
     const mpi = document.getElementById('modalPreviewImg');
@@ -1224,8 +1261,8 @@ function handleReportSubmit(e) {
     const ml = document.getElementById('modalLoc');
     if (ml) {
         if (reportLat !== null) {
-            ml.textContent = `📍 ${reportLat.toFixed(5)}, ${reportLng.toFixed(5)}`;
-            ml.style.display = 'block';
+            ml.innerHTML = `${ICON_PIN}${reportLat.toFixed(5)}, ${reportLng.toFixed(5)}`;
+            ml.style.display = 'flex';
         } else { ml.style.display = 'none'; }
     }
     const modal = document.getElementById('confirmModal');
@@ -1270,7 +1307,7 @@ async function submitReport(type, desc) {
             btn.textContent = '✓ Submitted';
             setTimeout(() => {
                 if (btn) {
-                    btn.textContent = 'Submit Report →';
+                    btn.innerHTML = 'Submit Report <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
                     btn.disabled = false;
                 }
             }, 3000);
@@ -1279,7 +1316,7 @@ async function submitReport(type, desc) {
         console.error('submitReport failed:', err);
         showToast('Submission failed. Try again.', 'error');
         if (btn) {
-            btn.textContent = 'Submit Report →';
+            btn.innerHTML = 'Submit Report <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
             btn.disabled = false;
         }
     }
@@ -1288,7 +1325,7 @@ async function submitReport(type, desc) {
 function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     if (!t) return;
-    t.textContent = `${type === 'success' ? '✅' : type === 'info' ? 'ℹ️' : '❌'} ${msg}`;
+    t.innerHTML = `<span class="icon">${TOAST_ICONS[type] || TOAST_ICONS.success}</span><span>${msg}</span>`;
     t.className = 'show';
     setTimeout(() => t.classList.remove('show'), 3500);
 }
@@ -1305,8 +1342,8 @@ Object.assign(window, {
     toggleScheduleAll,
     toggleAnnAll,
     expandAnn,
-    toggleDrawer,
-    closeDrawer,
+    toggleSidebar,
+    closeSidebar,
     toggleTheme,
     openModal,
     closeModal,
