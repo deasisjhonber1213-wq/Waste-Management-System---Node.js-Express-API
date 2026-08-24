@@ -70,6 +70,11 @@ async function login() {
                 else if (data.role === "driver") window.location = "/driver/dashboard";
                 else window.location = "/resident/dashboard";
             }, 900);
+        } else if (res.status === 403 && data.requiresVerification) {
+            showAlert(data.message || "Please verify your email before signing in.", "error");
+            setTimeout(() => {
+                window.location = `/verify-email?email=${encodeURIComponent(data.email || email)}`;
+            }, 1500);
         } else {
             showAlert(data.error || data.message || "Invalid credentials", "error");
             resetButton(btn, btnText, btnLoader);

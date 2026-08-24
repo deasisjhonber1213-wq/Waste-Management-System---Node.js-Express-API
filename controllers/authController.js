@@ -10,12 +10,11 @@ const EMAIL_REGEX =
     /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
 // ===========================================================
-// TEMPORARY: email verification is disabled for now.
-// - register() marks accounts as verified immediately, skips sending
-//   the verification email entirely.
-// - login() no longer blocks on email_verified.
-// To re-enable later: restore the original register()/login() logic
-// (send PIN + link, check email_verified before allowing login).
+// Email verification is ACTIVE.
+// - register() creates the account as unverified, generates a PIN +
+//   link token, and emails both via SMTP (utils/mailer.js).
+// - login() blocks unverified accounts with a 403 so the frontend can
+//   redirect them to /verify-email.
 // ===========================================================
 
 // ---------- Helpers ----------
@@ -39,8 +38,7 @@ async function logAction(userId, action, req) {
 }
 
 // ===========================================================
-// REGISTER  →  creates an account that is immediately usable.
-// (Email verification temporarily disabled — no PIN/link sent.)
+// REGISTER  →  creates an unverified account and emails a PIN + link.
 // ===========================================================
 exports.register = async (req, res) => {
     const { name, email, password, role, phone, address } = req.body;
@@ -69,19 +67,24 @@ exports.register = async (req, res) => {
         }
 
         const hashed = await bcrypt.hash(password, 10);
+        const pin = generatePin();
+        const token = generateToken();
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        // ✅ email_verified = 1 immediately — verification disabled for now
         const [result] = await db.query(
             `INSERT INTO users 
              (name, email, password, role, phone, address, email_verified, verify_pin, verify_token, verify_expires)
-             VALUES (?, ?, ?, ?, ?, ?, 1, NULL, NULL, NULL)`,
+             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
             [
                 name,
                 cleanEmail,
                 hashed,
                 role || "resident",
                 phone || null,
-                address || null
+                address || null,
+                pin,
+                token,
+                expires
             ]
         );
 
@@ -89,11 +92,32 @@ exports.register = async (req, res) => {
 
         await logAction(userId, "User registered", req);
 
+        const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
+
+        let emailSent = true;
+        try {
+            await sendMail({
+                to: cleanEmail,
+                subject: "Verify your SmartWaste account",
+                eyebrow: "Verify your email",
+                title: `Welcome, ${(name || "there").split(" ")[0]} — one step left`,
+                intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
+                code: pin,
+                ctaText: "Verify Email",
+                ctaUrl: verifyUrl
+            });
+        } catch (mailErr) {
+            emailSent = false;
+            console.error("Registration verification email failed:", mailErr);
+        }
+
         res.status(201).json({
-            message: "Account created. You can now sign in.",
+            message: emailSent
+                ? "Account created. Check your email for a verification code."
+                : "Account created, but we couldn't send the verification email. Use \"Resend Code\" on the verify page.",
             userId,
             email: cleanEmail,
-            requiresVerification: false
+            requiresVerification: true
         });
     } catch (err) {
         console.error("Registration error:", err);
@@ -102,7 +126,7 @@ exports.register = async (req, res) => {
 };
 
 // ===========================================================
-// VERIFY EMAIL — via 6-digit PIN (kept for when verification is re-enabled)
+// VERIFY EMAIL — via 6-digit PIN
 // ===========================================================
 exports.verifyEmailPin = async (req, res) => {
     const { email, pin } = req.body;
@@ -150,7 +174,7 @@ exports.verifyEmailPin = async (req, res) => {
 };
 
 // ===========================================================
-// VERIFY EMAIL — via link click (kept for when verification is re-enabled)
+// VERIFY EMAIL — via link click
 // ===========================================================
 exports.verifyEmailLink = async (req, res) => {
     const { token, email } = req.query;
@@ -198,7 +222,7 @@ exports.verifyEmailLink = async (req, res) => {
 };
 
 // ===========================================================
-// RESEND VERIFICATION CODE (kept for when verification is re-enabled)
+// RESEND VERIFICATION CODE
 // ===========================================================
 exports.resendVerification = async (req, res) => {
     const { email } = req.body;
@@ -283,14 +307,19 @@ exports.forgotPassword = async (req, res) => {
             [pin, expires, user.id]
         );
 
-        await sendMail({
-            to: user.email,
-            subject: "SmartWaste – Password Reset PIN",
-            eyebrow: "Password reset",
-            title: "Reset your password",
-            intro: `Hi ${(user.name || "there").split(" ")[0]}, use the code below to set a new password. It expires in 15 minutes.`,
-            code: pin
-        });
+        try {
+            await sendMail({
+                to: user.email,
+                subject: "SmartWaste – Password Reset PIN",
+                eyebrow: "Password reset",
+                title: "Reset your password",
+                intro: `Hi ${(user.name || "there").split(" ")[0]}, use the code below to set a new password. It expires in 15 minutes.`,
+                code: pin
+            });
+        } catch (mailErr) {
+            console.error("Forgot password email failed:", mailErr);
+            return res.status(500).json({ error: "Failed to send reset email. Please try again shortly." });
+        }
 
         await logAction(user.id, "Password reset PIN requested", req);
 
@@ -357,7 +386,7 @@ exports.resetPassword = async (req, res) => {
 };
 
 // ===========================================================
-// LOGIN  (email_verified check removed — verification disabled for now)
+// LOGIN — blocks unverified accounts
 // ===========================================================
 exports.login = async (req, res) => {
     const { email, password } = req.body;
@@ -387,7 +416,14 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Email verification check removed for now — accounts are usable immediately.
+        if (!user.email_verified) {
+            return res.status(403).json({
+                error: "Email not verified",
+                message: "Please verify your email before signing in.",
+                requiresVerification: true,
+                email: user.email
+            });
+        }
 
         const token = jwt.sign(
             { id: user.id, role: user.role, name: user.name, email: user.email },

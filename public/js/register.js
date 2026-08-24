@@ -82,21 +82,16 @@ async function register() {
                 password,
                 phone,
                 address,
-                role: selectedRole,
-                // Auto-verify — email verification is not working
-                is_verified: true,
-                email_verified: true,
-                verified: true,
-                skip_verification: true
+                role: selectedRole
             })
         });
 
         const data = await res.json().catch(() => ({}));
 
         if (res.ok) {
-            showAlert("Account created! You can sign in now. Redirecting…", "success");
+            showAlert(data.message || "Account created! Check your email for a verification code.", "success");
             setTimeout(() => {
-                window.location.href = `/login`;
+                window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
             }, 1400);
         } else {
             showAlert(data.error || data.message || "Registration failed. Please try again.", "error");
