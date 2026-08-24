@@ -1,5 +1,18 @@
 const nodemailer = require("nodemailer");
+const dns = require("dns");
 require("dotenv").config();
+
+// Railway containers frequently have no outbound IPv6 route, but Node's
+// default DNS lookup order can still hand back an AAAA (IPv6) record first
+// for smtp.gmail.com, causing ENETUNREACH. Forcing IPv4-first resolution
+// process-wide is the reliable fix (per-connection `family: 4` on the
+// transporter isn't always honored). Available on Node 18+.
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch (e) {
+  // Older Node versions without this API — the family:4 fallback below
+  // still applies, just less reliably.
+}
 
 // ===========================================================
 // SMTP transporter — reads SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS
