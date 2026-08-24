@@ -37,7 +37,16 @@ function getTransporter() {
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS
-    }
+    },
+    // Railway (and several other hosts) sometimes resolve smtp.gmail.com to
+    // an IPv6 address that isn't actually routable from the container, which
+    // makes the connection hang for minutes instead of failing. Forcing IPv4
+    // plus short timeouts means a broken connection fails in ~10s instead of
+    // hanging the whole request.
+    family: 4,
+    connectionTimeout: 10000, // time to establish the TCP connection
+    greetingTimeout: 10000,   // time to wait for the SMTP greeting
+    socketTimeout: 15000      // time to wait on an idle socket
   });
 
   return transporter;

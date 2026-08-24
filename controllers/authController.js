@@ -94,27 +94,25 @@ exports.register = async (req, res) => {
 
         const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
 
-        let emailSent = true;
-        try {
-            await sendMail({
-                to: cleanEmail,
-                subject: "Verify your SmartWaste account",
-                eyebrow: "Verify your email",
-                title: `Welcome, ${(name || "there").split(" ")[0]} — one step left`,
-                intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
-                code: pin,
-                ctaText: "Verify Email",
-                ctaUrl: verifyUrl
-            });
-        } catch (mailErr) {
-            emailSent = false;
+        // Fire-and-forget: the account is already created, so don't make the
+        // user's browser sit and wait on an SMTP round-trip (which can take
+        // several seconds, or hang if the mail server is unreachable). If it
+        // fails, they can still use "Resend Code" on the verify page.
+        sendMail({
+            to: cleanEmail,
+            subject: "Verify your SmartWaste account",
+            eyebrow: "Verify your email",
+            title: `Welcome, ${(name || "there").split(" ")[0]} — one step left`,
+            intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
+            code: pin,
+            ctaText: "Verify Email",
+            ctaUrl: verifyUrl
+        }).catch((mailErr) => {
             console.error("Registration verification email failed:", mailErr);
-        }
+        });
 
         res.status(201).json({
-            message: emailSent
-                ? "Account created. Check your email for a verification code."
-                : "Account created, but we couldn't send the verification email. Use \"Resend Code\" on the verify page.",
+            message: "Account created. Check your email for a verification code.",
             userId,
             email: cleanEmail,
             requiresVerification: true
@@ -255,20 +253,18 @@ exports.resendVerification = async (req, res) => {
 
         const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(user.email)}`;
 
-        try {
-            await sendMail({
-                to: user.email,
-                subject: "Your new SmartWaste verification code",
-                eyebrow: "Verify your email",
-                title: `Hi ${(user.name || "there").split(" ")[0]}, here's your new code`,
-                intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
-                code: pin,
-                ctaText: "Verify Email",
-                ctaUrl: verifyUrl
-            });
-        } catch (mailErr) {
+        sendMail({
+            to: user.email,
+            subject: "Your new SmartWaste verification code",
+            eyebrow: "Verify your email",
+            title: `Hi ${(user.name || "there").split(" ")[0]}, here's your new code`,
+            intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
+            code: pin,
+            ctaText: "Verify Email",
+            ctaUrl: verifyUrl
+        }).catch((mailErr) => {
             console.error("Resend verification email failed:", mailErr);
-        }
+        });
 
         await logAction(user.id, "Verification code resent", req);
         res.json(generic);
