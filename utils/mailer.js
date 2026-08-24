@@ -2,18 +2,6 @@ const nodemailer = require("nodemailer");
 const dns = require("dns");
 require("dotenv").config();
 
-// Railway containers frequently have no outbound IPv6 route, but Node's
-// default DNS lookup order can still hand back an AAAA (IPv6) record first
-// for smtp.gmail.com, causing ENETUNREACH. Forcing IPv4-first resolution
-// process-wide is the reliable fix (per-connection `family: 4` on the
-// transporter isn't always honored). Available on Node 18+.
-try {
-  dns.setDefaultResultOrder("ipv4first");
-} catch (e) {
-  // Older Node versions without this API — the family:4 fallback below
-  // still applies, just less reliably.
-}
-
 // ===========================================================
 // SMTP transporter — reads SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS
 // from your .env (Gmail SMTP in your case).
@@ -33,7 +21,20 @@ const MAIL_FROM = process.env.MAIL_FROM || `SmartWaste <${SMTP_USER}>`;
 
 let transporter = null;
 
-function getTransporter() {
+// Some Railway builds keep resolving smtp.gmail.com to an IPv6 address
+// (AAAA record) that isn't actually routable from the container, no matter
+// what `family`/`dns.setDefaultResultOrder` hints are given — those are
+// requests, not guarantees, and this runtime isn't honoring them. So instead
+// we resolve the hostname to a real IPv4 address ourselves with
+// dns.promises.lookup(..., { family: 4 }) and connect directly to that IP,
+// setting `tls.servername` to the original hostname so the TLS certificate
+// (issued for smtp.gmail.com) still validates correctly.
+async function resolveIPv4(hostname) {
+  const { address } = await dns.promises.lookup(hostname, { family: 4 });
+  return address;
+}
+
+async function getTransporter() {
   if (transporter) return transporter;
 
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
@@ -43,23 +44,31 @@ function getTransporter() {
     return null;
   }
 
+  let connectHost = SMTP_HOST;
+  try {
+    connectHost = await resolveIPv4(SMTP_HOST);
+    console.log(`📮 Resolved ${SMTP_HOST} → ${connectHost} (IPv4)`);
+  } catch (err) {
+    console.error(`⚠️ Could not resolve an IPv4 address for ${SMTP_HOST}, falling back to hostname:`, err.message);
+  }
+
   transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
+    host: connectHost,
     port: SMTP_PORT,
     secure: SMTP_PORT === 465, // true for 465 (SSL), false for 587 (STARTTLS)
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS
     },
-    // Railway (and several other hosts) sometimes resolve smtp.gmail.com to
-    // an IPv6 address that isn't actually routable from the container, which
-    // makes the connection hang for minutes instead of failing. Forcing IPv4
-    // plus short timeouts means a broken connection fails in ~10s instead of
-    // hanging the whole request.
     family: 4,
     connectionTimeout: 10000, // time to establish the TCP connection
     greetingTimeout: 10000,   // time to wait for the SMTP greeting
-    socketTimeout: 15000      // time to wait on an idle socket
+    socketTimeout: 15000,     // time to wait on an idle socket
+    tls: {
+      // Required because we're connecting by IP, not hostname — this
+      // tells Node which hostname to validate Gmail's TLS cert against.
+      servername: SMTP_HOST
+    }
   });
 
   return transporter;
@@ -67,8 +76,8 @@ function getTransporter() {
 
 // Verify SMTP credentials once at startup so misconfiguration shows up
 // immediately in the logs instead of silently failing on first send.
-function verifyMailer() {
-  const t = getTransporter();
+async function verifyMailer() {
+  const t = await getTransporter();
   if (!t) return;
   t.verify((err) => {
     if (err) {
@@ -134,7 +143,7 @@ function buildHtml({ eyebrow, title, intro, code, ctaText, ctaUrl }) {
  * or just log it (see resendVerification for a "log but don't fail" example).
  */
 async function sendMail({ to, subject, eyebrow, title, intro, code, ctaText, ctaUrl }) {
-  const t = getTransporter();
+  const t = await getTransporter();
   if (!t) {
     throw new Error("Mailer not configured — check SMTP_HOST/SMTP_USER/SMTP_PASS in .env");
   }
