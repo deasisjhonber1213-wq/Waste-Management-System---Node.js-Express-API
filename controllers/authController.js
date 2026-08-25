@@ -1,50 +1,36 @@
 const db = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
 const { revokeToken } = require("../middleware/auth");
-const { sendMail } = require("../utils/mailer");
+const { sendOTP } = require("../utils/sms");
 
-const APP_URL = (process.env.APP_URL || "http://localhost:5000").replace(/\/$/, "");
 const EMAIL_REGEX =
     /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
-// ===========================================================
-// Email verification is ACTIVE.
-// - register() creates the account as unverified, generates a PIN +
-//   link token, and emails both via SMTP (utils/mailer.js).
-// - login() blocks unverified accounts with a 403 so the frontend can
-//   redirect them to /verify-email.
-// ===========================================================
-
-// ---------- Helpers ----------
 function generatePin() {
     return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function generateToken() {
-    return crypto.randomBytes(32).toString("hex");
 }
 
 async function logAction(userId, action, req) {
     try {
         await db.query(
             `INSERT INTO audit_logs (user_id, action, ip_address) VALUES (?, ?, ?)`,
-            [userId, action, req.ip || req.connection.remoteAddress]
+            [userId, action, req.ip || req.connection?.remoteAddress]
         );
     } catch (err) {
         console.error("Audit log error:", err);
     }
 }
 
-// ===========================================================
-// REGISTER  →  creates an unverified account and emails a PIN + link.
-// ===========================================================
+// REGISTER — auto-verified, phone required
 exports.register = async (req, res) => {
     const { name, email, password, role, phone, address } = req.body;
 
     if (!name || !email || !password) {
         return res.status(400).json({ error: "Name, email, and password are required" });
+    }
+    if (!phone) {
+        return res.status(400).json({ error: "Phone number is required for SMS password recovery" });
     }
     if (password.length < 8) {
         return res.status(400).json({ error: "Password must be at least 8 characters" });
@@ -56,7 +42,6 @@ exports.register = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-        // Check if email already exists
         const [existing] = await db.query(
             "SELECT id FROM users WHERE email = ?",
             [cleanEmail]
@@ -67,55 +52,29 @@ exports.register = async (req, res) => {
         }
 
         const hashed = await bcrypt.hash(password, 10);
-        const pin = generatePin();
-        const token = generateToken();
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         const [result] = await db.query(
             `INSERT INTO users 
-             (name, email, password, role, phone, address, email_verified, verify_pin, verify_token, verify_expires)
-             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+             (name, email, password, role, phone, address, email_verified)
+             VALUES (?, ?, ?, ?, ?, ?, 1)`,
             [
                 name,
                 cleanEmail,
                 hashed,
                 role || "resident",
                 phone || null,
-                address || null,
-                pin,
-                token,
-                expires
+                address || null
             ]
         );
 
         const userId = result.insertId;
-
-        await logAction(userId, "User registered", req);
-
-        const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
-
-        // Fire-and-forget: the account is already created, so don't make the
-        // user's browser sit and wait on an SMTP round-trip (which can take
-        // several seconds, or hang if the mail server is unreachable). If it
-        // fails, they can still use "Resend Code" on the verify page.
-        sendMail({
-            to: cleanEmail,
-            subject: "Verify your SmartWaste account",
-            eyebrow: "Verify your email",
-            title: `Welcome, ${(name || "there").split(" ")[0]} — one step left`,
-            intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
-            code: pin,
-            ctaText: "Verify Email",
-            ctaUrl: verifyUrl
-        }).catch((mailErr) => {
-            console.error("Registration verification email failed:", mailErr);
-        });
+        await logAction(userId, "User registered (auto-verified)", req);
 
         res.status(201).json({
-            message: "Account created. Check your email for a verification code.",
+            message: "Account created successfully. You can sign in now.",
             userId,
             email: cleanEmail,
-            requiresVerification: true
+            requiresVerification: false
         });
     } catch (err) {
         console.error("Registration error:", err);
@@ -123,158 +82,7 @@ exports.register = async (req, res) => {
     }
 };
 
-// ===========================================================
-// VERIFY EMAIL — via 6-digit PIN
-// ===========================================================
-exports.verifyEmailPin = async (req, res) => {
-    const { email, pin } = req.body;
-
-    if (!email || !pin) {
-        return res.status(400).json({ error: "Email and PIN are required" });
-    }
-
-    try {
-        const [rows] = await db.query(
-            "SELECT id, email_verified, verify_pin, verify_expires FROM users WHERE email = ?",
-            [email.trim().toLowerCase()]
-        );
-
-        if (rows.length === 0) {
-            return res.status(400).json({ error: "Invalid email or code" });
-        }
-
-        const user = rows[0];
-
-        if (user.email_verified) {
-            return res.json({ message: "Email already verified. You can sign in." });
-        }
-
-        if (!user.verify_pin || !user.verify_expires || new Date(user.verify_expires) < new Date()) {
-            return res.status(400).json({ error: "Code expired. Request a new one." });
-        }
-
-        if (user.verify_pin !== pin.trim()) {
-            return res.status(400).json({ error: "Incorrect code" });
-        }
-
-        await db.query(
-            `UPDATE users SET email_verified = 1, verify_pin = NULL, verify_token = NULL, verify_expires = NULL WHERE id = ?`,
-            [user.id]
-        );
-
-        await logAction(user.id, "Email verified", req);
-
-        res.json({ message: "Email verified! You can now sign in." });
-    } catch (err) {
-        console.error("Verify email error:", err);
-        res.status(500).json({ error: "Verification failed" });
-    }
-};
-
-// ===========================================================
-// VERIFY EMAIL — via link click
-// ===========================================================
-exports.verifyEmailLink = async (req, res) => {
-    const { token, email } = req.query;
-
-    if (!token || !email) {
-        return res.redirect(`/verify-email?error=missing`);
-    }
-
-    try {
-        const [rows] = await db.query(
-            "SELECT id, email_verified, verify_token, verify_expires FROM users WHERE email = ?",
-            [String(email).trim().toLowerCase()]
-        );
-
-        if (rows.length === 0) {
-            return res.redirect(`/verify-email?error=invalid`);
-        }
-
-        const user = rows[0];
-
-        if (user.email_verified) {
-            return res.redirect(`/verify-email?verified=1`);
-        }
-
-        if (!user.verify_token || !user.verify_expires || new Date(user.verify_expires) < new Date()) {
-            return res.redirect(`/verify-email?error=expired&email=${encodeURIComponent(email)}`);
-        }
-
-        if (user.verify_token !== token) {
-            return res.redirect(`/verify-email?error=invalid`);
-        }
-
-        await db.query(
-            `UPDATE users SET email_verified = 1, verify_pin = NULL, verify_token = NULL, verify_expires = NULL WHERE id = ?`,
-            [user.id]
-        );
-
-        await logAction(user.id, "Email verified via link", req);
-
-        res.redirect(`/verify-email?verified=1`);
-    } catch (err) {
-        console.error("Verify link error:", err);
-        res.redirect(`/verify-email?error=server`);
-    }
-};
-
-// ===========================================================
-// RESEND VERIFICATION CODE
-// ===========================================================
-exports.resendVerification = async (req, res) => {
-    const { email } = req.body;
-
-    if (!email) {
-        return res.status(400).json({ error: "Email is required" });
-    }
-
-    const generic = { message: "If that account exists and isn't verified yet, a new code was sent." };
-
-    try {
-        const [rows] = await db.query(
-            "SELECT id, name, email, email_verified FROM users WHERE email = ?",
-            [email.trim().toLowerCase()]
-        );
-
-        if (rows.length === 0 || rows[0].email_verified) {
-            return res.json(generic); // avoid account enumeration
-        }
-
-        const user = rows[0];
-        const pin = generatePin();
-        const token = generateToken();
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-        await db.query(
-            "UPDATE users SET verify_pin = ?, verify_token = ?, verify_expires = ? WHERE id = ?",
-            [pin, token, expires, user.id]
-        );
-
-        const verifyUrl = `${APP_URL}/api/auth/verify-email/confirm?token=${token}&email=${encodeURIComponent(user.email)}`;
-
-        sendMail({
-            to: user.email,
-            subject: "Your new SmartWaste verification code",
-            eyebrow: "Verify your email",
-            title: `Hi ${(user.name || "there").split(" ")[0]}, here's your new code`,
-            intro: "Enter the code below, or tap the button to verify instantly. It expires in 24 hours.",
-            code: pin,
-            ctaText: "Verify Email",
-            ctaUrl: verifyUrl
-        }).catch((mailErr) => {
-            console.error("Resend verification email failed:", mailErr);
-        });
-
-        await logAction(user.id, "Verification code resent", req);
-        res.json(generic);
-
-    } catch (err) {
-        console.error("Resend verification error:", err);
-        res.status(500).json({ error: "Failed to resend code" });
-    }
-};
-
+// FORGOT PASSWORD — SMS PIN
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
@@ -285,40 +93,45 @@ exports.forgotPassword = async (req, res) => {
         return res.status(400).json({ error: "Invalid email format" });
     }
 
-    const generic = { message: "If that email exists, a PIN has been sent." };
+    const generic = {
+        message: "If that account exists and has a phone number on file, a PIN was sent by SMS."
+    };
 
     try {
-        const [rows] = await db.query("SELECT id, name, email FROM users WHERE email = ?", [email.trim().toLowerCase()]);
+        const [rows] = await db.query(
+            "SELECT id, name, email, phone FROM users WHERE email = ?",
+            [email.trim().toLowerCase()]
+        );
 
         if (rows.length === 0) {
-            return res.json(generic); // avoid email enumeration
+            return res.json(generic);
         }
 
         const user = rows[0];
+
+        if (!user.phone) {
+            console.warn(`Forgot password: user ${user.id} has no phone number`);
+            return res.json(generic);
+        }
+
         const pin = generatePin();
-        const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+        const expires = new Date(Date.now() + 15 * 60 * 1000);
 
         await db.query(
             "UPDATE users SET reset_pin = ?, reset_pin_expires = ?, reset_attempts = 0 WHERE id = ?",
             [pin, expires, user.id]
         );
 
-        try {
-            await sendMail({
-                to: user.email,
-                subject: "SmartWaste – Password Reset PIN",
-                eyebrow: "Password reset",
-                title: "Reset your password",
-                intro: `Hi ${(user.name || "there").split(" ")[0]}, use the code below to set a new password. It expires in 15 minutes.`,
-                code: pin
+        const smsResult = await sendOTP(user.phone, pin, "reset");
+
+        if (!smsResult.ok) {
+            console.error("Forgot password SMS failed:", smsResult.error);
+            return res.status(500).json({
+                error: "Failed to send reset PIN by SMS. Please try again shortly or contact support."
             });
-        } catch (mailErr) {
-            console.error("Forgot password email failed:", mailErr);
-            return res.status(500).json({ error: "Failed to send reset email. Please try again shortly." });
         }
 
-        await logAction(user.id, "Password reset PIN requested", req);
-
+        await logAction(user.id, "Password reset PIN requested (SMS)", req);
         res.json(generic);
     } catch (err) {
         console.error("Forgot password error:", err);
@@ -326,9 +139,7 @@ exports.forgotPassword = async (req, res) => {
     }
 };
 
-// ===========================================================
-// RESET PASSWORD — verify PIN + set new password
-// ===========================================================
+// RESET PASSWORD
 exports.resetPassword = async (req, res) => {
     const { email, pin, newPassword } = req.body;
 
@@ -381,9 +192,7 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-// ===========================================================
-// LOGIN — blocks unverified accounts
-// ===========================================================
+// LOGIN — no email verification check
 exports.login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -412,15 +221,6 @@ exports.login = async (req, res) => {
             });
         }
 
-        if (!user.email_verified) {
-            return res.status(403).json({
-                error: "Email not verified",
-                message: "Please verify your email before signing in.",
-                requiresVerification: true,
-                email: user.email
-            });
-        }
-
         const token = jwt.sign(
             { id: user.id, role: user.role, name: user.name, email: user.email },
             process.env.JWT_SECRET || "secret",
@@ -429,7 +229,7 @@ exports.login = async (req, res) => {
 
         await db.query(
             "UPDATE users SET last_login = NOW(), last_ip = ? WHERE id = ?",
-            [req.ip || req.connection.remoteAddress, user.id]
+            [req.ip || req.connection?.remoteAddress, user.id]
         );
 
         res.json({
@@ -520,4 +320,17 @@ exports.updateProfile = async (req, res) => {
         console.error("Profile update error:", err);
         res.status(500).json({ error: "Profile update failed" });
     }
+};
+
+// Stubs so old verify-email routes don't break
+exports.verifyEmailPin = async (req, res) => {
+    res.json({ message: "Email verification is no longer required. You can sign in." });
+};
+
+exports.verifyEmailLink = async (req, res) => {
+    res.redirect("/login?verified=1");
+};
+
+exports.resendVerification = async (req, res) => {
+    res.json({ message: "Email verification is no longer required. You can sign in." });
 };

@@ -61,5 +61,6 @@ router.get("/resident-locations", ctrl.getResidentLocations);
 // Profile
 router.get("/profile", ctrl.getProfile);
 router.put("/profile", ctrl.updateProfile);
+router.post("/notify-pickup-today", ctrl.notifyPickupToday);
 
 module.exports = router;

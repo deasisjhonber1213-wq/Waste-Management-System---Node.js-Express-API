@@ -421,6 +421,10 @@ exports.assignRoute = async (req, res) => {
              VALUES (?, ?, ?, ?, ?, 'pending')`,
             [driver_id, truck_id, route_id, assigned_date, pickup_type || "regular"]
         );
+
+        notifyResidentsOfPickup(route_id, truck_id, assigned_date, pickup_type || "regular")
+            .catch((e) => console.error("Pickup SMS notify error:", e));
+
         res.json({ message: "Route assigned successfully" });
     } catch (err) {
         console.error(err);
@@ -428,16 +432,75 @@ exports.assignRoute = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────
-// MRF FACILITY LOCATIONS
-// A standalone, admin-managed table of real-world MRF facility
-// coordinates. The admin physically visits a site, drops a pin on
-// its exact position, and saves it here. These are then rendered
-// as a read-only reference layer on the route-drawing map and the
-// route-detail map, so a route's own 🏭 MRF stop can be placed
-// precisely on top of a real facility instead of eyeballed — and
-// the admin can add or delete facilities at any time.
-// ─────────────────────────────────────────────────────────
+async function notifyResidentsOfPickup(route_id, truck_id, assigned_date, pickup_type) {
+    try {
+        const { sendPickupNotice } = require("../utils/sms");
+
+        const [[route]] = await db.query(
+            "SELECT zone_name FROM routes WHERE id = ?",
+            [route_id]
+        );
+        const [[truck]] = await db.query(
+            "SELECT plate_number FROM trucks WHERE id = ?",
+            [truck_id]
+        );
+
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+        const assigned = String(assigned_date).slice(0, 10);
+        if (assigned !== today) {
+            console.log(`Pickup SMS skipped — assigned_date ${assigned} is not today (${today})`);
+            return;
+        }
+
+        const [residents] = await db.query(
+            `SELECT id, name, phone FROM users
+             WHERE role = 'resident' AND phone IS NOT NULL AND phone != ''`
+        );
+
+        if (!residents.length) {
+            console.log("No residents with phone numbers to notify");
+            return;
+        }
+
+        let sent = 0;
+        for (const r of residents) {
+            const result = await sendPickupNotice(r.phone, {
+                zoneName: route?.zone_name,
+                plateNumber: truck?.plate_number,
+                pickupType: pickup_type,
+            });
+            if (result.ok) sent++;
+            await new Promise((resolve) => setTimeout(resolve, 150));
+        }
+        console.log(`📱 Pickup SMS: ${sent}/${residents.length} residents notified for ${assigned}`);
+    } catch (err) {
+        console.error("notifyResidentsOfPickup error:", err);
+    }
+}
+
+exports.notifyPickupToday = async (req, res) => {
+    try {
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+        const [assignments] = await db.query(
+            `SELECT route_id, truck_id, pickup_type FROM route_assignments
+             WHERE assigned_date = ? AND status IN ('pending', 'in_progress')
+             LIMIT 1`,
+            [today]
+        );
+
+        if (!assignments.length) {
+            return res.json({ message: "No pickup scheduled for today", sent: 0 });
+        }
+
+        const a = assignments[0];
+        await notifyResidentsOfPickup(a.route_id, a.truck_id, today, a.pickup_type || "regular");
+        res.json({ message: "Pickup SMS notifications queued for residents with phone numbers" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 async function ensureMRFTable() {
     await db.query(`
         CREATE TABLE IF NOT EXISTS mrf_locations (
