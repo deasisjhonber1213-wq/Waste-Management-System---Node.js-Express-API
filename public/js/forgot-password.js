@@ -2,11 +2,21 @@ const API_URL = window.location.origin + "/api";
 let currentEmail = "";
 
 function showStep(n) {
-    document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
-    document.getElementById("step" + n).classList.add("active");
+    const steps = document.querySelectorAll(".step");
+    steps.forEach(s => {
+        s.style.opacity = "0";
+        setTimeout(() => {
+            s.classList.remove("active");
+            if (s.id === "step" + n) {
+                s.classList.add("active");
+                s.style.opacity = "1";
+            }
+        }, 150);
+    });
 }
 
 function setLoading(btn, loading) {
+    if (!btn) return;
     const text = btn.querySelector(".btn-text");
     const loader = btn.querySelector(".btn-loader");
     btn.disabled = loading;
@@ -16,18 +26,22 @@ function setLoading(btn, loading) {
 
 function showAlert(msg, type) {
     const el = document.getElementById("alertBox");
+    if (!el) return;
     el.textContent = msg;
     el.className = "alert " + type;
 }
 
 function clearAlert() {
     const el = document.getElementById("alertBox");
-    el.className = "alert";
-    el.textContent = "";
+    if (el) {
+        el.className = "alert";
+        el.textContent = "";
+    }
 }
 
 document.getElementById("toggleNewPasswordBtn")?.addEventListener("click", function () {
     const input = document.getElementById("newPassword");
+    if (!input) return;
     const showing = input.type === "text";
     input.type = showing ? "password" : "text";
     this.textContent = showing ? "Show" : "Hide";
@@ -38,12 +52,14 @@ document.getElementById("pin")?.addEventListener("input", function () {
 });
 
 async function sendPin() {
-    const email = document.getElementById("email").value.trim().toLowerCase();
+    const emailInput = document.getElementById("email");
+    if (!emailInput) return;
+    const email = emailInput.value.trim().toLowerCase();
     const btn = document.getElementById("sendPinBtn");
 
     clearAlert();
     if (!email) {
-        showAlert("Please enter your email.", "error");
+        showAlert("Please enter your registered email address.", "error");
         return;
     }
 
@@ -59,34 +75,34 @@ async function sendPin() {
 
         if (res.ok) {
             currentEmail = email;
-            showAlert(data.message || "PIN sent. Check your inbox.", "success");
+            showAlert(data.message || "A secure 6-digit PIN was dispatched via SMS.", "success");
             setTimeout(() => {
                 clearAlert();
                 showStep(2);
-            }, 1200);
+            }, 1000);
         } else {
-            showAlert(data.error || "Something went wrong.", "error");
+            showAlert(data.error || "Verification failed. Check your entry.", "error");
         }
     } catch (err) {
-        showAlert("Connection error. Please try again.", "error");
+        showAlert("Network connection timeout. Please verify connectivity.", "error");
     } finally {
         setLoading(btn, false);
     }
 }
 
 async function resetPassword() {
-    const pin = document.getElementById("pin").value.trim();
-    const newPassword = document.getElementById("newPassword").value;
+    const pin = document.getElementById("pin")?.value.trim();
+    const newPassword = document.getElementById("newPassword")?.value;
     const btn = document.getElementById("resetBtn");
 
     clearAlert();
 
     if (!pin || pin.length !== 6) {
-        showAlert("Enter the 6-digit PIN from your email.", "error");
+        showAlert("Please enter the complete 6-digit verification code.", "error");
         return;
     }
     if (!newPassword || newPassword.length < 8) {
-        showAlert("Password must be at least 8 characters.", "error");
+        showAlert("Security standard: Password must contain at least 8 characters.", "error");
         return;
     }
 
@@ -101,14 +117,14 @@ async function resetPassword() {
         const data = await res.json();
 
         if (res.ok) {
-            showAlert(data.message || "Password updated!", "success");
-            setTimeout(() => (window.location = "/login"), 1800);
+            showAlert(data.message || "Credentials updated successfully!", "success");
+            setTimeout(() => (window.location = "/login"), 1500);
         } else {
-            showAlert(data.error || "Failed to reset password.", "error");
+            showAlert(data.error || "Failed to finalize new password.", "error");
             setLoading(btn, false);
         }
     } catch (err) {
-        showAlert("Connection error. Please try again.", "error");
+        showAlert("Network connection timeout. Please try again.", "error");
         setLoading(btn, false);
     }
 }
@@ -122,6 +138,7 @@ document.getElementById("resendBtn")?.addEventListener("click", () => {
 
 document.addEventListener("keydown", e => {
     if (e.key !== "Enter") return;
-    if (document.getElementById("step1").classList.contains("active")) sendPin();
+    const activeStep = document.getElementById("step1");
+    if (activeStep && activeStep.classList.contains("active")) sendPin();
     else resetPassword();
 });
