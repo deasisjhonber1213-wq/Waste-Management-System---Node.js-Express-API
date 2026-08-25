@@ -24,9 +24,18 @@ function clearAlert() {
     }
 }
 
-// Ensure phone numbers only contain digits
+// Interactive Password Clear Text Toggle Handler
+document.getElementById("toggleRegisterPasswordBtn")?.addEventListener("click", function () {
+    const input = document.getElementById("password");
+    if (!input) return;
+    const isShowing = input.type === "text";
+    input.type = isShowing ? "password" : "text";
+    this.style.color = isShowing ? "var(--text-2)" : "var(--gold)";
+});
+
+// Enforce numbers-only filtration logic on entry fields
 document.getElementById("phone")?.addEventListener("input", function () {
-    this.value = this.value.replace(/\D/g, "");
+    this.value = this.value.replace(/\D/g, "").slice(0, 11);
 });
 
 async function register(e) {
@@ -41,9 +50,15 @@ async function register(e) {
 
     clearAlert();
 
-    // Required fields check
-    if (!fullName || !email || !password) {
-        showAlert("Full name, email address, and security password are required fields.", "error");
+    // Comprehensive structural parameters audit
+    if (!fullName || !phone || !email || !password) {
+        showAlert("All required parameters (including phone number) must be supplied.", "error");
+        return;
+    }
+
+    // Precise validation to catch faulty phone entries early
+    if (phone.length !== 11 || !phone.startsWith("09")) {
+        showAlert("Invalid format. Phone number must be exactly 11 digits and start with '09'.", "error");
         return;
     }
 
@@ -64,16 +79,15 @@ async function register(e) {
                 email,
                 password,
                 homeAddress,
-                role: "resident" // Enforce default user context tier safely
+                role: "resident"
             })
         });
 
         const data = await res.json();
 
         if (res.ok) {
-            showAlert("Account registered successfully! Transferring to your profile...", "success");
+            showAlert("Account registered successfully! Loading workspace profile...", "success");
 
-            // Auto-authenticate user using incoming response parameters
             if (data.token) {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("user", JSON.stringify(data.user || { fullName, email }));
@@ -83,27 +97,19 @@ async function register(e) {
                     window.location = "/resident/dashboard";
                 }, 1000);
             } else {
-                // Fallback destination if the API does not auto-login
                 setTimeout(() => {
                     window.location = "/login";
                 }, 1500);
             }
         } else {
-            showAlert(data.error || data.message || "Registration failed. Please check your inputs.", "error");
+            showAlert(data.error || data.message || "Registration parameter conflict occurred.", "error");
             setLoading(btn, false);
         }
     } catch (err) {
-        console.error("Registration Network Error:", err);
+        console.error("Critical Registry Trace Exception:", err);
         showAlert("Gateway transmission failure. Check platform parameters.", "error");
         setLoading(btn, false);
     }
 }
 
-document.getElementById("registerBtn")?.addEventListener("click", register);
-
-// Support quick entry submission across standard form flows
-document.querySelectorAll(".form-input").forEach(input => {
-    input.addEventListener("keydown", e => {
-        if (e.key === "Enter") register(e);
-    });
-});
+document.getElementById("registerForm")?.addEventListener("submit", register);
