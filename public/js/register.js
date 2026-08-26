@@ -85,9 +85,9 @@ async function register(e) {
     setLoading(btn, true);
 
     // Do NOT send role — public register must let the server assign "resident".
-    // Sending role often triggers 400 under strict body validation.
-    const payload = { fullName, phone, email, password };
-    if (homeAddress) payload.homeAddress = homeAddress;
+    // Field names must match what authController.register expects: name/address (not fullName/homeAddress).
+    const payload = { name: fullName, phone, email, password };
+    if (homeAddress) payload.address = homeAddress;
 
     try {
         const res = await fetch(API_URL + "/auth/register", {

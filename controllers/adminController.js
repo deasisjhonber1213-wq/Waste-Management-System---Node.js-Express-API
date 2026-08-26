@@ -1193,44 +1193,48 @@ exports.deletePickup = async (req, res) => {
 
 exports.createUser = async (req, res) => {
     try {
-        const { fullName, email, password, role, phone, homeAddress } = req.body;
+        // Accept both admin-panel field names (name/address) and the
+        // fullName/homeAddress aliases some older callers may still send.
+        const name = (req.body.name || req.body.fullName || "").trim();
+        const email = (req.body.email || "").trim().toLowerCase();
+        const { password, role, phone } = req.body;
+        const address = req.body.address || req.body.homeAddress || null;
 
-        if (!fullName || !email || !password) {
+        if (!name || !email || !password) {
             return res.status(400).json({ error: "Name, email and password are required." });
         }
         if (password.length < 8) {
             return res.status(400).json({ error: "Password must be at least 8 characters." });
         }
 
-        const exists = await User.findOne({ email: email.toLowerCase().trim() });
-        if (exists) {
+        const [existing] = await db.query(
+            "SELECT id FROM users WHERE email = ?",
+            [email]
+        );
+        if (existing.length) {
             return res.status(400).json({ error: "Email already registered." });
         }
 
-        const hashed = await bcrypt.hash(password, 12);
+        const hashed = await bcrypt.hash(password, 10);
 
-        const user = await User.create({
-            fullName: fullName.trim(),
-            email: email.toLowerCase().trim(),
-            password: hashed,
-            role: role || "resident",
-            phone: phone || undefined,
-            homeAddress: homeAddress || undefined,
-            // ★ Auto-verify — admin-created users skip email PIN
-            isVerified: true,
-            emailVerified: true,
-            verified: true,
-            emailVerificationPin: undefined,
-            emailVerificationToken: undefined,
-            emailVerificationExpires: undefined
-        });
+        // Admin-created users are auto-verified — they skip email/PIN verification entirely.
+        const [result] = await db.query(
+            `INSERT INTO users
+             (name, email, password, role, phone, address, email_verified)
+             VALUES (?, ?, ?, ?, ?, ?, 1)`,
+            [name, email, hashed, role || "resident", phone || null, address]
+        );
 
-        const safe = user.toObject ? user.toObject() : { ...user };
-        delete safe.password;
+        const userId = result.insertId;
+
+        await db.query(
+            "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
+            [req.user.id, `Created user ID ${userId} (${email}) via admin panel — auto-verified`]
+        );
 
         res.status(201).json({
             message: "User created and auto-verified. They can sign in immediately.",
-            user: safe
+            user: { id: userId, name, email, role: role || "resident", phone: phone || null, address }
         });
     } catch (err) {
         console.error("createUser:", err);
