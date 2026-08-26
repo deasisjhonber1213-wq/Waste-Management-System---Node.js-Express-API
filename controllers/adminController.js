@@ -1189,3 +1189,51 @@ exports.deletePickup = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+
+exports.createUser = async (req, res) => {
+    try {
+        const { fullName, email, password, role, phone, homeAddress } = req.body;
+
+        if (!fullName || !email || !password) {
+            return res.status(400).json({ error: "Name, email and password are required." });
+        }
+        if (password.length < 8) {
+            return res.status(400).json({ error: "Password must be at least 8 characters." });
+        }
+
+        const exists = await User.findOne({ email: email.toLowerCase().trim() });
+        if (exists) {
+            return res.status(400).json({ error: "Email already registered." });
+        }
+
+        const hashed = await bcrypt.hash(password, 12);
+
+        const user = await User.create({
+            fullName: fullName.trim(),
+            email: email.toLowerCase().trim(),
+            password: hashed,
+            role: role || "resident",
+            phone: phone || undefined,
+            homeAddress: homeAddress || undefined,
+            // ★ Auto-verify — admin-created users skip email PIN
+            isVerified: true,
+            emailVerified: true,
+            verified: true,
+            emailVerificationPin: undefined,
+            emailVerificationToken: undefined,
+            emailVerificationExpires: undefined
+        });
+
+        const safe = user.toObject ? user.toObject() : { ...user };
+        delete safe.password;
+
+        res.status(201).json({
+            message: "User created and auto-verified. They can sign in immediately.",
+            user: safe
+        });
+    } catch (err) {
+        console.error("createUser:", err);
+        res.status(500).json({ error: "Failed to create user." });
+    }
+};

@@ -11,6 +11,7 @@ router.get("/dashboard", ctrl.dashboardStats);
 // Users
 router.get("/users", ctrl.getUsers);
 router.get("/users/:id", ctrl.getUserById);
+router.post("/users", ctrl.createUser);          // admin create → auto-verified
 router.put("/users/:id", ctrl.updateUser);
 router.delete("/users/:id", ctrl.deleteUser);
 
@@ -43,7 +44,7 @@ router.delete("/reports/:id", ctrl.deleteReport);
 router.get("/analytics", ctrl.reportAnalytics);
 router.get("/export-analytics", ctrl.exportAnalytics);
 
-// MRF Locations (NEW - from your controller)
+// MRF Locations
 router.get("/mrf-locations", ctrl.getMRFLocations);
 router.get("/mrf-locations/:id", ctrl.getMRFLocationById);
 router.post("/mrf-locations", ctrl.addMRFLocation);
