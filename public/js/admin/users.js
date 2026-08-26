@@ -1,4 +1,3 @@
-
 (function () {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initSidebar);
@@ -175,7 +174,7 @@ function showToast(msg, type = 'info') {
 function checkAuth() {
     const token = getToken();
     if (!token) {
-        window.location.href = '/login.html';
+        window.location.href = '/login';
     }
 }
 checkAuth();
@@ -196,7 +195,8 @@ function statusBadge(role) {
         'driver': 'badge-blue',
         'resident': 'badge-green'
     };
-    return `<span class="badge ${map[role] || 'badge-gray'}">${role.toUpperCase()}</span>`;
+    const safeRole = role ? String(role) : 'unknown';
+    return `<span class="badge ${map[safeRole] || 'badge-gray'}">${safeRole.toUpperCase()}</span>`;
 }
 
 let allUsers = [];
@@ -210,9 +210,26 @@ function escHtml(s) {
 }
 
 async function loadUsers() {
+    const tbody = document.getElementById("usersBody");
     try {
         const res = await API.get("/admin/users");
-        if (!res.ok) throw new Error();
+
+        if (res.status === 401 || res.status === 403) {
+            // Token missing/expired/invalid, or account isn't admin — send to login.
+            localStorage.removeItem("token");
+            window.location.href = "/login";
+            return;
+        }
+
+        if (!res.ok) {
+            let msg = `Request failed (HTTP ${res.status})`;
+            try {
+                const data = await res.json();
+                msg = data.error || data.message || msg;
+            } catch (_) { /* non-JSON error body */ }
+            throw new Error(msg);
+        }
+
         allUsers = await res.json();
         renderUsers(allUsers);
 
@@ -221,7 +238,13 @@ async function loadUsers() {
         document.getElementById("totalResidents").textContent = allUsers.filter(u => u.role === "resident").length;
     } catch (err) {
         console.error('Load users error:', err);
-        showToast("Failed to load users", "error");
+        showToast("Failed to load users: " + (err.message || "unknown error"), "error");
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text2)">
+                Couldn't load users — ${escHtml(err.message || "unknown error")}.
+                <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="loadUsers()">Retry</button>
+            </td></tr>`;
+        }
     }
 }
 
@@ -253,7 +276,7 @@ function filterUsers() {
     const q = document.getElementById("searchInput").value.toLowerCase();
     const role = document.getElementById("roleFilter").value;
     const filtered = allUsers.filter(u =>
-        (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
+        (!q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)) &&
         (!role || u.role === role)
     );
     renderUsers(filtered);
