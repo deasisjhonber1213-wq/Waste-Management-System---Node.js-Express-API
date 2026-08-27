@@ -187,15 +187,17 @@ function initReportMap() {
 
 function makeTiles() {
     return {
-        // Dark gray basemap (closest free match to old Carto dark)
+        // CARTO Dark Matter — free, no API key ever required, detailed roads/streets, retina-sharp, zoom 20
         dark: L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
             {
-                attribution: '&copy; Esri',
-                maxZoom: 16
+                attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                subdomains: 'abcd',
+                maxZoom: 20,
+                detectRetina: true
             }
         ),
-        // Satellite
+        // Satellite (Esri — still free, no key required)
         sat: L.tileLayer(
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             {
@@ -203,14 +205,16 @@ function makeTiles() {
                 maxZoom: 19
             }
         ),
-        // Labels / roads on top of dark or satellite
+        // Street/road labels overlay for satellite view — free, no API key, sharper than old Esri Reference layer
         label: L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+            'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
             {
                 attribution: '',
-                maxZoom: 16,
+                subdomains: 'abcd',
+                maxZoom: 20,
                 opacity: 0.9,
-                pane: 'overlayPane'
+                pane: 'overlayPane',
+                detectRetina: true
             }
         )
     };

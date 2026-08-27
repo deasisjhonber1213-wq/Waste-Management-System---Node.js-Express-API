@@ -184,17 +184,32 @@ let pinStops = [];
 let mrfStops = [];
 const DEFAULT_CENTER = { lat: 8.2317, lng: 123.4018 };
 
+// CARTO Dark Matter — free, no API key ever required, detailed roads/streets, retina-sharp, zoom 20
 tileStreet = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    { attribution: '&copy; Esri', maxZoom: 16 }
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {
+        attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        detectRetina: true
+    }
 );
+// Satellite (Esri — still free, no key required)
 tileSat = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     { attribution: '&copy; Esri', maxZoom: 19 }
 );
+// Street/road labels overlay for satellite view — free, no API key, sharper than old Esri Reference layer
 tileRoadOverlay = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-    { attribution: '', maxZoom: 16, opacity: 0.9, pane: 'overlayPane' }
+    'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+    {
+        attribution: '',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        opacity: 0.9,
+        pane: 'overlayPane',
+        detectRetina: true
+    }
 );
 
 // v2 = proximity-based MRF/stop checks. Old unversioned saves marked every
