@@ -185,26 +185,16 @@ let mrfStops = [];
 const DEFAULT_CENTER = { lat: 8.2317, lng: 123.4018 };
 
 tileStreet = L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        subdomains: 'abc',
-        maxZoom: 19
-    }
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '&copy; Esri', maxZoom: 16 }
 );
 tileSat = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     { attribution: '&copy; Esri', maxZoom: 19 }
 );
 tileRoadOverlay = L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-        attribution: '',
-        subdomains: 'abc',
-        maxZoom: 19,
-        opacity: 0.45,
-        pane: 'overlayPane'
-    }
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '', maxZoom: 16, opacity: 0.9, pane: 'overlayPane' }
 );
 
 // v2 = proximity-based MRF/stop checks. Old unversioned saves marked every
@@ -344,8 +334,8 @@ function setTile(mode) {
         document.getElementById('btnSat')?.classList.add('active');
     } else {
         if (map.hasLayer(tileSat)) map.removeLayer(tileSat);
-        if (map.hasLayer(tileRoadOverlay)) map.removeLayer(tileRoadOverlay);
         tileStreet.addTo(map);
+        tileRoadOverlay.addTo(map);   // keep labels on dark base
         document.getElementById('btnSat')?.classList.remove('active');
         document.getElementById('btnStreet')?.classList.add('active');
     }

@@ -113,16 +113,15 @@ let mrfUserLocationMarker = null;
 
 function makeTiles() {
     return {
-        // Free OSM raster (no key, no watermark)
+        // Dark gray basemap (closest free match to old Carto dark)
         dark: L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
             {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                subdomains: 'abc',
-                maxZoom: 19
+                attribution: '&copy; Esri',
+                maxZoom: 16
             }
         ),
-        // Free Esri satellite (already working in your code)
+        // Satellite
         sat: L.tileLayer(
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             {
@@ -130,14 +129,13 @@ function makeTiles() {
                 maxZoom: 19
             }
         ),
-        // Light OSM labels overlaid on satellite (optional, free)
+        // Labels / roads on top of dark or satellite
         label: L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
             {
                 attribution: '',
-                subdomains: 'abc',
-                maxZoom: 19,
-                opacity: 0.45,
+                maxZoom: 16,
+                opacity: 0.9,
                 pane: 'overlayPane'
             }
         )
@@ -156,6 +154,7 @@ function applyTile(map, tiles, isSat) {
         if (tiles.label) tiles.label.addTo(map);
     } else {
         tiles.dark.addTo(map);
+        if (tiles.label) tiles.label.addTo(map);   // roads/names on dark base
     }
 }
 function escHtml(s) {

@@ -90,16 +90,15 @@ let detailMapInstance = null;
 
 function makeTiles() {
     return {
-        // Free OSM raster (no key, no watermark)
+        // Dark gray basemap (closest free match to old Carto dark)
         dark: L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
             {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                subdomains: 'abc',
-                maxZoom: 19
+                attribution: '&copy; Esri',
+                maxZoom: 16
             }
         ),
-        // Free Esri satellite (already working in your code)
+        // Satellite
         sat: L.tileLayer(
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             {
@@ -107,14 +106,13 @@ function makeTiles() {
                 maxZoom: 19
             }
         ),
-        // Light OSM labels overlaid on satellite (optional, free)
+        // Labels / roads on top of dark or satellite
         label: L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
             {
                 attribution: '',
-                subdomains: 'abc',
-                maxZoom: 19,
-                opacity: 0.45,
+                maxZoom: 16,
+                opacity: 0.9,
                 pane: 'overlayPane'
             }
         )
@@ -132,6 +130,7 @@ function applyTile(map, tiles, isSat) {
         if (tiles.label) tiles.label.addTo(map);
     } else {
         tiles.dark.addTo(map);
+        if (tiles.label) tiles.label.addTo(map);   // roads/names on dark base
     }
 }
 
@@ -217,7 +216,7 @@ async function loadTrucks() {
         allTrucks = await res.json();
         document.getElementById("truckCount").textContent =
             `${allTrucks.length} truck${allTrucks.length !== 1 ? "s" : ""}`;
-        document.getElementById("mapTruckCount").textContent =
+        document.getElementById("mapTruckCount").innerHTML =
             `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${allTrucks.filter(t => t.latitude != null && t.longitude != null).length} trucks on map`;
         renderTruckList(allTrucks);
         renderFleetMap(allTrucks);

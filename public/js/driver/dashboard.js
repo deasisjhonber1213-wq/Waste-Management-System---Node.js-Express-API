@@ -542,24 +542,18 @@ function addTileLayer(style) {
             "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
             { attribution: "&copy; Esri", maxZoom: 19 }
         ).addTo(dMap);
-        // Optional faint labels on satellite
         L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                attribution: "",
-                subdomains: "abc",
-                maxZoom: 19,
-                opacity: 0.4
-            }
+            "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+            { attribution: "", maxZoom: 16, opacity: 0.85 }
         ).addTo(dMap);
     } else {
         L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                subdomains: "abc",
-                maxZoom: 19
-            }
+            "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            { attribution: "&copy; Esri", maxZoom: 16 }
+        ).addTo(dMap);
+        L.tileLayer(
+            "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+            { attribution: "", maxZoom: 16, opacity: 0.9 }
         ).addTo(dMap);
     }
 }
