@@ -90,23 +90,49 @@ let detailMapInstance = null;
 
 function makeTiles() {
     return {
-        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            { attribution: '&copy; OSM & CARTO', subdomains: 'abcd', maxZoom: 20 }),
-        sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            { attribution: '&copy; Esri', maxZoom: 19 }),
-        label: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
-            { subdomains: 'abcd', maxZoom: 20, opacity: 0.85, pane: 'overlayPane' })
+        // Free OSM raster (no key, no watermark)
+        dark: L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                subdomains: 'abc',
+                maxZoom: 19
+            }
+        ),
+        // Free Esri satellite (already working in your code)
+        sat: L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                attribution: '&copy; Esri',
+                maxZoom: 19
+            }
+        ),
+        // Light OSM labels overlaid on satellite (optional, free)
+        label: L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                attribution: '',
+                subdomains: 'abc',
+                maxZoom: 19,
+                opacity: 0.45,
+                pane: 'overlayPane'
+            }
+        )
     };
 }
 
 let fleetTiles = null;
 
 function applyTile(map, tiles, isSat) {
-    Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
+    Object.values(tiles).forEach(l => {
+        if (l && map.hasLayer(l)) map.removeLayer(l);
+    });
     if (isSat) {
         tiles.sat.addTo(map);
-        tiles.label.addTo(map);
-    } else { tiles.dark.addTo(map); }
+        if (tiles.label) tiles.label.addTo(map);
+    } else {
+        tiles.dark.addTo(map);
+    }
 }
 
 function toggleFleetMapSatellite() {

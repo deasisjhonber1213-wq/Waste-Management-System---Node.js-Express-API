@@ -538,16 +538,29 @@ function addTileLayer(style) {
     if (!dMap) return;
     dMap.eachLayer(l => { if (l._url) dMap.removeLayer(l); });
     if (style === "satellite") {
-        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-            attribution: "Esri",
-            maxZoom: 19
-        }).addTo(dMap);
+        L.tileLayer(
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            { attribution: "&copy; Esri", maxZoom: 19 }
+        ).addTo(dMap);
+        // Optional faint labels on satellite
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution: "",
+                subdomains: "abc",
+                maxZoom: 19,
+                opacity: 0.4
+            }
+        ).addTo(dMap);
     } else {
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-            attribution: "© OSM © CARTO",
-            subdomains: "abcd",
-            maxZoom: 20
-        }).addTo(dMap);
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                subdomains: "abc",
+                maxZoom: 19
+            }
+        ).addTo(dMap);
     }
 }
 

@@ -185,13 +185,26 @@ let mrfStops = [];
 const DEFAULT_CENTER = { lat: 8.2317, lng: 123.4018 };
 
 tileStreet = L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM &amp; CARTO', subdomains: 'abcd', maxZoom: 20 }
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: 'abc',
+        maxZoom: 19
+    }
 );
 tileSat = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 19 }
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '&copy; Esri', maxZoom: 19 }
 );
 tileRoadOverlay = L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20, opacity: 0.8, pane: 'overlayPane' }
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+        attribution: '',
+        subdomains: 'abc',
+        maxZoom: 19,
+        opacity: 0.45,
+        pane: 'overlayPane'
+    }
 );
 
 // v2 = proximity-based MRF/stop checks. Old unversioned saves marked every

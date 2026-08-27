@@ -113,12 +113,34 @@ let mrfUserLocationMarker = null;
 
 function makeTiles() {
     return {
-        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-            { attribution: '&copy; OSM & CARTO', subdomains: 'abcd', maxZoom: 20 }),
-        sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            { attribution: '&copy; Esri', maxZoom: 19 }),
-        label: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
-            { subdomains: 'abcd', maxZoom: 20, opacity: 0.85, pane: 'overlayPane' })
+        // Free OSM raster (no key, no watermark)
+        dark: L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                subdomains: 'abc',
+                maxZoom: 19
+            }
+        ),
+        // Free Esri satellite (already working in your code)
+        sat: L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                attribution: '&copy; Esri',
+                maxZoom: 19
+            }
+        ),
+        // Light OSM labels overlaid on satellite (optional, free)
+        label: L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                attribution: '',
+                subdomains: 'abc',
+                maxZoom: 19,
+                opacity: 0.45,
+                pane: 'overlayPane'
+            }
+        )
     };
 }
 
@@ -126,13 +148,16 @@ let markingTiles = null;
 let detailTiles = null;
 
 function applyTile(map, tiles, isSat) {
-    Object.values(tiles).forEach(l => { if (map.hasLayer(l)) map.removeLayer(l); });
+    Object.values(tiles).forEach(l => {
+        if (l && map.hasLayer(l)) map.removeLayer(l);
+    });
     if (isSat) {
         tiles.sat.addTo(map);
-        tiles.label.addTo(map);
-    } else { tiles.dark.addTo(map); }
+        if (tiles.label) tiles.label.addTo(map);
+    } else {
+        tiles.dark.addTo(map);
+    }
 }
-
 function escHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c =>
         ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -651,7 +676,7 @@ function updateUI() {
     const roadN = roadPoints.length,
         pinN = pinPoints.length,
         mrfN = mrfPoints.length;
-    document.getElementById('wpCountLabel').textContent =
+    document.getElementById('wpCountLabel').innerHTML =
         `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19L8 5"/><path d="M16 5l4 14"/><path d="M12 5v14"/><path d="M8 12h8"/></svg> ${roadN} road · <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${pinN} stop${pinN !== 1 ? 's' : ''} · 🏭 ${mrfN} MRF`;
     document.getElementById('layerSummary').innerHTML = `
                 <span><span class="dot" style="background:#60a5fa;"></span> ${roadN} road vertex${roadN !== 1 ? 'es' : ''}</span>
