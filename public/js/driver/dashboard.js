@@ -1615,4 +1615,4 @@ window.markIssueResolved = markIssueResolved;
 console.log('Hybrid Driver Portal initialized');
 console.log(`WebSocket: ${WS_URL}`);
 console.log(`Driver ID: ${driverId}`);
-console.log(`Socket connected: ${socketConnected}`);
+console.log(`Socket connected: ${socketConnected}`); 
