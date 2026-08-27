@@ -110,11 +110,15 @@ let mrfPickMap = null, mrfPickTiles = null, isMRFPickSatellite = false;
 let mrfPendingMarker = null, mrfPendingCircle = null, mrfPendingLatLng = null;
 let mrfUserLocationMarker = null;
 
+// Free CARTO basemap key — get your own at https://carto.com/basemaps/apikey
+// (free, no card, ~1 min via email — 5M tile requests/month). Paste it below.
+const CARTO_API_KEY = "cb1_29ri_1_ec22111e95ba27720f0b3c7b";
+
 function makeTiles() {
     return {
-        // CARTO Dark Matter — free, no API key ever required, detailed roads/streets, retina-sharp, zoom 20
+        // CARTO Dark Matter — detailed roads/streets, retina-sharp, zoom 20
         dark: L.tileLayer(
-            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=' + CARTO_API_KEY,
             {
                 attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 subdomains: 'abcd',
@@ -132,7 +136,7 @@ function makeTiles() {
         ),
         // Street/road labels overlay for satellite view — free, no API key, sharper than old Esri Reference layer
         label: L.tileLayer(
-            'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+            'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?key=' + CARTO_API_KEY,
             {
                 attribution: '',
                 subdomains: 'abcd',

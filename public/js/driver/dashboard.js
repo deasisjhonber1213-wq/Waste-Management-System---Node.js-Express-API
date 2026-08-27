@@ -534,6 +534,10 @@ function initMap(lat = 8.2380, lng = 123.0, zoom = 14) {
     setInterval(loadOpenReports, 30000);
 }
 
+// Free CARTO basemap key — get your own at https://carto.com/basemaps/apikey
+// (free, no card, ~1 min via email — 5M tile requests/month). Paste it below.
+const CARTO_API_KEY = "cb1_29ri_1_ec22111e95ba27720f0b3c7b";
+
 function addTileLayer(style) {
     if (!dMap) return;
     dMap.eachLayer(l => { if (l._url) dMap.removeLayer(l); });
@@ -545,13 +549,13 @@ function addTileLayer(style) {
         ).addTo(dMap);
         // CARTO street/road labels overlay — free, no API key, sharper than the old Esri Reference layer
         L.tileLayer(
-            "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
+            "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png?key=" + CARTO_API_KEY,
             { attribution: "", subdomains: "abcd", maxZoom: 20, opacity: 0.9, detectRetina: true }
         ).addTo(dMap);
     } else {
         // CARTO Dark Matter — free, no API key ever required, detailed roads/streets, retina-sharp, zoom 20
         L.tileLayer(
-            "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+            "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=" + CARTO_API_KEY,
             {
                 attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 subdomains: "abcd",
@@ -1615,4 +1619,4 @@ window.markIssueResolved = markIssueResolved;
 console.log('Hybrid Driver Portal initialized');
 console.log(`WebSocket: ${WS_URL}`);
 console.log(`Driver ID: ${driverId}`);
-console.log(`Socket connected: ${socketConnected}`); 
+console.log(`Socket connected: ${socketConnected}`);
