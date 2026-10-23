@@ -5,6 +5,7 @@ const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
 const helmet = require("helmet");
+const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 const session = require("express-session");
 const crypto = require("crypto");
@@ -12,6 +13,8 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
+
+app.use(compression());
 
 function manilaToday() {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });

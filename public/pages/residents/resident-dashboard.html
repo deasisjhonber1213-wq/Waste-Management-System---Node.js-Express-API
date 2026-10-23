@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2f855a">
+    <link rel="manifest" href="/manifest.webmanifest">
     <title>Jose Dalman Garbage Truck Monitoring | Resident Portal</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -20,7 +22,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="../../css/resident/dashboard.css">
+    <link rel="stylesheet" href="../../css/resident/resident-dashboard.css">
 </head>
 
 <body>
@@ -767,7 +769,8 @@
             <polyline points="18 15 12 9 6 15" />
         </svg>
     </button>
-    <script src="../../js/resident/dashboard.js"></script>
+    <script src="../../js/resident/resident-dashboard.js"></script>
+    <script src="/js/pwa.js" defer></script>
 </body>
 
 </html>
