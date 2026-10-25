@@ -600,26 +600,26 @@ app.get('/pages/admin', (req, res) => res.redirect('/pages/admin/dashboard'));
 
 // Resident
 app.get('/resident/dashboard', (req, res) => {
-    const filePath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    const filePath = path.join(__dirname, 'public/pages/residents', 'resident-dashboard.html');
     if (fs.existsSync(filePath)) return res.sendFile(filePath);
     res.status(404).json({ error: 'Page not found' });
 });
 app.get('/pages/resident/dashboard', (req, res) => {
-    const filePath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    const filePath = path.join(__dirname, 'public/pages/residents', 'resident-dashboard.html');
     if (fs.existsSync(filePath)) return res.sendFile(filePath);
     res.status(404).json({ error: 'Page not found' });
 });
 
 app.get('/resident', (req, res) => {
     const residentPath = path.join(__dirname, 'public/pages/residents', 'resident.html');
-    const dashboardPath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    const dashboardPath = path.join(__dirname, 'public/pages/residents', 'resident-dashboard.html');
     if (fs.existsSync(residentPath)) return res.sendFile(residentPath);
     if (fs.existsSync(dashboardPath)) return res.sendFile(dashboardPath);
     res.redirect('/login');
 });
 app.get('/pages/resident', (req, res) => {
     const residentPath = path.join(__dirname, 'public/pages/residents', 'resident.html');
-    const dashboardPath = path.join(__dirname, 'public/pages/residents', 'dashboard.html');
+    const dashboardPath = path.join(__dirname, 'public/pages/residents', 'resident-dashboard.html');
     if (fs.existsSync(residentPath)) return res.sendFile(residentPath);
     if (fs.existsSync(dashboardPath)) return res.sendFile(dashboardPath);
     res.redirect('/login');
