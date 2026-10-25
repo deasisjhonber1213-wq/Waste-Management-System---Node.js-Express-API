@@ -29,6 +29,8 @@
 
 The web app can be installed from a supported browser over HTTPS (or localhost). Its service worker caches same-origin static assets and a generic offline page; account pages, API responses, and personal data are never cached. Live features such as maps, tracking, and submissions still require an internet connection.
 
+On Android, open the HTTPS site in Chrome or Edge and tap **Install app** (or choose **Install app** / **Add to Home screen** from the browser menu). On iPhone or iPad, open the HTTPS site in Safari, tap **Share**, then **Add to Home Screen**. The install action requires HTTPS; a plain HTTP address on a phone or local network is not installable. App icons are provided as square PNGs in the manifest and as an Apple touch icon.
+
 ## CI/CD (GitHub Actions and Railway)
 
 The `CI/CD` workflow runs on pull requests and pushes to `main`. It installs dependencies and checks the syntax of the server and PWA scripts. A successful push to `main` is then deployed to Railway; pull requests and manual workflow runs only validate the code.
