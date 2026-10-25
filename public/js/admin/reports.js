@@ -21,6 +21,12 @@ const API = {
             },
             body: JSON.stringify(data)
         });
+    },
+    delete: async (endpoint) => {
+        return fetch(API_URL + endpoint, {
+            method: 'DELETE',
+            headers: { Authorization: 'Bearer ' + getToken() }
+        });
     }
 };
 
@@ -167,6 +173,27 @@ async function resolveReport(id) {
     }
 }
 window.resolveReport = resolveReport;
+
+async function deleteReport(id) {
+    if (!window.confirm(`Permanently delete report #${id}? This cannot be undone.`)) return;
+
+    try {
+        const res = await API.delete(`/admin/reports/${encodeURIComponent(id)}`);
+        const result = await res.json();
+        if (!res.ok) {
+            throw new Error(result.error || result.message || 'Failed to delete report');
+        }
+
+        allReports = allReports.filter(report => String(report.id) !== String(id));
+        updateStatCards(allReports);
+        applyFilters();
+        showToast(result.message || 'Report deleted successfully', 'success');
+    } catch (err) {
+        console.error('Delete report error:', err);
+        showToast(err.message || 'Failed to delete report', 'error');
+    }
+}
+window.deleteReport = deleteReport;
 
 function fitAllPins() {
     const allPins = [...reportMarkers, ...residentMarkers];
@@ -481,9 +508,10 @@ function renderTable(data) {
                 <td class="table-muted" style="font-size:0.7rem;">${fmtDate(r.created_at)}</td>
                 <td><span class="badge ${STATUS_BADGE[r.status] || 'badge-gray'}">${STATUS_LABEL[r.status] || r.status || 'pending'}</span></td>
                 <td style="text-align:center;">${hasImage ? `<img src="${r.image_url}" class="report-img-thumb" onclick="event.stopPropagation();openLightbox('${r.image_url}')" onerror="this.style.display='none'" loading="lazy">` : '—'}</td>
-                <td style="text-align:center;display:flex;gap:4px;justify-content:center;">
+                <td class="report-actions">
                     <button class="btn btn-outline btn-sm btn-icon" onclick='event.stopPropagation();viewReport(${r.id})'><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
                     ${r.status !== 'resolved' ? `<button class="btn btn-outline btn-sm btn-icon" title="Mark resolved" onclick='event.stopPropagation();resolveReport(${r.id})'><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></button>` : ''}
+                    <button class="btn btn-outline btn-sm btn-icon btn-delete-report" title="Delete report" aria-label="Delete report ${r.id}" onclick='event.stopPropagation();deleteReport(${r.id})'><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button>
                 </td>
              </tr>`;
     }).join('');
@@ -654,7 +682,7 @@ async function loadAdminProfile() {
 Object.assign(window, {
     viewReport, viewResident, flyToReport, flyToResident,
     openLightbox, closeLightbox, setDateFilter, setStatusFilter,
-    applyFilters, toggleSat, switchTab, fitAllPins, resolveReport
+    applyFilters, toggleSat, switchTab, fitAllPins, resolveReport, deleteReport
 });
 
 // Boot

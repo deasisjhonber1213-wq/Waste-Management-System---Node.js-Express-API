@@ -392,8 +392,8 @@ body,
 .logo-icon {
     width: 42px;
     height: 42px;
-    background: url("/images/jose-dalman-logo.jpeg") center / cover no-repeat;
-    border-radius: 14px;
+    background: url("/images/jose-dalman-logo.png") center / contain no-repeat;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;

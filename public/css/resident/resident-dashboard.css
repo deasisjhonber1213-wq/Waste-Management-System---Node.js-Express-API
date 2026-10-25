@@ -161,9 +161,9 @@
     .sidebar-logo-icon {
         width: 36px;
         height: 36px;
-        background: url("/images/jose-dalman-logo.jpeg") center / cover no-repeat;
+        background: url("/images/jose-dalman-logo.png") center / contain no-repeat;
         color: var(--bg);
-        border-radius: 10px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;

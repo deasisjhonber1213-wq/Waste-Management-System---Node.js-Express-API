@@ -1,8 +1,8 @@
-const CACHE_NAME = "smartwaste-shell-v3";
+const CACHE_NAME = "smartwaste-shell-v4";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [
     OFFLINE_URL,
-    "/images/jose-dalman-logo.jpeg",
+    "/images/jose-dalman-logo.png",
     "/images/app-icon-192.png",
     "/images/app-icon-512.png",
     "/images/apple-touch-icon.png"
