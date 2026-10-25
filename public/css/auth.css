@@ -142,7 +142,7 @@ a:hover { color: var(--gold-2); text-decoration: underline; }
     width: 42px;
     height: 42px;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-2));
+    background: url("/images/jose-dalman-logo.jpeg") center / cover no-repeat;
     color: var(--bg);
     display: flex;
     align-items: center;
@@ -151,7 +151,7 @@ a:hover { color: var(--gold-2); text-decoration: underline; }
     box-shadow: 0 4px 16px rgba(212, 168, 83, 0.25);
 }
 
-.brand-icon svg { width: 22px; height: 22px; stroke: currentColor; }
+.brand-icon svg { display: none; }
 
 .brand-name {
     font-weight: 800;

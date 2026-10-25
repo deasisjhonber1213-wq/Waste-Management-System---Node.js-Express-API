@@ -1,6 +1,6 @@
-const CACHE_NAME = "smartwaste-shell-v1";
+const CACHE_NAME = "smartwaste-shell-v2";
 const OFFLINE_URL = "/offline.html";
-const PRECACHE_URLS = [OFFLINE_URL, "/images/pwa-icon.svg"];
+const PRECACHE_URLS = [OFFLINE_URL, "/images/jose-dalman-logo.jpeg"];
 
 self.addEventListener("install", (event) => {
     event.waitUntil(

@@ -153,7 +153,7 @@ body {
 .sidebar-logo-icon {
     width: 30px;
     height: 30px;
-    background: var(--gold);
+    background: url("/images/jose-dalman-logo.jpeg") center / cover no-repeat;
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -161,6 +161,10 @@ body {
     font-size: 14px;
     color: #fff;
     flex-shrink: 0;
+}
+
+.sidebar-logo-icon svg {
+    display: none;
 }
 
 .sidebar-logo-text {

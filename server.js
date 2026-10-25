@@ -627,23 +627,23 @@ app.get('/pages/resident', (req, res) => {
 
 // Driver
 app.get('/driver/dashboard', (req, res) => {
-    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    const filePath = path.join(__dirname, 'public/pages/driver', 'driver-dashboard.html');
     if (fs.existsSync(filePath)) return res.sendFile(filePath);
     res.status(404).json({ error: 'Page not found' });
 });
 app.get('/pages/driver/dashboard', (req, res) => {
-    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    const filePath = path.join(__dirname, 'public/pages/driver', 'driver-dashboard.html');
     if (fs.existsSync(filePath)) return res.sendFile(filePath);
     res.status(404).json({ error: 'Page not found' });
 });
 
 app.get('/driver', (req, res) => {
-    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    const filePath = path.join(__dirname, 'public/pages/driver', 'driver-dashboard.html');
     if (fs.existsSync(filePath)) return res.sendFile(filePath);
     res.redirect('/login');
 });
 app.get('/pages/driver', (req, res) => {
-    const filePath = path.join(__dirname, 'public/pages/driver', 'dashboard.html');
+    const filePath = path.join(__dirname, 'public/pages/driver', 'driver-dashboard.html');
     if (fs.existsSync(filePath)) return res.sendFile(filePath);
     res.redirect('/login');
 });

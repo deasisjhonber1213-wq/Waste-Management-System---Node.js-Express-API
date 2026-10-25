@@ -392,7 +392,7 @@ body,
 .logo-icon {
     width: 42px;
     height: 42px;
-    background: linear-gradient(135deg, var(--amber), var(--amber2));
+    background: url("/images/jose-dalman-logo.jpeg") center / cover no-repeat;
     border-radius: 14px;
     display: flex;
     align-items: center;
@@ -405,7 +405,7 @@ body,
 }
 
 .logo-icon svg {
-    display: block;
+    display: none;
 }
 
 .logo-sub {
