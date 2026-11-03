@@ -15,6 +15,17 @@ function parseJsonValue(raw) {
     }
 }
 
+async function hasColumn(table, column) {
+    const [[result]] = await db.query(
+        `SELECT 1
+         FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?
+         LIMIT 1`,
+        [table, column]
+    );
+    return Boolean(result);
+}
+
 exports.dashboardStats = async (req, res) => {
     try {
         const [[users]] = await db.query("SELECT COUNT(*) total FROM users");
@@ -22,7 +33,10 @@ exports.dashboardStats = async (req, res) => {
         const [[trucks]] = await db.query("SELECT COUNT(*) total FROM trucks");
         const [[routes]] = await db.query("SELECT COUNT(*) total FROM routes");
         const [[reports]] = await db.query("SELECT COUNT(*) total FROM reports");
-        const [[fuel]] = await db.query("SELECT SUM(fuel_used) total FROM trip_logs");
+        const hasFuelUsed = await hasColumn('trip_logs', 'fuel_used');
+        const [[fuel]] = hasFuelUsed
+            ? await db.query("SELECT SUM(fuel_used) total FROM trip_logs")
+            : [[{ total: null }], []];
         const [[reportAlerts]] = await db.query(`
             SELECT
                 SUM(CASE WHEN COALESCE(status, 'pending') NOT IN ('resolved', 'rejected') THEN 1 ELSE 0 END) AS open_reports,
@@ -30,15 +44,20 @@ exports.dashboardStats = async (req, res) => {
                     AND COALESCE(status, 'pending') NOT IN ('resolved', 'rejected') THEN 1 ELSE 0 END) AS missed_pickup_reports
             FROM reports
         `);
-        const [stopAssignments] = await db.query(
-            `SELECT ra.id, ra.assigned_date, ra.progress_log, r.zone_name, r.waypoints_json
-             FROM route_assignments ra
-             JOIN routes r ON r.id = ra.route_id
-             WHERE ra.assigned_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-               AND ra.progress_log IS NOT NULL
-             ORDER BY ra.assigned_date DESC
-             LIMIT 200`
-        );
+        const hasProgressLog = await hasColumn('route_assignments', 'progress_log');
+        const hasWaypoints = await hasColumn('routes', 'waypoints_json');
+        const [stopAssignments] = hasProgressLog
+            ? await db.query(
+                `SELECT ra.id, ra.assigned_date, ra.progress_log, r.zone_name,
+                        ${hasWaypoints ? 'r.waypoints_json' : 'NULL AS waypoints_json'}
+                 FROM route_assignments ra
+                 JOIN routes r ON r.id = ra.route_id
+                 WHERE ra.assigned_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                   AND ra.progress_log IS NOT NULL
+                 ORDER BY ra.assigned_date DESC
+                 LIMIT 200`
+            )
+            : [[]];
         const stopExceptions = [];
         for (const assignment of stopAssignments) {
             const progress = parseJsonValue(assignment.progress_log);
@@ -62,7 +81,8 @@ exports.dashboardStats = async (req, res) => {
 
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
         const [recentPings] = await db.query(
-            `SELECT ra.id AS assignment_id, r.zone_name, r.waypoints_json,
+            `SELECT ra.id AS assignment_id, r.zone_name,
+                    ${hasWaypoints ? 'r.waypoints_json' : 'NULL AS waypoints_json'},
                     t.plate_number, u.name AS driver_name,
                     tl.latitude, tl.longitude
              FROM trip_logs tl
@@ -106,7 +126,7 @@ exports.dashboardStats = async (req, res) => {
             totalTrucks: trucks.total,
             totalRoutes: routes.total,
             totalReports: reports.total,
-            totalFuelUsed: fuel.total || 0,
+            totalFuelUsed: hasFuelUsed ? (fuel.total || 0) : null,
             openReports: Number(reportAlerts.open_reports) || 0,
             missedPickupReports: Number(reportAlerts.missed_pickup_reports) || 0,
             missedStopExceptions: stopExceptions.length,
@@ -115,7 +135,7 @@ exports.dashboardStats = async (req, res) => {
             detourRoutes
         });
     } catch (err) {
-        console.error(err);
+        console.error("Admin dashboard stats error:", err);
         res.status(500).json({ error: err.message });
     }
 };

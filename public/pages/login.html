@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" href="/images/jose-dalman-logo.png">
     <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Jose Dalman">
     <title>SmartWaste — Sign In</title>
     <link rel="stylesheet" href="/css/auth.css">
@@ -61,7 +62,7 @@
 
                 <div id="alertBox" class="alert" aria-live="polite"></div>
 
-                <form id="loginForm" onsubmit="return false;">
+                <form id="loginForm" autocomplete="off" onsubmit="return false;">
                     <div class="form-group">
                         <label class="form-label" for="email">Email Address</label>
                         <div class="input-wrap">
@@ -74,7 +75,7 @@
                                 </svg>
                             </div>
                             <input class="form-input" type="email" id="email" placeholder="name@example.com" required
-                                autocomplete="email">
+                                autocomplete="off">
                         </div>
                     </div>
 
@@ -90,7 +91,7 @@
                                 </svg>
                             </div>
                             <input class="form-input" type="password" id="password" placeholder="••••••••" required
-                                autocomplete="current-password">
+                                autocomplete="off">
                             <button type="button" class="toggle-password" id="togglePasswordBtn"
                                 aria-label="Toggle text configuration display view">
                                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"

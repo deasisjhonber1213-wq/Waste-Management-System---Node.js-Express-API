@@ -73,20 +73,28 @@ window.doLogout = doLogout;
 async function loadStats() {
     try {
         const res = await API.get("/admin/dashboard");
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            throw new Error(error.message || error.error || `Stats request failed (${res.status})`);
+        }
         const d = await res.json();
         document.getElementById("s-users").textContent = d.totalUsers ?? "—";
         document.getElementById("s-drivers").textContent = d.totalDrivers ?? "—";
         document.getElementById("s-trucks").textContent = d.totalTrucks ?? "—";
         document.getElementById("s-routes").textContent = d.totalRoutes ?? "—";
         document.getElementById("s-reports").textContent = d.totalReports ?? "—";
-        document.getElementById("s-fuel").textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) + "L" : "0L";
+        document.getElementById("s-fuel").textContent = d.totalFuelUsed == null
+            ? "—"
+            : `${Math.round(Number(d.totalFuelUsed) || 0)}L`;
         document.getElementById("opsOpenReports").textContent = d.openReports ?? "—";
         document.getElementById("opsMissedPickups").textContent = d.missedPickupReports ?? "—";
         document.getElementById("opsActiveDetours").textContent = d.activeDetours ?? "—";
         document.getElementById("opsStopExceptions").textContent = d.missedStopExceptions ?? "—";
         renderOperationsWatch(d);
-    } catch { showToast("Failed to load stats", "error"); }
+    } catch (err) {
+        console.error("Dashboard stats error:", err);
+        showToast(`Failed to load stats: ${err.message}`, "error");
+    }
 }
 
 function renderOperationsWatch(data) {
