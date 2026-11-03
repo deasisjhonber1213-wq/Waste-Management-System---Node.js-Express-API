@@ -519,7 +519,15 @@ app.use(express.static(path.join(__dirname, "public"), {
     maxAge: '1d',
     etag: true,
     lastModified: true,
-    index: false
+    index: false,
+    setHeaders: (res, filePath) => {
+        if (
+            filePath === path.join(__dirname, 'public', 'service-worker.js') ||
+            filePath === path.join(__dirname, 'public', 'manifest.webmanifest')
+        ) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    }
 }));
 
 app.use('/pages', express.static(path.join(__dirname, 'public/pages'), {

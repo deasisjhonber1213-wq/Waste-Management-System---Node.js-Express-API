@@ -52,3 +52,5 @@ Before enabling deployments, configure these GitHub Actions repository values:
 - `RAILWAY_ENVIRONMENT_ID` (variable): the target environment ID.
 
 The workflow deploys only to the configured Railway service and environment. Keep application credentials in Railway's environment variables, not in GitHub workflow files.
+
+For a Railway deployment, connect the app service to its MySQL service and make sure the app receives either `MYSQLHOST`, `MYSQLPORT`, `MYSQLUSER`, `MYSQLPASSWORD`, and `MYSQLDATABASE`, or a MySQL `MYSQL_URL`/`DATABASE_URL`. Set `JWT_SECRET` to a unique random value of at least 32 bytes. The app will not start if this signing secret is missing or too short. Railway supplies `PORT` automatically; do not hard-code it.
