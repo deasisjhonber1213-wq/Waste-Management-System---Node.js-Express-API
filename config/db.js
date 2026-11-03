@@ -1,11 +1,12 @@
 const mysql = require("mysql2");
 require('dotenv').config();
 
-const databaseUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
+const databaseUrl = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL || process.env.DATABASE_URL;
 const isRailway = Boolean(
     process.env.RAILWAY_ENVIRONMENT ||
     process.env.RAILWAY_ENVIRONMENT_NAME ||
     process.env.MYSQLHOST ||
+    process.env.MYSQL_PUBLIC_URL ||
     process.env.MYSQL_URL
 );
 
@@ -16,11 +17,11 @@ if (databaseUrl) {
     try {
         parsedUrl = new URL(databaseUrl);
     } catch (err) {
-        throw new Error('MYSQL_URL or DATABASE_URL must be a valid MySQL connection URL.');
+        throw new Error('MYSQL_PUBLIC_URL, MYSQL_URL, or DATABASE_URL must be a valid MySQL connection URL.');
     }
 
     if (parsedUrl.protocol !== 'mysql:') {
-        throw new Error('MYSQL_URL or DATABASE_URL must use the mysql:// protocol.');
+        throw new Error('MYSQL_PUBLIC_URL, MYSQL_URL, or DATABASE_URL must use the mysql:// protocol.');
     }
 
     dbConfig = {
