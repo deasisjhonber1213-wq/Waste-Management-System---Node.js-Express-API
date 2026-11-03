@@ -294,6 +294,17 @@
                             </div>
                         </div>
                         <div id="map"></div>
+                        <div class="share-location-warning" role="note">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3 2.8 20h18.4L12 3Z"></path>
+                                <path d="M12 9v4m0 3h.01"></path>
+                            </svg>
+                            <div>
+                                <strong>Location sharing tip</strong>
+                                <span>Share a spot beside a public road or the marked collection route. Pins away from the route may make the driver detour.</span>
+                                <span>Only your assigned driver and system administrators can see your shared live location. It is cleared when you stop sharing or after two hours without an update.</span>
+                            </div>
+                        </div>
                         <div class="location-info" id="locationInfo">
                             <span>
                                 <svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -305,6 +316,9 @@
                                 Getting your location…
                             </span>
                             <span id="locAccuracy"></span>
+                        </div>
+                        <div class="location-info truck-freshness stale" id="truckFreshness" aria-live="polite">
+                            Truck GPS: waiting for route location
                         </div>
                         <div class="location-info" id="distanceHUD" style="margin-top:4px;display:none;">
                             <span id="distanceText">🚛 Calculating distance…</span>
@@ -591,6 +605,7 @@
                                     <polyline points="12 5 19 12 12 19"></polyline>
                                 </svg>
                             </button>
+                            <p class="offline-queue-status" id="offlineReportStatus" role="status" aria-live="polite"></p>
                         </form>
                     </div>
                 </div>
@@ -773,6 +788,7 @@
             <polyline points="18 15 12 9 6 15" />
         </svg>
     </button>
+    <script src="/js/offline-sync.js"></script>
     <script src="../../js/resident/resident-dashboard.js"></script>
     <script src="/js/pwa.js" defer></script>
 </body>

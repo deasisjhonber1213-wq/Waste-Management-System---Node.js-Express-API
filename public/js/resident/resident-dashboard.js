@@ -152,16 +152,18 @@ let currentTruckId, truckMarker, userMarker;
 let mrfMarkers = [];
 let fallbackMRF = null;
 let pinMarkers = [];
-let residentMarkers = {};
 let activeTile = 'street';
 let sharingLocation = false,
     shareInterval = null;
+const pendingLocationUpdates = new Set();
 let userLat = null,
     userLng = null;
 let truckLat = null,
     truckLng = null;
 let lastKnownLocation = null;
 let locationWatchId = null;
+let truckLocationUpdatedAt = null;
+let routeStopStatuses = {};
 
 let routeStarted = false;
 let hasLiveTruckLocation = false;
@@ -319,8 +321,6 @@ function initMap(lat = DEFAULT_CENTER.lat, lng = DEFAULT_CENTER.lng) {
     tileStreet.addTo(map);
     markerLayer = L.layerGroup().addTo(map);
     loadFallbackMRF();
-    loadResidentLocations();
-    setInterval(loadResidentLocations, 30000);
 }
 
 async function loadFallbackMRF() {
@@ -389,7 +389,7 @@ function nearestRoadIndex(lat, lng) {
     return best;
 }
 
-function showRouteWithTrail(routeData) {
+function showRouteWithTrail(routeData, stopStatuses = {}) {
     if (!map) return;
 
     if (progressPolyline) { map.removeLayer(progressPolyline); progressPolyline = null; }
@@ -431,7 +431,10 @@ function showRouteWithTrail(routeData) {
         }
     }
 
-    pinStops = pins;
+    pinStops = pins.map((pin, index) => ({
+        ...pin,
+        status: stopStatuses[`stop_${index}`] || null
+    }));
     pins.forEach((p, i) => {
         const icon = L.divIcon({
             className: "",
@@ -441,7 +444,7 @@ function showRouteWithTrail(routeData) {
         });
         pinMarkers.push(
             L.marker([p.lat, p.lng], { icon, zIndexOffset: 300 })
-                .bindPopup(`<b>${ICON_PIN}Stop ${p.num}</b><br>${p.name}`)
+                .bindPopup(`<b>${ICON_PIN}Stop ${p.num}</b><br>${p.name}<br>${formatStopStatus(pinStops[i].status)}`)
                 .addTo(map)
         );
     });
@@ -592,9 +595,11 @@ function animateTruck(from, to, duration = 3000) {
     step();
 }
 
-function placeTruckMarker(lat, lng, animate = true) {
+function placeTruckMarker(lat, lng, animate = true, updatedAt = Date.now()) {
     truckLat = lat;
     truckLng = lng;
+    truckLocationUpdatedAt = updatedAt;
+    renderTruckFreshness();
 
     if (!map) initMap(lat, lng);
 
@@ -626,37 +631,6 @@ function placeTruckMarker(lat, lng, animate = true) {
     }
 }
 
-async function loadResidentLocations() {
-    if (!map) return;
-    try {
-        const list = await apiFetch('/api/resident/resident-locations');
-        const freshIds = new Set(list.map(r => r.id));
-        Object.keys(residentMarkers).forEach(id => {
-            if (!freshIds.has(parseInt(id))) {
-                map.removeLayer(residentMarkers[id]);
-                delete residentMarkers[id];
-            }
-        });
-        list.forEach(r => {
-            const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
-            // Resident (house) marker: emoji left as-is by design
-            const icon = L.divIcon({
-                className: "",
-                html: `<div class="resident-pin ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
-            });
-            if (residentMarkers[r.id]) {
-                residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon);
-            } else {
-                residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon })
-                    .bindPopup(`<b style="color:#5b9cf6">🏠 ${r.name}</b><br><span style="color:${fresh ? '#34d399' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`)
-                    .addTo(map);
-            }
-        });
-    } catch (e) { console.warn('Resident locations failed', e); }
-}
-
 function haversineKm(lat1, lng1, lat2, lng2) {
     const R = 6371,
         dLat = (lat2 - lat1) * Math.PI / 180,
@@ -664,6 +638,36 @@ function haversineKm(lat1, lng1, lat2, lng2) {
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+function formatStopStatus(status) {
+    const labels = {
+        collected: 'Collected',
+        missed: 'Missed',
+        inaccessible: 'Inaccessible'
+    };
+    return `Pickup status: ${labels[status] || 'Not reported yet'}`;
+}
+
+function renderTruckFreshness() {
+    const el = document.getElementById('truckFreshness');
+    if (!el) return;
+    if (!truckLocationUpdatedAt) {
+        el.textContent = 'Truck GPS: waiting for route location';
+        el.classList.remove('fresh');
+        el.classList.add('stale');
+        return;
+    }
+
+    const ageMs = Date.now() - new Date(truckLocationUpdatedAt).getTime();
+    const fresh = Number.isFinite(ageMs) && ageMs >= 0 && ageMs < 3 * 60 * 1000;
+    const age = Math.max(0, Math.floor(ageMs / 1000));
+    const lastSeen = age < 60 ? `${age}s ago` : `${Math.floor(age / 60)}m ago`;
+    el.textContent = `Truck GPS: ${fresh ? 'live' : 'stale'} · updated ${lastSeen}`;
+    el.classList.toggle('fresh', fresh);
+    el.classList.toggle('stale', !fresh);
+}
+
+setInterval(renderTruckFreshness, 30000);
 
 function updateDistanceHUD() {
     if (userLat === null || truckLat === null) return;
@@ -741,15 +745,53 @@ function startUserTracking() {
     );
 }
 
-function toggleShareLocation() {
+async function toggleShareLocation() {
     const btn = document.getElementById('btnShare');
     const status = document.getElementById('shareStatus');
-    sharingLocation = !sharingLocation;
-
     if (sharingLocation) {
-        if (btn) {
-            btn.classList.add('active');
+        sharingLocation = false;
+        clearInterval(shareInterval);
+        shareInterval = null;
+        await Promise.allSettled(Array.from(pendingLocationUpdates));
+        try {
+            await window.WMSOfflineQueue?.discard('resident-location');
+        } catch (err) {
+            console.error('Could not discard queued location updates:', err);
         }
+        if (btn) {
+            btn.classList.remove('active');
+        }
+        if (status) {
+            status.textContent = 'Sharing: OFF';
+            status.style.color = 'var(--text-3)';
+        }
+        apiFetch('/api/resident/share-location', { method: 'DELETE' })
+            .then(() => showToast('Sharing stopped and your location was cleared', 'success'))
+            .catch(async err => {
+                if ((err instanceof TypeError || !navigator.onLine) && window.WMSOfflineQueue) {
+                    try {
+                        await window.WMSOfflineQueue.enqueue({
+                            type: 'resident-stop-sharing',
+                            method: 'DELETE',
+                            path: '/api/resident/share-location',
+                            key: 'resident-stop-sharing',
+                            maxAgeMs: 2 * 60 * 60 * 1000
+                        });
+                        showToast('Sharing stopped. Your location will be cleared when you reconnect.', 'info');
+                        return;
+                    } catch (queueError) {
+                        console.error('Could not queue location clear:', queueError);
+                    }
+                }
+                console.error('Could not stop sharing location:', err);
+                showToast('Could not clear your shared location. Please try again.', 'error');
+            });
+        return;
+    }
+
+    sharingLocation = true;
+    if (sharingLocation) {
+        if (btn) btn.classList.add('active');
         if (status) {
             status.textContent = 'Sharing: ON';
             status.style.color = 'var(--gold)';
@@ -802,16 +844,40 @@ function toggleShareLocation() {
 }
 
 async function pushMyLocation(lat, lng) {
-    if (!lat || !lng) return;
+    if (!sharingLocation || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const update = (async () => {
+        try {
+            await apiFetch('/api/resident/share-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitude: lat, longitude: lng })
+            });
+        } catch (e) {
+            if (!sharingLocation) return;
+            if ((e instanceof TypeError || !navigator.onLine) && window.WMSOfflineQueue) {
+                try {
+                    await window.WMSOfflineQueue.enqueue({
+                        type: 'resident-location',
+                        method: 'POST',
+                        path: '/api/resident/share-location',
+                        body: { latitude: lat, longitude: lng },
+                        key: 'resident-location',
+                        maxAgeMs: 5 * 60 * 1000
+                    });
+                    return;
+                } catch (queueError) {
+                    console.error('Could not queue location update:', queueError);
+                }
+            }
+            console.warn('Share push failed', e);
+            showToast('Failed to share location', 'error');
+        }
+    })();
+    pendingLocationUpdates.add(update);
     try {
-        await apiFetch('/api/resident/share-location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ latitude: lat, longitude: lng })
-        });
-    } catch (e) {
-        console.warn('Share push failed', e);
-        showToast('Failed to share location', 'error');
+        await update;
+    } finally {
+        pendingLocationUpdates.delete(update);
     }
 }
 
@@ -973,15 +1039,23 @@ async function loadTodayTruck() {
             statusEl.textContent = 'No truck assigned today.';
             currentAssignmentId = null;
             routeStatus = null;
+            routeStopStatuses = {};
+            truckLocationUpdatedAt = null;
+            renderTruckFreshness();
             initMap();
             startUserTracking();
             return;
         }
         currentTruckId = data.truck_id;
         currentAssignmentId = data.id || null;
+        routeStopStatuses = data.progress_log && typeof data.progress_log === 'object'
+            ? data.progress_log
+            : {};
         routeStarted = !!data.route_started;
         hasLiveTruckLocation = !!data.has_live_location;
         routeStatus = data.status || (routeStarted ? 'in_progress' : 'pending');
+        truckLocationUpdatedAt = data.truck_location_updated_at || null;
+        renderTruckFreshness();
 
         if (routeStatus === 'completed') {
             statusEl.innerHTML = `<strong>${data.plate_number}</strong> — ${data.zone_name} <span style="color:var(--success)">· Collection complete ✓</span>`;
@@ -1003,7 +1077,7 @@ async function loadTodayTruck() {
                 const parsed = parseWaypointsJson(routeData.raw_waypoints || routeData.waypoints_json);
                 if (parsed.road.length || parsed.pins.length || parsed.mrfs.length) {
                     initMap(parsed.road[0]?.lat || DEFAULT_CENTER.lat, parsed.road[0]?.lng || DEFAULT_CENTER.lng);
-                    showRouteWithTrail(parsed);
+                    showRouteWithTrail(parsed, routeStopStatuses);
                 } else {
                     initMap();
                 }
@@ -1016,7 +1090,7 @@ async function loadTodayTruck() {
         }
 
         if (routeStarted && hasLiveTruckLocation && data.latitude && data.longitude) {
-            placeTruckMarker(data.latitude, data.longitude, false);
+            placeTruckMarker(data.latitude, data.longitude, false, data.truck_location_updated_at);
         }
 
         startUserTracking();
@@ -1040,7 +1114,7 @@ async function pollTruckLocation() {
         const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
         if (logs && logs.length > 0 && logs[0].latitude && logs[0].longitude) {
             hasLiveTruckLocation = true;
-            placeTruckMarker(logs[0].latitude, logs[0].longitude, true);
+            placeTruckMarker(logs[0].latitude, logs[0].longitude, true, logs[0].recorded_at);
             const statusEl = document.getElementById('todayTruck');
             if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
                 loadTodayTruck();
@@ -1089,7 +1163,7 @@ function connectResidentSocket() {
         if (routeStatus !== 'in_progress') return;
 
         hasLiveTruckLocation = true;
-        placeTruckMarker(data.latitude, data.longitude, true);
+        placeTruckMarker(data.latitude, data.longitude, true, data.timestamp || Date.now());
 
         const statusEl = document.getElementById('todayTruck');
         if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
@@ -1114,6 +1188,22 @@ function connectResidentSocket() {
         } else if (data.status === 'cancelled') {
             showToast('Route cancelled for today', 'info');
         }
+    });
+
+    residentSocket.on('assignment-stop-status', (data) => {
+        if (!currentAssignmentId || !data ||
+            String(data.assignmentId) !== String(currentAssignmentId) ||
+            !Number.isSafeInteger(data.stopIndex)) return;
+
+        routeStopStatuses[`stop_${data.stopIndex}`] = data.status;
+        const marker = pinMarkers[data.stopIndex];
+        if (marker) {
+            const stop = pinStops[data.stopIndex];
+            marker.setPopupContent(
+                `<b>${ICON_PIN}Stop ${stop.num}</b><br>${stop.name}<br>${formatStopStatus(data.status)}`
+            );
+        }
+        showToast(`Stop ${data.stopIndex + 1}: ${formatStopStatus(data.status)}`);
     });
 }
 
@@ -1339,16 +1429,12 @@ async function submitReport(type, desc) {
         btn.textContent = 'Submitting…';
         btn.disabled = true;
     }
-    const payload = { type, description: desc };
+    const payload = { type, description: desc, client_request_id: crypto.randomUUID() };
     if (reportLat !== null) payload.latitude = reportLat;
     if (reportLng !== null) payload.longitude = reportLng;
     if (reportPhotoBase64) payload.image_url = reportPhotoBase64;
-    try {
-        await apiFetch('/api/resident/reports', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+
+    const clearSubmittedReport = () => {
         const descField = document.getElementById('rdesc');
         if (descField) descField.value = '';
         updateCharCount();
@@ -1359,6 +1445,15 @@ async function submitReport(type, desc) {
         const locText = document.getElementById('locText');
         if (locRow) locRow.className = 'loc-row';
         if (locText) locText.textContent = 'Location not yet captured';
+    };
+
+    try {
+        await apiFetch('/api/resident/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        clearSubmittedReport();
         showToast('Report submitted successfully!');
         if (btn) {
             btn.textContent = '✓ Submitted';
@@ -1370,14 +1465,69 @@ async function submitReport(type, desc) {
             }, 3000);
         }
     } catch (err) {
+        if ((err instanceof TypeError || !navigator.onLine) && window.WMSOfflineQueue) {
+            try {
+                await window.WMSOfflineQueue.enqueue({
+                    type: 'resident-report',
+                    method: 'POST',
+                    path: '/api/resident/reports',
+                    body: payload,
+                    key: payload.client_request_id,
+                    maxAgeMs: 7 * 24 * 60 * 60 * 1000
+                });
+                clearSubmittedReport();
+                showToast('Report saved on this device. It will send when you reconnect.', 'info');
+                updateOfflineQueueStatus();
+                if (btn) btn.disabled = false;
+                return;
+            } catch (queueError) {
+                console.error('Could not save report offline:', queueError);
+                showToast(queueError.message || 'Could not save this report offline.', 'error');
+            }
+        }
         console.error('submitReport failed:', err);
-        showToast('Submission failed. Try again.', 'error');
+        if (navigator.onLine) showToast('Submission failed. Try again.', 'error');
         if (btn) {
             btn.innerHTML = 'Submit Report <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
             btn.disabled = false;
         }
     }
 }
+
+async function updateOfflineQueueStatus() {
+    const status = document.getElementById('offlineReportStatus');
+    if (!status || !window.WMSOfflineQueue) return;
+    try {
+        const count = await window.WMSOfflineQueue.count();
+        status.textContent = count
+            ? `${count} update${count === 1 ? '' : 's'} waiting to sync when you are online.`
+            : '';
+    } catch (err) {
+        console.error('Could not read offline queue status:', err);
+        status.textContent = 'Offline updates could not be checked on this device.';
+    }
+}
+
+window.addEventListener('offlinequeuechange', updateOfflineQueueStatus);
+window.addEventListener('offlinequeuesynced', event => {
+    if (event.detail.type === 'resident-report') {
+        showToast('Your saved report was submitted.', 'success');
+    }
+    updateOfflineQueueStatus();
+});
+window.addEventListener('offlinequeueexpired', event => {
+    if (event.detail.type === 'resident-report') {
+        showToast('A saved report expired before it could be sent. Please submit it again.', 'error');
+    }
+    updateOfflineQueueStatus();
+});
+window.addEventListener('offlinequeuerejected', event => {
+    if (event.detail.type === 'resident-report') {
+        showToast('A saved report could not be sent. Please review it and submit again.', 'error');
+    }
+    updateOfflineQueueStatus();
+});
+updateOfflineQueueStatus();
 (function initScrollTop() {
     const btn = document.getElementById('scrollTopBtn');
     if (!btn) return;

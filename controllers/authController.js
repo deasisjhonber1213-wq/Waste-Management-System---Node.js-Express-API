@@ -24,7 +24,7 @@ async function logAction(userId, action, req) {
 
 // REGISTER — auto-verified, phone required
 exports.register = async (req, res) => {
-    const { name, email, password, role, phone, address } = req.body;
+    const { name, email, password, phone, address } = req.body;
 
     if (!name || !email || !password) {
         return res.status(400).json({ error: "Name, email, and password are required" });
@@ -61,7 +61,7 @@ exports.register = async (req, res) => {
                 name,
                 cleanEmail,
                 hashed,
-                role || "resident",
+                "resident",
                 phone || null,
                 address || null
             ]
@@ -223,7 +223,7 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign(
             { id: user.id, role: user.role, name: user.name, email: user.email },
-            process.env.JWT_SECRET || "secret",
+            process.env.JWT_SECRET,
             { expiresIn: "24h" }
         );
 

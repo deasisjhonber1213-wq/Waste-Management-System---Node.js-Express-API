@@ -25,6 +25,16 @@ function fmtDate(date) {
     return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
+}
+
 function statusBadge(status) {
     const map = { 'pending': 'badge-warning', 'in_progress': 'badge-info', 'completed': 'badge-success', 'cancelled': 'badge-danger' };
     return `<span class="badge ${map[status] || 'badge-gray'}">${status.replace('_', ' ')}</span>`;
@@ -71,7 +81,37 @@ async function loadStats() {
         document.getElementById("s-routes").textContent = d.totalRoutes ?? "—";
         document.getElementById("s-reports").textContent = d.totalReports ?? "—";
         document.getElementById("s-fuel").textContent = d.totalFuelUsed ? Math.round(d.totalFuelUsed) + "L" : "0L";
+        document.getElementById("opsOpenReports").textContent = d.openReports ?? "—";
+        document.getElementById("opsMissedPickups").textContent = d.missedPickupReports ?? "—";
+        document.getElementById("opsActiveDetours").textContent = d.activeDetours ?? "—";
+        document.getElementById("opsStopExceptions").textContent = d.missedStopExceptions ?? "—";
+        renderOperationsWatch(d);
     } catch { showToast("Failed to load stats", "error"); }
+}
+
+function renderOperationsWatch(data) {
+    const stopList = document.getElementById('opsStopExceptionList');
+    const detourList = document.getElementById('opsDetourList');
+    const exceptions = Array.isArray(data.recentStopExceptions) ? data.recentStopExceptions : [];
+    const detours = Array.isArray(data.detourRoutes) ? data.detourRoutes : [];
+    if (stopList) {
+        stopList.innerHTML = exceptions.length
+            ? exceptions.map(item => `
+                <div class="ops-watch-row">
+                    <strong>${escapeHTML(item.zoneName || 'Route')}</strong>
+                    <span>${escapeHTML(item.stopName)} · ${escapeHTML(item.status)} · ${fmtDate(item.assignedDate)}</span>
+                </div>`).join('')
+            : '<p class="ops-watch-empty">No missed or inaccessible stops reported in the last 30 days.</p>';
+    }
+    if (detourList) {
+        detourList.innerHTML = detours.length
+            ? detours.map(route => `
+                <div class="ops-watch-row">
+                    <strong>${escapeHTML(route.zoneName || 'Route')} · ${escapeHTML(route.plateNumber || 'Truck')}</strong>
+                    <span>${escapeHTML(route.driverName || 'Driver')} · ${route.offRouteUpdates} off-route updates</span>
+                </div>`).join('')
+            : '<p class="ops-watch-empty">No repeated route deviations detected in the last 15 minutes.</p>';
+    }
 }
 
 async function loadChart() {

@@ -1344,6 +1344,35 @@ body,
     font-weight: 500;
 }
 
+.wp-stop-details {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.wp-stop-status {
+    color: var(--text3);
+    font-size: .65rem;
+}
+
+.wp-stop-outcome {
+    width: fit-content;
+    max-width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: .68rem;
+}
+
+.wp-stop-outcome:disabled {
+    opacity: .65;
+}
+
 .list-stack {
     display: flex;
     flex-direction: column;

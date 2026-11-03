@@ -1,4 +1,4 @@
-const CACHE_NAME = "smartwaste-shell-v4";
+const CACHE_NAME = "smartwaste-shell-v6";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [
     OFFLINE_URL,

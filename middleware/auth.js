@@ -29,7 +29,7 @@ exports.protect = async (req, res, next) => {
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         // Check if token is expired (jwt.verify already does this)
         if (Date.now() >= decoded.exp * 1000) {

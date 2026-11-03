@@ -3,6 +3,17 @@ const db = require("../config/db");
 const ExcelJS = require("exceljs");
 const bcrypt = require("bcrypt");
 const fs = require("fs");
+const { distanceFromRouteMeters, getRouteGeometry } = require("../utils/geo");
+
+function parseJsonValue(raw) {
+    if (!raw) return null;
+    if (typeof raw !== 'string') return raw;
+    try {
+        return JSON.parse(raw);
+    } catch (err) {
+        return null;
+    }
+}
 
 exports.dashboardStats = async (req, res) => {
     try {
@@ -12,6 +23,82 @@ exports.dashboardStats = async (req, res) => {
         const [[routes]] = await db.query("SELECT COUNT(*) total FROM routes");
         const [[reports]] = await db.query("SELECT COUNT(*) total FROM reports");
         const [[fuel]] = await db.query("SELECT SUM(fuel_used) total FROM trip_logs");
+        const [[reportAlerts]] = await db.query(`
+            SELECT
+                SUM(CASE WHEN COALESCE(status, 'pending') NOT IN ('resolved', 'rejected') THEN 1 ELSE 0 END) AS open_reports,
+                SUM(CASE WHEN type = 'missed_pickup'
+                    AND COALESCE(status, 'pending') NOT IN ('resolved', 'rejected') THEN 1 ELSE 0 END) AS missed_pickup_reports
+            FROM reports
+        `);
+        const [stopAssignments] = await db.query(
+            `SELECT ra.id, ra.assigned_date, ra.progress_log, r.zone_name, r.waypoints_json
+             FROM route_assignments ra
+             JOIN routes r ON r.id = ra.route_id
+             WHERE ra.assigned_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+               AND ra.progress_log IS NOT NULL
+             ORDER BY ra.assigned_date DESC
+             LIMIT 200`
+        );
+        const stopExceptions = [];
+        for (const assignment of stopAssignments) {
+            const progress = parseJsonValue(assignment.progress_log);
+            if (!progress || typeof progress !== 'object' || Array.isArray(progress)) continue;
+            const waypoints = parseJsonValue(assignment.waypoints_json);
+            const pins = Array.isArray(waypoints)
+                ? waypoints
+                : waypoints?.pin_stops || waypoints?.pins || [];
+            for (const [key, status] of Object.entries(progress)) {
+                if (!/^stop_\d+$/.test(key) || !['missed', 'inaccessible'].includes(status)) continue;
+                const index = Number(key.slice(5));
+                stopExceptions.push({
+                    assignmentId: assignment.id,
+                    assignedDate: assignment.assigned_date,
+                    zoneName: assignment.zone_name,
+                    stopName: pins[index]?.name || `Stop ${index + 1}`,
+                    status
+                });
+            }
+        }
+
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const [recentPings] = await db.query(
+            `SELECT ra.id AS assignment_id, r.zone_name, r.waypoints_json,
+                    t.plate_number, u.name AS driver_name,
+                    tl.latitude, tl.longitude
+             FROM trip_logs tl
+             JOIN route_assignments ra ON ra.id = tl.assignment_id
+             JOIN routes r ON r.id = ra.route_id
+             JOIN trucks t ON t.id = ra.truck_id
+             JOIN users u ON u.id = ra.driver_id
+             WHERE ra.assigned_date = ? AND ra.status = 'in_progress'
+               AND tl.logged_at >= NOW() - INTERVAL 15 MINUTE
+               AND tl.latitude IS NOT NULL AND tl.longitude IS NOT NULL
+             ORDER BY tl.logged_at DESC
+             LIMIT 1000`,
+            [today]
+        );
+        const detourCounts = new Map();
+        const roadCache = new Map();
+        for (const ping of recentPings) {
+            const point = { lat: Number(ping.latitude), lng: Number(ping.longitude) };
+            if (!roadCache.has(ping.assignment_id)) {
+                roadCache.set(ping.assignment_id, getRouteGeometry(ping.waypoints_json).road);
+            }
+            const road = roadCache.get(ping.assignment_id);
+            if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng) ||
+                distanceFromRouteMeters(point, road) <= 120) continue;
+            const current = detourCounts.get(ping.assignment_id) || {
+                assignmentId: ping.assignment_id,
+                zoneName: ping.zone_name,
+                plateNumber: ping.plate_number,
+                driverName: ping.driver_name,
+                offRouteUpdates: 0
+            };
+            current.offRouteUpdates++;
+            detourCounts.set(ping.assignment_id, current);
+        }
+        const detourRoutes = Array.from(detourCounts.values())
+            .filter(route => route.offRouteUpdates >= 3);
 
         res.json({
             totalUsers: users.total,
@@ -20,6 +107,12 @@ exports.dashboardStats = async (req, res) => {
             totalRoutes: routes.total,
             totalReports: reports.total,
             totalFuelUsed: fuel.total || 0,
+            openReports: Number(reportAlerts.open_reports) || 0,
+            missedPickupReports: Number(reportAlerts.missed_pickup_reports) || 0,
+            missedStopExceptions: stopExceptions.length,
+            recentStopExceptions: stopExceptions.slice(0, 8),
+            activeDetours: detourRoutes.length,
+            detourRoutes
         });
     } catch (err) {
         console.error(err);

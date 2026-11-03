@@ -20,8 +20,8 @@ router.get('/reports', auth.protect, residentController.getReports);
 router.get('/notifications', auth.protect, residentController.getNotifications);
 router.get('/announcements', auth.protect, residentController.getAnnouncements);
 
-router.post('/share-location', auth.protect, residentController.shareMyLocation);
-router.get('/resident-locations', auth.protect, residentController.getResidentLocations);
+router.post('/share-location', auth.protect, auth.residentOnly, residentController.shareMyLocation);
+router.delete('/share-location', auth.protect, auth.residentOnly, residentController.stopSharingLocation);
 router.get('/mrf-location', auth.protect, residentController.getMRFLocation);
 
 // Profile / account management

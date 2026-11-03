@@ -410,13 +410,79 @@ function updateConnectionStatus(connected) {
     }
 }
 
+async function updateQueueIndicator() {
+    if (!window.WMSOfflineQueue) return;
+    try {
+        const count = await window.WMSOfflineQueue.count();
+        const label = document.getElementById('connLabel');
+        if (count && label) {
+            label.textContent = `${count} update${count === 1 ? '' : 's'} waiting to sync`;
+        } else {
+            updateConnectionStatus(navigator.onLine && socketConnected);
+        }
+    } catch (err) {
+        console.error('Could not read pending offline updates:', err);
+    }
+}
+
+window.addEventListener('offline', () => updateConnectionStatus(false));
+window.addEventListener('online', () => {
+    updateConnectionStatus(true);
+    window.WMSOfflineQueue?.flush();
+});
+window.addEventListener('offlinequeuechange', updateQueueIndicator);
+window.addEventListener('offlinequeuesynced', event => {
+    if (event.detail.type === 'driver-stop-status') {
+        pendingStopKeys.delete(event.detail.key);
+        renderStopList();
+        toast('Saved stop update synced.', 'success');
+    }
+    updateQueueIndicator();
+});
+window.addEventListener('offlinequeueexpired', event => {
+    if (event.detail.type === 'driver-stop-status') {
+        pendingStopKeys.delete(event.detail.key);
+        renderStopList();
+        toast('A saved stop update expired before syncing. Please update it again.', 'error');
+    }
+    updateQueueIndicator();
+});
+window.addEventListener('offlinequeuerejected', event => {
+    if (event.detail.type === 'driver-stop-status') {
+        pendingStopKeys.delete(event.detail.key);
+        renderStopList();
+        toast('A saved stop update was rejected by the server.', 'error');
+    }
+    updateQueueIndicator();
+});
+updateQueueIndicator();
+
 function emitLocation(lat, lng, accuracy) {
     const payload = { latitude: lat, longitude: lng, accuracy: accuracy || 0, assignmentId: currentAssignmentId, timestamp: Date.now() };
     if (socket && socketConnected) {
         socket.emit('driver-location', payload);
     } else {
-        api('POST', '/location', { latitude: lat, longitude: lng, accuracy: accuracy || 0, assignment_id: currentAssignmentId })
-            .catch(err => console.warn('REST location fallback failed:', err));
+        const requestBody = { latitude: lat, longitude: lng, accuracy: accuracy || 0, assignment_id: currentAssignmentId };
+        api('POST', '/location', requestBody)
+            .catch(async err => {
+                if ((err instanceof TypeError || !navigator.onLine) &&
+                    window.WMSOfflineQueue && currentAssignmentId) {
+                    try {
+                        await window.WMSOfflineQueue.enqueue({
+                            type: 'driver-location',
+                            method: 'POST',
+                            path: '/driver/api/location',
+                            body: requestBody,
+                            key: `driver-location-${currentAssignmentId}`,
+                            maxAgeMs: 5 * 60 * 1000
+                        });
+                        return;
+                    } catch (queueError) {
+                        console.error('Could not queue driver location:', queueError);
+                    }
+                }
+                console.warn('REST location fallback failed:', err);
+            });
     }
 }
 
@@ -496,6 +562,8 @@ let pinStops = [];
 let mrfStops = [];
 let reachedStopKeys = new Set();
 let reachedMrfKeys = new Set();
+let currentStopStatuses = {};
+let pendingStopKeys = new Set();
 let lastLoadedRouteId = null;
 let locked = false, currentMapStyle = "light";
 let lastPos = null;
@@ -789,9 +857,10 @@ function showRouteFromData(routeData) {
         document.getElementById("routeWpCount").textContent = "0";
     }
 
-    pinStops = pins.map(p => ({
+    pinStops = pins.map((p, index) => ({
         ...p,
         _key: `stop_${p.num}`,
+        status: currentStopStatuses[`stop_${index}`] || null,
         _routeIdx: drawnCoords.length ? nearestRoadIndex(p.lat, p.lng) : null
     }));
 
@@ -805,7 +874,7 @@ function showRouteFromData(routeData) {
         });
         const m = L.marker([p.lat, p.lng], { icon, zIndexOffset: 300 })
             .addTo(dMap)
-            .bindPopup(`<strong>Stop ${p.num}</strong><br>${p.name}`);
+            .bindPopup(`<strong>Stop ${p.num}</strong><br>${escapeHtml(p.name)}<br>${stopStatusLabel(p.status)}`);
         pinMarkers.push(m);
     });
     document.getElementById("routeStops").textContent = pinStops.length;
@@ -838,26 +907,7 @@ function showRouteFromData(routeData) {
         mrfMarkers.push(marker);
     });
 
-    const items = [
-        ...pinStops.map((p, i) => {
-            const isDone = reachedStopKeys.has(p._key);
-            return `
-                    <div class="wp-item ${isDone ? 'reached' : ''}" id="wpItem${i}">
-                        <div class="wp-num ${isDone ? 'done' : ''}" id="wpNum${i}">${isDone ? '✓' : p.num}</div>
-                        <span class="wp-name">${p.name || `Stop ${p.num}`}</span>
-                    </div>`;
-        }),
-        ...mrfStops.map((m, i) => {
-            const isPassed = reachedMrfKeys.has(m._key);
-            return `
-                    <div class="wp-item ${isPassed ? 'reached' : ''}">
-                        <div class="wp-num mrf-stop ${isPassed ? 'passed' : ''}" id="mrfWpNum${i}">${isPassed ? '✓' : 'M'}</div>
-                        <span class="wp-name" style="color:${isPassed ? 'var(--text3)' : 'var(--green)'}">${m.name}${isPassed ? ' · passed' : ''}</span>
-                    </div>`;
-        })
-    ];
-    document.getElementById("wpList").innerHTML = items.length ? items.join("") :
-        `<div class="empty" style="padding:20px"><div class="empty-title">No stops defined</div></div>`;
+    renderStopList();
 
     const allPts = [
         ...road.map(v => [v.lat, v.lng]),
@@ -875,7 +925,144 @@ function showRouteFromData(routeData) {
     if (lastPos) {
         resyncRouteProgress(lastPos.lat, lastPos.lng);
     }
+    if (currentAssignmentId) {
+        restoreQueuedStopStatuses(currentAssignmentId);
+    }
 }
+
+function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
+}
+
+function stopStatusLabel(status) {
+    const labels = {
+        collected: 'Collected',
+        missed: 'Missed',
+        inaccessible: 'Inaccessible'
+    };
+    return `Pickup status: ${labels[status] || 'Not reported yet'}`;
+}
+
+function renderStopList() {
+    const list = document.getElementById('wpList');
+    if (!list) return;
+    const items = [
+        ...pinStops.map((stop, index) => {
+            const isDone = reachedStopKeys.has(stop._key);
+            const queueKey = `${currentAssignmentId}:${index}`;
+            const status = currentStopStatuses[`stop_${index}`] || '';
+            const statusLabel = pendingStopKeys.has(queueKey)
+                ? `${stopStatusLabel(status)} · waiting to sync`
+                : stopStatusLabel(status);
+            return `
+                <div class="wp-item ${isDone ? 'reached' : ''}" id="wpItem${index}">
+                    <div class="wp-num ${isDone ? 'done' : ''}" id="wpNum${index}">${isDone ? '✓' : stop.num}</div>
+                    <div class="wp-stop-details">
+                        <span class="wp-name">${escapeHtml(stop.name || `Stop ${stop.num}`)}</span>
+                        <span class="wp-stop-status">${escapeHtml(statusLabel)}</span>
+                        <select class="wp-stop-outcome" aria-label="Pickup outcome for stop ${stop.num}"
+                            onchange="setStopStatus(${index}, this.value)"
+                            ${routeStatus !== 'in_progress' ? 'disabled' : ''}>
+                            <option value="">Record pickup outcome</option>
+                            <option value="collected" ${status === 'collected' ? 'selected' : ''}>Collected</option>
+                            <option value="missed" ${status === 'missed' ? 'selected' : ''}>Missed</option>
+                            <option value="inaccessible" ${status === 'inaccessible' ? 'selected' : ''}>Inaccessible</option>
+                        </select>
+                    </div>
+                </div>`;
+        }),
+        ...mrfStops.map((stop, index) => {
+            const isPassed = reachedMrfKeys.has(stop._key);
+            return `
+                <div class="wp-item ${isPassed ? 'reached' : ''}">
+                    <div class="wp-num mrf-stop ${isPassed ? 'passed' : ''}" id="mrfWpNum${index}">${isPassed ? '✓' : 'M'}</div>
+                    <span class="wp-name">${escapeHtml(stop.name)}${isPassed ? ' · passed' : ''}</span>
+                </div>`;
+        })
+    ];
+    list.innerHTML = items.length ? items.join('') :
+        `<div class="empty" style="padding:20px"><div class="empty-title">No stops defined</div></div>`;
+}
+
+async function restoreQueuedStopStatuses(assignmentId) {
+    if (!window.WMSOfflineQueue) return;
+    try {
+        const queued = await window.WMSOfflineQueue.pending('driver-stop-status');
+        if (String(currentAssignmentId) !== String(assignmentId)) return;
+        queued.forEach(record => {
+            if (Number(record.body?.assignment_id) !== Number(assignmentId)) return;
+            const index = record.body.stop_index;
+            if (!Number.isSafeInteger(index) || !pinStops[index]) return;
+            currentStopStatuses[`stop_${index}`] = record.body.stop_status;
+            pendingStopKeys.add(record.key);
+        });
+        renderStopList();
+    } catch (err) {
+        console.error('Could not restore pending stop statuses:', err);
+    }
+}
+
+async function setStopStatus(stopIndex, status) {
+    if (!['collected', 'missed', 'inaccessible'].includes(status) ||
+        !currentAssignmentId || !pinStops[stopIndex] || routeStatus !== 'in_progress') {
+        renderStopList();
+        return;
+    }
+
+    const assignmentId = currentAssignmentId;
+    const queueKey = `${assignmentId}:${stopIndex}`;
+    try {
+        await api('PATCH', `/assignment/${assignmentId}/progress`, {
+            assignment_id: assignmentId,
+            stop_index: stopIndex,
+            stop_status: status
+        });
+        currentStopStatuses[`stop_${stopIndex}`] = status;
+        pendingStopKeys.delete(queueKey);
+        toast(`Stop ${stopIndex + 1}: ${stopStatusLabel(status)}`, 'success');
+    } catch (err) {
+        if ((err instanceof TypeError || !navigator.onLine) && window.WMSOfflineQueue) {
+            try {
+                await window.WMSOfflineQueue.enqueue({
+                    type: 'driver-stop-status',
+                    method: 'PATCH',
+                    path: `/driver/api/assignment/${assignmentId}/progress`,
+                    body: {
+                        assignment_id: assignmentId,
+                        stop_index: stopIndex,
+                        stop_status: status
+                    },
+                    key: queueKey,
+                    maxAgeMs: 24 * 60 * 60 * 1000
+                });
+                currentStopStatuses[`stop_${stopIndex}`] = status;
+                pendingStopKeys.add(queueKey);
+                toast(`Stop ${stopIndex + 1} saved offline; it will sync when connected.`, 'info');
+            } catch (queueError) {
+                console.error('Could not queue stop status:', queueError);
+                toast(queueError.message || 'Could not save stop status offline.', 'error');
+            }
+        } else {
+            toast(err.message, 'error');
+        }
+    }
+
+    const marker = pinMarkers[stopIndex];
+    if (marker) {
+        marker.setPopupContent(
+            `<strong>Stop ${pinStops[stopIndex].num}</strong><br>${escapeHtml(pinStops[stopIndex].name)}<br>${stopStatusLabel(currentStopStatuses[`stop_${stopIndex}`])}`
+        );
+    }
+    renderStopList();
+}
+
+window.setStopStatus = setStopStatus;
 
 function animateMarker(from, to, duration = 1000) {
     if (animating) {
@@ -983,12 +1170,19 @@ function updateRouteProgress(lat, lng) {
 async function loadResidents() {
     if (!dMap) return;
     try {
-        const residents = await apiRaw("/api/resident/resident-locations");
+        const residents = await api("GET", "/resident-locations");
         const seen = new Set();
         residents.forEach(r => {
-            if (!r.latitude || !r.longitude) return;
+            if (r.latitude == null || r.longitude == null) return;
             seen.add(r.id);
-            const fresh = (Date.now() - new Date(r.location_updated_at || 0).getTime()) < 5 * 60 * 1000;
+            const age = Date.now() - new Date(r.location_updated_at || 0).getTime();
+            const validAge = Number.isFinite(age) && age >= 0;
+            const fresh = validAge && age < 3 * 60 * 1000;
+            const lastSeen = !validAge
+                ? 'Update time unavailable'
+                : age < 60 * 1000
+                ? 'Updated less than a minute ago'
+                : `Updated ${Math.floor(age / 60000)}m ago`;
             const icon = L.divIcon({
                 className: "",
                 html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
@@ -997,10 +1191,13 @@ async function loadResidents() {
             });
             if (residentMarkers[r.id]) {
                 residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon);
+                residentMarkers[r.id].setPopupContent(
+                    `<strong style="color:#5b9cf6">${escapeHtml(r.name || 'Resident')}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${lastSeen}${fresh ? ' · live' : ' · stale'}</span>`
+                );
             } else {
                 residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon })
                     .addTo(dMap)
-                    .bindPopup(`<strong style="color:#5b9cf6">${r.name || "Resident"}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${fresh ? "Active now" : "Last seen >5m ago"}</span>`);
+                    .bindPopup(`<strong style="color:#5b9cf6">${escapeHtml(r.name || 'Resident')}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${lastSeen}${fresh ? ' · live' : ' · stale'}</span>`);
             }
         });
         Object.keys(residentMarkers).forEach(id => {
@@ -1292,6 +1489,7 @@ function selectAssignment(idx) {
     if (idx < 0 || idx >= todaysAssignments.length) {
         currentAssignmentId = null;
         routeStatus = null;
+        currentStopStatuses = {};
         renderAssignment(null);
         initMap(8.2380, 123.0, 14);
         return;
@@ -1300,6 +1498,9 @@ function selectAssignment(idx) {
     const data = todaysAssignments[idx];
     currentAssignmentId = data.id;
     routeStatus = data.status;
+    currentStopStatuses = data.progress_log && typeof data.progress_log === 'object'
+        ? data.progress_log
+        : {};
     renderAssignment(data);
     renderRouteTabs();
     if (data.route_id) {

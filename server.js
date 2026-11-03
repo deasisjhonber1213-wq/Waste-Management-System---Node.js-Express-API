@@ -11,6 +11,10 @@ const session = require("express-session");
 const crypto = require("crypto");
 require('dotenv').config();
 
+if (!process.env.JWT_SECRET || Buffer.byteLength(process.env.JWT_SECRET) < 32) {
+    throw new Error('JWT_SECRET must be configured with at least 32 bytes before starting the server.');
+}
+
 const app = express();
 const server = http.createServer(app);
 
@@ -168,7 +172,7 @@ io.use((socket, next) => {
 
     try {
         const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         socket.userId = decoded.id;
         socket.userRole = decoded.role;
         next();
@@ -178,8 +182,8 @@ io.use((socket, next) => {
 });
 
 const db = require("./config/db");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const auth = require("./middleware/auth");
 const connectedDrivers = new Map();
 app.set('connectedDrivers', connectedDrivers);
 
@@ -192,7 +196,7 @@ io.on('connection', (socket) => {
 
             let decoded;
             try {
-                decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+                decoded = jwt.verify(token, process.env.JWT_SECRET);
                 if (decoded.id !== parseInt(driverId)) {
                     socket.emit('auth-error', { message: 'Token mismatch' });
                     return;
@@ -480,15 +484,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
     lastModified: true
 }));
 
-app.get('/uploads/announcements/:filename', (req, res) => {
-    const filePath = path.join(__dirname, 'public/uploads/announcements', req.params.filename);
-    if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
-    } else {
-        res.status(404).json({ error: 'Image not found' });
-    }
-});
-
 const uploadDirs = [
     path.join(__dirname, 'public/uploads'),
     path.join(__dirname, 'public/uploads/announcements')
@@ -665,7 +660,7 @@ app.use((req, res, next) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/driver/api/')) {
         return next();
     }
-    if (req.path === '/health' || req.path === '/migrate' || req.path === '/setup-admin') {
+    if (req.path === '/health' || req.path === '/migrate') {
         return next();
     }
 
@@ -697,12 +692,16 @@ app.use((req, res, next) => {
 });
 
 // ---------- UTILITY ROUTES ----------
-app.get('/migrate', async (req, res) => {
+app.post('/migrate', async (req, res) => {
     try {
-        const secret = req.query.secret;
-        const expectedSecret = process.env.MIGRATION_SECRET || 'your_migration_secret_123';
+        const expectedSecret = process.env.MIGRATION_SECRET;
+        const suppliedSecret = req.get('X-Migration-Secret') || '';
+        const suppliedBuffer = Buffer.from(suppliedSecret);
+        const expectedBuffer = Buffer.from(expectedSecret || '');
 
-        if (secret !== expectedSecret) {
+            if (!expectedSecret || expectedSecret.length < 32 ||
+                suppliedBuffer.length !== expectedBuffer.length ||
+            !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
@@ -819,57 +818,6 @@ app.get('/migrate', async (req, res) => {
     }
 });
 
-app.get('/setup-admin', async (req, res) => {
-    try {
-        const secret = req.query.secret;
-        const expectedSecret = process.env.SETUP_SECRET || 'setup123';
-
-        if (secret !== expectedSecret) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-
-        if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_SETUP_IN_PROD) {
-            return res.status(403).json({ error: 'Setup disabled in production' });
-        }
-
-        const email = 'admin@smartwaste.com';
-        const password = 'admin123';
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const [existing] = await db.query('SELECT id, email FROM users WHERE email = ?', [email]);
-
-        let message = '';
-        if (existing.length > 0) {
-            await db.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
-            message = '✅ Admin password reset successfully!';
-        } else {
-            await db.query(
-                'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-                ['Admin', email, hashedPassword, 'admin']
-            );
-            message = '✅ Admin created successfully!';
-        }
-
-        console.log('✅ Admin setup completed:', email);
-
-        res.json({
-            success: true,
-            message: message,
-            email: email,
-            password: password,
-            login_url: `${req.protocol}://${req.get('host')}/login`,
-            warning: '⚠️ For security, remove this endpoint after use or add authentication'
-        });
-
-    } catch (error) {
-        console.error('❌ Admin setup error:', error);
-        res.status(500).json({
-            error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
-    }
-});
-
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -881,7 +829,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-app.get('/api/drivers/online', (req, res) => {
+app.get('/api/drivers/online', auth.protect, auth.adminOnly, (req, res) => {
     const online = Array.from(connectedDrivers.entries()).map(([id, data]) => ({
         id,
         name: data.name,
@@ -916,8 +864,26 @@ app.use((err, req, res, next) => {
     });
 });
 
+async function initializeAppSchema() {
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS resident_report_requests (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            resident_id BIGINT UNSIGNED NOT NULL,
+            request_id CHAR(36) NOT NULL,
+            report_id BIGINT UNSIGNED NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_resident_report_request (resident_id, request_id),
+            INDEX idx_resident_report_requests_created_at (created_at)
+        )
+    `);
+    await db.query(
+        `DELETE FROM resident_report_requests
+         WHERE created_at < NOW() - INTERVAL 30 DAY`
+    );
+}
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
+initializeAppSchema().then(() => server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔒 Security: ${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'}`);
     console.log(`📱 Access: http://localhost:${PORT}/login`);
@@ -925,4 +891,8 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`📱 Driver: http://localhost:${PORT}/driver`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
+})).catch(async (err) => {
+    console.error('Application schema initialization failed:', err);
+    await db.end();
+    process.exitCode = 1;
 });

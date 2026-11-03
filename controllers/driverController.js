@@ -1,10 +1,23 @@
 const db = require("../config/db");
+const { isNearRoute, isValidCoordinate } = require("../utils/geo");
 
 // ─────────────────────────────────────────────────────────
 // HELPER: Get today's date in Asia/Manila timezone
 // ─────────────────────────────────────────────────────────
 function manilaToday() {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
+
+function parseProgressLog(raw) {
+    if (!raw) return {};
+    if (typeof raw === 'object') return raw;
+    try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (err) {
+        console.error("Invalid route progress log:", err);
+        return {};
+    }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -46,7 +59,7 @@ exports.getTodayAssignment = async (req, res) => {
 
         const [assignments] = await db.query(
             `SELECT
-                ra.id, ra.assigned_date, ra.status, ra.pickup_type,
+                ra.id, ra.assigned_date, ra.status, ra.pickup_type, ra.progress_log,
                 r.id as route_id, r.zone_name, r.description AS zone_description,
                 t.id AS truck_id, t.plate_number, t.model, t.latitude, t.longitude
              FROM route_assignments ra
@@ -57,7 +70,10 @@ exports.getTodayAssignment = async (req, res) => {
             [req.user.id, today]
         );
 
-        res.json(assignments); // array, possibly empty
+        res.json(assignments.map(assignment => ({
+            ...assignment,
+            progress_log: parseProgressLog(assignment.progress_log)
+        })));
     } catch (err) {
         console.error("Error in getTodayAssignment:", err);
         res.status(500).json({ error: err.message });
@@ -433,7 +449,7 @@ exports.getTodayRouteDetails = async (req, res) => {
 
         const [assignments] = await db.query(
             `SELECT
-                ra.id, ra.assigned_date, ra.status, ra.pickup_type,
+                ra.id, ra.assigned_date, ra.status, ra.pickup_type, ra.progress_log,
                 r.id as route_id, r.zone_name, r.description AS zone_description, r.waypoints_json,
                 t.id AS truck_id, t.plate_number, t.model, t.latitude, t.longitude
              FROM route_assignments ra
@@ -453,6 +469,7 @@ exports.getTodayRouteDetails = async (req, res) => {
             } else {
                 a.waypoints = null;
             }
+            a.progress_log = parseProgressLog(a.progress_log);
             delete a.waypoints_json;
             return a;
         });
@@ -494,17 +511,36 @@ exports.updateRouteProgress = async (req, res) => {
     try {
         const { assignment_id, stop_index, stop_status } = req.body;
 
-        if (!assignment_id || stop_index === undefined) {
+        if (!Number.isSafeInteger(Number(assignment_id)) || Number(assignment_id) <= 0 ||
+            !Number.isSafeInteger(stop_index) || stop_index < 0 ||
+            !['collected', 'missed', 'inaccessible'].includes(stop_status)) {
             return res.status(400).json({ error: "assignment_id and stop_index required" });
         }
 
         const [[assignment]] = await db.query(
-            "SELECT id FROM route_assignments WHERE id = ? AND driver_id = ?",
-            [assignment_id, req.user.id]
+            `SELECT ra.id, r.waypoints_json
+             FROM route_assignments ra
+             JOIN routes r ON r.id = ra.route_id
+             WHERE ra.id = ? AND ra.driver_id = ?
+               AND ra.assigned_date = ? AND ra.status = 'in_progress'`,
+            [Number(assignment_id), req.user.id, manilaToday()]
         );
 
         if (!assignment) {
             return res.status(403).json({ error: "Not authorised" });
+        }
+
+        let waypoints = assignment.waypoints_json;
+        try {
+            waypoints = typeof waypoints === 'string' ? JSON.parse(waypoints) : waypoints;
+        } catch (err) {
+            return res.status(409).json({ error: "Route stops could not be loaded" });
+        }
+        const stops = Array.isArray(waypoints)
+            ? waypoints
+            : waypoints?.pin_stops || waypoints?.pins || [];
+        if (!Array.isArray(stops) || stop_index >= stops.length) {
+            return res.status(400).json({ error: "Stop index is outside this route" });
         }
 
         await db.query(
@@ -515,25 +551,64 @@ exports.updateRouteProgress = async (req, res) => {
                  ?
              )
              WHERE id = ?`,
-            [stop_index, stop_status || 'reached', assignment_id]
+            [stop_index, stop_status, Number(assignment_id)]
         );
 
         if (req.app.get('io')) {
             const io = req.app.get('io');
             io.to(`driver-${req.user.id}`).emit('stop-updated', {
-                assignmentId: assignment_id,
+                assignmentId: Number(assignment_id),
                 stopIndex: stop_index,
-                status: stop_status || 'reached',
+                status: stop_status,
+                timestamp: new Date()
+            });
+            io.emit('assignment-stop-status', {
+                assignmentId: Number(assignment_id),
+                stopIndex: stop_index,
+                status: stop_status,
                 timestamp: new Date()
             });
         }
 
         res.json({
-            message: `Stop ${stop_index} updated to ${stop_status || 'reached'}`
+            message: `Stop ${stop_index + 1} updated to ${stop_status}`
         });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getResidentLocations = async (req, res) => {
+    try {
+        const [assignments] = await db.query(
+            `SELECT r.waypoints_json
+             FROM route_assignments ra
+             JOIN routes r ON r.id = ra.route_id
+             WHERE ra.driver_id = ? AND ra.assigned_date = ?
+               AND ra.status IN ('pending', 'in_progress')`,
+            [req.user.id, manilaToday()]
+        );
+        const routes = assignments.map(row => row.waypoints_json).filter(Boolean);
+        if (!routes.length) return res.json([]);
+
+        const [residents] = await db.query(
+            `SELECT id, name, latitude, longitude, location_updated_at
+             FROM users
+             WHERE role = 'resident'
+               AND latitude IS NOT NULL AND longitude IS NOT NULL
+               AND location_updated_at >= NOW() - INTERVAL 2 HOUR
+             ORDER BY location_updated_at DESC`
+        );
+        const visibleResidents = residents.filter(resident => {
+            const point = { lat: Number(resident.latitude), lng: Number(resident.longitude) };
+            return isValidCoordinate(point) &&
+                routes.some(route => isNearRoute(point, route));
+        });
+        res.json(visibleResidents);
+    } catch (err) {
+        console.error("Driver resident-location lookup failed:", err);
+        res.status(500).json({ error: "Could not load residents near your assigned route" });
     }
 };
 
@@ -725,6 +800,9 @@ exports.getOpenReports = async (req, res) => {
 
 exports.updateReportStatus = async (req, res) => {
     try {
+        if (req.user?.role !== 'driver') {
+            return res.status(403).json({ error: 'Driver access required' });
+        }
         const { id } = req.params;
         const { status } = req.body;
 

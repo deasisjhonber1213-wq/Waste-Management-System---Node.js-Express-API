@@ -47,6 +47,23 @@ function parseWaypoints(raw) {
 // last few minutes.
 const LIVE_LOCATION_FRESHNESS_MS = 3 * 60 * 1000;
 
+async function clearExpiredResidentLocations() {
+    try {
+        await db.query(
+            `UPDATE users
+             SET latitude = NULL, longitude = NULL, location_updated_at = NULL
+             WHERE role = 'resident'
+               AND location_updated_at < NOW() - INTERVAL 2 HOUR`
+        );
+    } catch (err) {
+        console.error("Resident location cleanup failed:", err);
+    }
+}
+
+const locationCleanupTimer = setInterval(clearExpiredResidentLocations, 10 * 60 * 1000);
+locationCleanupTimer.unref();
+clearExpiredResidentLocations();
+
 // Both the driver and resident sides must agree on what "today" means. The
 // driver dashboard computes it in Asia/Manila local time (see driverController
 // getTodayAssignment) — this side previously used MySQL's CURDATE(), which
@@ -87,6 +104,15 @@ exports.getTodayTruck = async (req, res) => {
         route.route_started = route.status === "in_progress";
         route.route_completed = route.status === "completed";
         route.route_cancelled = route.status === "cancelled";
+        route.truck_location_updated_at = route.truck_loc_updated_at;
+        if (typeof route.progress_log === 'string') {
+            try {
+                route.progress_log = JSON.parse(route.progress_log);
+            } catch (err) {
+                console.error("Invalid route progress log:", err);
+                route.progress_log = {};
+            }
+        }
         route.has_live_location = false;
         route.latitude = null;
         route.longitude = null;
@@ -234,15 +260,68 @@ exports.getTruckLocation = async (req, res) => {
 
 exports.createReport = async (req, res) => {
     try {
-        const { type, description, latitude, longitude, image_url } = req.body;
+        const { type, description, latitude, longitude, image_url, client_request_id } = req.body;
 
         if (!type) return res.status(400).json({ error: "Type required" });
         if (!description) return res.status(400).json({ error: "Description required" });
-        if (latitude === undefined || longitude === undefined) {
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+            latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
             return res.status(400).json({ error: "Location required" });
         }
         if (!image_url) {
             return res.status(400).json({ error: "Image required" });
+        }
+
+        if (client_request_id !== undefined &&
+            (typeof client_request_id !== 'string' ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(client_request_id))) {
+            return res.status(400).json({ error: "Invalid client request ID" });
+        }
+
+        if (client_request_id) {
+            const connection = await db.getConnection();
+            try {
+                await connection.beginTransaction();
+                await connection.query(
+                    `INSERT INTO resident_report_requests (resident_id, request_id)
+                     VALUES (?, ?)
+                     ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)`,
+                    [req.user.id, client_request_id]
+                );
+                const [[request]] = await connection.query(
+                    `SELECT report_id FROM resident_report_requests
+                     WHERE resident_id = ? AND request_id = ? FOR UPDATE`,
+                    [req.user.id, client_request_id]
+                );
+                if (request.report_id) {
+                    await connection.commit();
+                    return res.json({
+                        message: "Report already submitted",
+                        reportId: request.report_id,
+                        duplicate: true
+                    });
+                }
+
+                const [result] = await connection.query(`
+                    INSERT INTO reports (resident_id, type, description, latitude, longitude, image_url)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `, [req.user.id, type, description, latitude, longitude, image_url]);
+                await connection.query(
+                    `UPDATE resident_report_requests SET report_id = ?
+                     WHERE resident_id = ? AND request_id = ?`,
+                    [result.insertId, req.user.id, client_request_id]
+                );
+                await connection.commit();
+                return res.json({
+                    message: "Report submitted successfully",
+                    reportId: result.insertId
+                });
+            } catch (err) {
+                await connection.rollback();
+                throw err;
+            } finally {
+                connection.release();
+            }
         }
 
         await db.query(`
@@ -293,8 +372,9 @@ exports.getAnnouncements = async (req, res) => {
 exports.shareMyLocation = async (req, res) => {
     try {
         const { latitude, longitude } = req.body;
-        if (latitude === undefined || longitude === undefined) {
-            return res.status(400).json({ error: "latitude and longitude required" });
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+            latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            return res.status(400).json({ error: "Valid latitude and longitude are required" });
         }
 
         await db.query(
@@ -309,18 +389,15 @@ exports.shareMyLocation = async (req, res) => {
     }
 };
 
-exports.getResidentLocations = async (req, res) => {
+exports.stopSharingLocation = async (req, res) => {
     try {
-        const [residents] = await db.query(
-            `SELECT id, name, latitude, longitude, location_updated_at
-             FROM users
-             WHERE role = 'resident'
-               AND latitude IS NOT NULL
-               AND longitude IS NOT NULL
-               AND location_updated_at > NOW() - INTERVAL 2 HOUR
-             ORDER BY location_updated_at DESC`
+        await db.query(
+            `UPDATE users
+             SET latitude = NULL, longitude = NULL, location_updated_at = NULL
+             WHERE id = ? AND role = 'resident'`,
+            [req.user.id]
         );
-        res.json(residents);
+        res.json({ message: "Location sharing stopped and your shared location was cleared" });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });

@@ -604,17 +604,33 @@ function removeMRFStop(id) {
 window.removeMRFStop = removeMRFStop;
 
 function undoLast() {
-    if (activeLayer === 'road') {
-        if (!roadPoints.length) return;
+    const undoRoad = () => {
+        if (!roadPoints.length) return false;
         roadPoints.pop();
         rebuildRoadMarkersFromPoints();
         rebuildRoadPolyline();
         rebuildGhostHandles();
-    } else if (activeLayer === 'pin') {
-        if (!pinPoints.length) return;
+        return true;
+    };
+    const undoPin = () => {
+        if (!pinPoints.length) return false;
         pinPoints.pop();
         const m = pinMarkers.pop();
         if (m) markingMap.removeLayer(m);
+        return true;
+    };
+    const undoMRF = () => {
+        const lastPoint = mrfPoints[mrfPoints.length - 1];
+        if (!lastPoint) return false;
+        removeMRFStop(lastPoint._id);
+        return true;
+    };
+    const undoActions = activeLayer === 'road'
+        ? [undoRoad, undoPin, undoMRF]
+        : [undoPin, undoRoad, undoMRF];
+    if (!undoActions.some(undo => undo())) {
+        showToast('Nothing to undo', 'info');
+        return;
     }
     updateUI();
 }

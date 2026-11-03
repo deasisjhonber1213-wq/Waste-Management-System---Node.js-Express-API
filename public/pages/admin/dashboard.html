@@ -174,6 +174,48 @@
             </div>
         </div>
 
+        <section class="ops-watch section-gap reveal" aria-labelledby="opsWatchTitle">
+            <div class="ops-watch-heading">
+                <div>
+                    <div class="section-eyebrow">Operational Follow-up</div>
+                    <h2 id="opsWatchTitle">Operations Watch</h2>
+                </div>
+                <span>Detours are flagged after 3 off-route GPS updates within 15 minutes (120 m threshold).</span>
+            </div>
+            <div class="ops-watch-grid">
+                <a class="ops-watch-card" href="reports.html">
+                    <span>Unresolved reports</span>
+                    <strong id="opsOpenReports">—</strong>
+                    <small>Open resident reports</small>
+                </a>
+                <a class="ops-watch-card" href="reports.html">
+                    <span>Missed pickup reports</span>
+                    <strong id="opsMissedPickups">—</strong>
+                    <small>Waiting for resolution</small>
+                </a>
+                <a class="ops-watch-card" href="routes.html">
+                    <span>Active detours</span>
+                    <strong id="opsActiveDetours">—</strong>
+                    <small>Repeated route deviations now</small>
+                </a>
+                <a class="ops-watch-card" href="schedules.html">
+                    <span>Missed / inaccessible stops</span>
+                    <strong id="opsStopExceptions">—</strong>
+                    <small>Driver-reported exceptions · last 30 days</small>
+                </a>
+            </div>
+            <div class="ops-watch-details">
+                <div>
+                    <h3>Recent stop exceptions</h3>
+                    <div id="opsStopExceptionList" class="ops-watch-list" aria-live="polite">Loading…</div>
+                </div>
+                <div>
+                    <h3>Routes with repeated detours</h3>
+                    <div id="opsDetourList" class="ops-watch-list" aria-live="polite">Loading…</div>
+                </div>
+            </div>
+        </section>
+
         <div class="panel section-gap reveal">
             <div class="panel-header">
                 <div class="panel-title"><span class="panel-title-icon"><svg xmlns="http://www.w3.org/2000/svg"

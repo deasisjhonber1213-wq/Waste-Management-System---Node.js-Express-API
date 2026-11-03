@@ -993,6 +993,40 @@
         margin-top: 2px;
     }
 
+    .share-location-warning {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--gold-dim);
+        color: var(--text-2);
+        font-size: 0.7rem;
+        line-height: 1.5;
+    }
+
+    .share-location-warning svg {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+        margin-top: 1px;
+        fill: none;
+        stroke: var(--gold);
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .share-location-warning strong,
+    .share-location-warning span {
+        display: block;
+    }
+
+    .share-location-warning strong {
+        margin-bottom: 0.1rem;
+        color: var(--gold);
+    }
+
     .location-info {
         background: var(--surface-2);
         border-radius: 12px;
@@ -1010,6 +1044,25 @@
     .location-info .icon {
         color: var(--gold);
         margin-right: 4px;
+    }
+
+    .truck-freshness {
+        justify-content: flex-start;
+    }
+
+    .truck-freshness.fresh {
+        color: var(--success);
+    }
+
+    .truck-freshness.stale {
+        color: var(--amber);
+    }
+
+    .offline-queue-status {
+        min-height: 1.3em;
+        margin-top: 0.6rem;
+        color: var(--amber);
+        font-size: 0.75rem;
     }
 
     /* ── Collection completion / cancellation banner ── */

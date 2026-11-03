@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check": "node --check server.js && node --check public/service-worker.js && node --check public/js/pwa.js"
+    "check": "node --check server.js && node --check controllers/adminController.js && node --check controllers/authController.js && node --check controllers/driverController.js && node --check controllers/residentController.js && node --check middleware/auth.js && node --check routes/driverRoutes.js && node --check routes/residentRoutes.js && node --check utils/geo.js && node --check public/service-worker.js && node --check public/js/offline-sync.js && node --check public/js/pwa.js && node --check public/js/admin/dashboard.js && node --check public/js/driver/driver-dashboard.js && node --check public/js/resident/resident-dashboard.js"
   },
   "engines": {
     "node": ">=18.0.0"
