@@ -1331,12 +1331,20 @@ exports.createUser = async (req, res) => {
         const hashed = await bcrypt.hash(password, 10);
 
         // Admin-created users are auto-verified — they skip email/PIN verification entirely.
-        const [result] = await db.query(
-            `INSERT INTO users
-             (name, email, password, role, phone, address, email_verified)
-             VALUES (?, ?, ?, ?, ?, ?, 1)`,
-            [name, email, hashed, role || "resident", phone || null, address]
-        );
+        let result;
+        try {
+            [result] = await db.query(
+                `INSERT INTO users
+                 (name, email, password, role, phone, address, email_verified)
+                 VALUES (?, ?, ?, ?, ?, ?, 1)`,
+                [name, email, hashed, role || "resident", phone || null, address]
+            );
+        } catch (err) {
+            if (err.code === "ER_DUP_ENTRY") {
+                return res.status(409).json({ error: "Email already registered." });
+            }
+            throw err;
+        }
 
         const userId = result.insertId;
 

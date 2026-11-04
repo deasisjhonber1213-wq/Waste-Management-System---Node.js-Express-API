@@ -53,19 +53,27 @@ exports.register = async (req, res) => {
 
         const hashed = await bcrypt.hash(password, 10);
 
-        const [result] = await db.query(
-            `INSERT INTO users 
-             (name, email, password, role, phone, address, email_verified)
-             VALUES (?, ?, ?, ?, ?, ?, 1)`,
-            [
-                name,
-                cleanEmail,
-                hashed,
-                "resident",
-                phone || null,
-                address || null
-            ]
-        );
+        let result;
+        try {
+            [result] = await db.query(
+                `INSERT INTO users
+                 (name, email, password, role, phone, address, email_verified)
+                 VALUES (?, ?, ?, ?, ?, ?, 1)`,
+                [
+                    name,
+                    cleanEmail,
+                    hashed,
+                    "resident",
+                    phone || null,
+                    address || null
+                ]
+            );
+        } catch (err) {
+            if (err.code === "ER_DUP_ENTRY") {
+                return res.status(409).json({ error: "Email already registered" });
+            }
+            throw err;
+        }
 
         const userId = result.insertId;
         await logAction(userId, "User registered (auto-verified)", req);

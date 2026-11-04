@@ -12,9 +12,9 @@ setInterval(() => {
 
 exports.protect = async (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
+        const [scheme, token, ...extra] = (req.headers.authorization || "").trim().split(/\s+/);
 
-        if (!token) {
+        if (scheme.toLowerCase() !== "bearer" || !token || extra.length) {
             return res.status(401).json({
                 error: 'Unauthorized',
                 message: "No token provided"
@@ -57,8 +57,6 @@ exports.protect = async (req, res, next) => {
 
         next();
     } catch (err) {
-        console.error("Auth error:", err.message);
-
         if (err.name === 'TokenExpiredError') {
             return res.status(401).json({
                 error: 'Unauthorized',
@@ -75,6 +73,7 @@ exports.protect = async (req, res, next) => {
             });
         }
 
+        console.error("Authentication middleware error:", err);
         res.status(401).json({
             error: 'Unauthorized',
             message: "Authentication failed"
