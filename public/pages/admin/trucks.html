@@ -239,9 +239,8 @@
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                             <circle cx="12" cy="10" r="3" />
                         </svg> GPS Coordinates &amp; Location Timestamps</strong>
-                    <p>Each truck stores a <strong>latitude</strong>, <strong>longitude</strong>, and a
-                        <strong>location_updated_at</strong> timestamp. The coordinates pin the truck on the
-                        map below and on the resident's live tracking view.
+                    <p>Trucks currently on an in-progress route are highlighted and updated in real time. Their
+                        markers show the assigned driver, route, and latest GPS update.
                     </p>
                     <div class="legend">
                         <div class="legend-item"><span style="color:#4ade80;font-size:1rem">●</span> <strong
@@ -479,6 +478,7 @@
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="../js/admin/trucks.js"></script>
     <script src="/js/pwa.js" defer></script>
 </body>

@@ -186,6 +186,7 @@ const jwt = require("jsonwebtoken");
 const auth = require("./middleware/auth");
 const connectedDrivers = new Map();
 app.set('connectedDrivers', connectedDrivers);
+app.set('io', io);
 
 io.on('connection', (socket) => {
     console.log('🔌 New client connected:', socket.id);
@@ -283,8 +284,8 @@ io.on('connection', (socket) => {
             if (assignmentId) {
                 const [rows] = await db.query(
                     `SELECT id, truck_id FROM route_assignments
-                 WHERE id = ? AND driver_id = ? AND assigned_date = CURDATE()`,
-                    [assignmentId, driverId]
+                 WHERE id = ? AND driver_id = ? AND assigned_date = ?`,
+                    [assignmentId, driverId, manilaToday()]
                 );
                 assignment = rows[0];
             }
@@ -294,10 +295,10 @@ io.on('connection', (socket) => {
                 // relevant assignment: in-progress first, else earliest pending.
                 const [rows] = await db.query(
                     `SELECT id, truck_id FROM route_assignments
-                 WHERE driver_id = ? AND assigned_date = CURDATE()
+                 WHERE driver_id = ? AND assigned_date = ?
                  ORDER BY FIELD(status,'in_progress','pending','completed','cancelled'), id ASC
                  LIMIT 1`,
-                    [driverId]
+                    [driverId, manilaToday()]
                 );
                 assignment = rows[0];
             }

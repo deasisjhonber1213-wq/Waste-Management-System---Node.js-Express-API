@@ -17,6 +17,7 @@ router.delete("/users/:id", ctrl.deleteUser);
 
 // Trucks
 router.get("/trucks", ctrl.getTrucks);
+router.get("/trucks/active-locations", ctrl.getActiveTruckLocations);
 router.post("/trucks", ctrl.addTruck);
 router.put("/trucks/:id", ctrl.editTruck);
 router.delete("/trucks/:id", ctrl.deleteTruck);

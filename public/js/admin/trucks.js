@@ -83,9 +83,13 @@ window.doLogout = doLogout;
 let allTrucks = [];
 let selectedTruck = null;
 let fleetMap = null;
-let mapMarkers = [];
+let mapMarkers = new Map();
+let markerAnimations = new Map();
+let activeAssignments = new Map();
 let isFleetMapSatellite = false;
 let detailMapInstance = null;
+let adminTrackingSocket = null;
+let activeAssignmentRequestId = 0;
 
 // Free CARTO basemap key — get your own at https://carto.com/basemaps/apikey
 // (free, no card, ~1 min via email — 5M tile requests/month). Paste it below.
@@ -216,6 +220,14 @@ function dotColor(d) {
     return "#f87171";
 }
 
+function updateMapTruckCount() {
+    const count = document.getElementById("mapTruckCount");
+    if (!count) return;
+    const positioned = allTrucks.filter(t => t.latitude != null && t.longitude != null).length;
+    count.innerHTML =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${positioned} trucks on map · ${activeAssignments.size} on route`;
+}
+
 async function loadTrucks() {
     try {
         const res = await API.get("/admin/trucks");
@@ -223,8 +235,7 @@ async function loadTrucks() {
         allTrucks = await res.json();
         document.getElementById("truckCount").textContent =
             `${allTrucks.length} truck${allTrucks.length !== 1 ? "s" : ""}`;
-        document.getElementById("mapTruckCount").innerHTML =
-            `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${allTrucks.filter(t => t.latitude != null && t.longitude != null).length} trucks on map`;
+        updateMapTruckCount();
         renderTruckList(allTrucks);
         renderFleetMap(allTrucks);
         if (selectedTruck) {
@@ -374,7 +385,149 @@ function centerTruckOnMap(id) {
     }
 }
 
-function renderFleetMap(data) {
+function fleetTruckPopup(truck) {
+    const active = activeAssignments.get(String(truck.id));
+    const liveDetails = active
+        ? `<strong style="color:#16a34a">Currently on route</strong><br>
+           Driver: ${escHtml(active.driver_name || "Driver")}<br>
+           Route: ${escHtml(active.zone_name || "Assigned route")}<br>`
+        : "";
+    return `
+        <strong style="font-family:monospace">${escHtml(truck.plate_number)}</strong><br>
+        ${escHtml(truck.model || "")}<br>
+        ${liveDetails}
+        <span style="font-size:11px;color:#888">Last GPS update: ${fmtDateTime(truck.location_updated_at)}</span><br>
+        <button class="btn btn-outline btn-sm" onclick="selectTruck(${truck.id})" style="margin-top:6px;">View Details</button>`;
+}
+
+function fleetTruckIcon(truck) {
+    const active = activeAssignments.has(String(truck.id));
+    const color = active ? "#16a34a" : dotColor(truck.location_updated_at);
+    return L.divIcon({
+        className: "",
+        html: `<div class="truck-marker" style="border-color:#fff;box-shadow:0 0 0 3px ${color}, 0 0 14px ${color};"><span>🚛</span></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+}
+
+function updateFleetTruckMarker(truck) {
+    if (!fleetMap || truck.latitude == null || truck.longitude == null) return;
+    const key = String(truck.id);
+    let marker = mapMarkers.get(key);
+    if (!marker) {
+        renderFleetMap(allTrucks, false);
+        marker = mapMarkers.get(key);
+        if (!marker) return;
+    }
+    const target = L.latLng(Number(truck.latitude), Number(truck.longitude));
+    const active = activeAssignments.has(key);
+    if (active && marker.getLatLng().distanceTo(target) >= 1) {
+        animateFleetMarker(key, marker, target);
+    } else {
+        marker.setLatLng(target);
+    }
+    marker.setIcon(fleetTruckIcon(truck));
+    marker.setPopupContent(fleetTruckPopup(truck));
+}
+
+function animateFleetMarker(key, marker, target) {
+    const previousFrame = markerAnimations.get(key);
+    if (previousFrame) cancelAnimationFrame(previousFrame);
+    const start = marker.getLatLng();
+    const startedAt = performance.now();
+    const duration = 800;
+
+    function step(now) {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const eased = 1 - (1 - progress) ** 3;
+        marker.setLatLng([
+            start.lat + (target.lat - start.lat) * eased,
+            start.lng + (target.lng - start.lng) * eased
+        ]);
+        if (progress < 1) {
+            markerAnimations.set(key, requestAnimationFrame(step));
+        } else {
+            markerAnimations.delete(key);
+        }
+    }
+    markerAnimations.set(key, requestAnimationFrame(step));
+}
+
+function syncActiveAssignments(assignments) {
+    const next = new Map();
+    assignments.forEach(assignment => next.set(String(assignment.truck_id), assignment));
+    const changed = next.size !== activeAssignments.size ||
+        Array.from(next.entries()).some(([truckId, assignment]) => {
+            const previous = activeAssignments.get(truckId);
+            return !previous || String(previous.assignment_id) !== String(assignment.assignment_id);
+        });
+    activeAssignments = next;
+
+    assignments.forEach(assignment => {
+        const truck = allTrucks.find(item => String(item.id) === String(assignment.truck_id));
+        if (!truck) return;
+        if (assignment.latitude != null && assignment.longitude != null) {
+            truck.latitude = assignment.latitude;
+            truck.longitude = assignment.longitude;
+            truck.location_updated_at = assignment.location_updated_at;
+        }
+    });
+
+    updateMapTruckCount();
+    if (changed) {
+        renderFleetMap(allTrucks, false);
+    } else {
+        assignments.forEach(assignment => {
+            const truck = allTrucks.find(item => String(item.id) === String(assignment.truck_id));
+            if (truck) updateFleetTruckMarker(truck);
+        });
+    }
+}
+
+async function loadActiveAssignments() {
+    const requestId = ++activeAssignmentRequestId;
+    try {
+        const res = await API.get("/admin/trucks/active-locations");
+        if (!res.ok) throw new Error(`Active truck request failed (${res.status})`);
+        const assignments = await res.json();
+        if (requestId !== activeAssignmentRequestId) return;
+        syncActiveAssignments(Array.isArray(assignments) ? assignments : []);
+    } catch (err) {
+        console.error("Active route tracking error:", err);
+    }
+}
+
+function connectAdminTracking() {
+    if (!window.io || adminTrackingSocket?.connected) return;
+    adminTrackingSocket = window.io(window.location.origin, {
+        transports: ['websocket', 'polling'],
+        auth: { token: getToken() },
+        reconnection: true
+    });
+    adminTrackingSocket.on('connect', loadActiveAssignments);
+    adminTrackingSocket.on('connect_error', err => {
+        console.warn("Admin live tracking connection failed:", err.message);
+    });
+    adminTrackingSocket.on('truck-location', data => {
+        if (!data || data.truckId == null) return;
+        const assignment = activeAssignments.get(String(data.truckId));
+        if (!assignment || String(assignment.assignment_id) !== String(data.assignmentId)) return;
+        const truck = allTrucks.find(item => String(item.id) === String(data.truckId));
+        if (!truck) return;
+        truck.latitude = Number(data.latitude);
+        truck.longitude = Number(data.longitude);
+        truck.location_updated_at = data.timestamp ? new Date(data.timestamp).toISOString() : new Date().toISOString();
+        assignment.latitude = truck.latitude;
+        assignment.longitude = truck.longitude;
+        assignment.location_updated_at = truck.location_updated_at;
+        updateFleetTruckMarker(truck);
+        updateMapTruckCount();
+    });
+    adminTrackingSocket.on('assignment-public-status', loadActiveAssignments);
+}
+
+function renderFleetMap(data, fitBounds = true) {
     if (!fleetMap) {
         fleetMap = L.map("fleetMap", { zoomControl: true }).setView([14.5995, 120.9842], 12);
         fleetTiles = makeTiles();
@@ -385,34 +538,22 @@ function renderFleetMap(data) {
     mapMarkers.forEach(m => {
         if (fleetMap.hasLayer(m)) fleetMap.removeLayer(m);
     });
-    mapMarkers = [];
+    markerAnimations.forEach(frame => cancelAnimationFrame(frame));
+    markerAnimations.clear();
+    mapMarkers = new Map();
 
     const positioned = data.filter(t => t.latitude != null && t.longitude != null);
     positioned.forEach(t => {
-        const color = dotColor(t.location_updated_at);
-        const icon = L.divIcon({
-            className: "",
-            html: `<div class="truck-marker" style="border-color:#fff;box-shadow:0 0 0 3px ${color}, 0 0 14px ${color};"><span>🚛</span></div>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-        });
-        const m = L.marker([t.latitude, t.longitude], { icon })
+        const m = L.marker([t.latitude, t.longitude], { icon: fleetTruckIcon(t) })
             .addTo(fleetMap)
-            .bindPopup(`
-                        <strong style="font-family:monospace">${escHtml(t.plate_number)}</strong><br>
-                        ${escHtml(t.model || "")}<br>
-                        <span style="font-size:11px;color:#888">
-                            Last update: ${fmtDateTime(t.location_updated_at)}
-                        </span><br>
-                        <button class="btn btn-outline btn-sm" onclick="selectTruck(${t.id})" style="margin-top:6px;">View Details</button>
-                    `);
-        mapMarkers.push(m);
+            .bindPopup(fleetTruckPopup(t));
+        mapMarkers.set(String(t.id), m);
     });
 
-    if (positioned.length > 0 && positioned.length <= 3) {
+    if (fitBounds && positioned.length > 0 && positioned.length <= 3) {
         const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
         fleetMap.fitBounds(bounds.pad(0.3));
-    } else if (positioned.length > 3) {
+    } else if (fitBounds && positioned.length > 3) {
         const bounds = L.latLngBounds(positioned.map(t => [t.latitude, t.longitude]));
         fleetMap.fitBounds(bounds.pad(0.15));
     }
@@ -530,6 +671,9 @@ window.centerTruckOnMap = centerTruckOnMap;
 
 loadAdminProfile();
 loadTrucks();
+loadActiveAssignments();
+connectAdminTracking();
+setInterval(loadActiveAssignments, 30000);
 
 window.addEventListener('resize', () => {
     if (fleetMap) setTimeout(() => fleetMap.invalidateSize(), 100);

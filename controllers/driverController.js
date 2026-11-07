@@ -207,7 +207,9 @@ exports.updateMyLocation = async (req, res) => {
                 latitude, longitude, accuracy: accuracy || 0, timestamp: Date.now()
             });
             io.emit('truck-location', {
-                truckId: assignment.truck_id, latitude, longitude,
+                truckId: assignment.truck_id,
+                assignmentId: assignment.id,
+                latitude, longitude,
                 accuracy: accuracy || 0, timestamp: Date.now()
             });
         }

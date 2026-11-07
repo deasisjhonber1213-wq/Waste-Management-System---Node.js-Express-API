@@ -28,7 +28,9 @@
 
 ## Location, route progress, and offline updates
 
-Residents can share their location with administrators and drivers who have an assignment that day. Drivers can see all recently shared resident locations while they have a non-cancelled assignment that day; locations are no longer limited to a radius around the assigned route. The resident map advises sharing a point beside a public road or collection route. Stopping sharing clears saved coordinates immediately when online; if offline, the clear request is queued for reconnection. Coordinates are also cleared after two hours without an update. While sharing is active, the latest location update may be queued for up to five minutes.
+Residents can share their location with administrators and drivers who have an assignment that day. Drivers can see all recently shared resident locations while they have a non-cancelled assignment that day; locations are no longer limited to a radius around the assigned route. Resident location changes and stops are sent to assigned drivers in real time, with periodic refresh as a fallback. The resident map smoothly interpolates live truck updates. The resident map advises sharing a point beside a public road or collection route. Stopping sharing clears saved coordinates immediately when online; if offline, the clear request is queued for reconnection. Coordinates are also cleared after two hours without an update. While sharing is active, the latest location update may be queued for up to five minutes.
+
+Administrators can track trucks on active routes from the Trucks page. The fleet map highlights in-progress assignments and follows their live GPS updates, with a periodic refresh to reconcile route status.
 
 Drivers can record each route stop as collected, missed, or inaccessible. Administrators can review unresolved reports and recent stop exceptions. The dashboard flags a route for review after at least three GPS updates more than 120 metres from its planned road path within 15 minutes; this is an operational alert, not proof of a missed pickup.
 

@@ -383,6 +383,20 @@ function connectWebSocket() {
         }
     });
 
+    socket.on('resident-location', (resident) => {
+        if (dMap) upsertResidentMarker(resident);
+        else loadResidents();
+    });
+
+    socket.on('resident-location-cleared', (data) => {
+        if (!data || data.id == null) return;
+        const marker = residentMarkers[data.id];
+        if (marker && dMap) dMap.removeLayer(marker);
+        delete residentMarkers[data.id];
+        const hud = document.getElementById("residentCountHUD");
+        if (hud) hud.textContent = Object.keys(residentMarkers).length;
+    });
+
     socket.on('driver-disconnected', (data) => {
         console.log('Driver disconnected:', data.driverId);
     });
@@ -1167,47 +1181,55 @@ function updateRouteProgress(lat, lng) {
     markMRFPassed(dPt, progressIndex);
 }
 
+function upsertResidentMarker(resident) {
+    if (!dMap || !resident || resident.id == null) return;
+    const lat = Number(resident.latitude), lng = Number(resident.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    const age = Date.now() - new Date(resident.location_updated_at || 0).getTime();
+    const validAge = Number.isFinite(age) && age >= 0;
+    const fresh = validAge && age < 3 * 60 * 1000;
+    const lastSeen = !validAge
+        ? 'Update time unavailable'
+        : age < 60 * 1000
+        ? 'Updated less than a minute ago'
+        : `Updated ${Math.floor(age / 60000)}m ago`;
+    const icon = L.divIcon({
+        className: "",
+        html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+    });
+    const popup = `<strong style="color:#5b9cf6">${escapeHtml(resident.name || 'Resident')}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${lastSeen}${fresh ? ' · live' : ' · stale'}</span>`;
+    if (residentMarkers[resident.id]) {
+        residentMarkers[resident.id].setLatLng([lat, lng]).setIcon(icon).setPopupContent(popup);
+    } else {
+        residentMarkers[resident.id] = L.marker([lat, lng], { icon })
+            .addTo(dMap)
+            .bindPopup(popup);
+    }
+    const hud = document.getElementById("residentCountHUD");
+    if (hud) hud.textContent = Object.keys(residentMarkers).length;
+}
+
 async function loadResidents() {
     if (!dMap) return;
     try {
         const residents = await api("GET", "/resident-locations");
         const seen = new Set();
-        residents.forEach(r => {
-            if (r.latitude == null || r.longitude == null) return;
-            seen.add(r.id);
-            const age = Date.now() - new Date(r.location_updated_at || 0).getTime();
-            const validAge = Number.isFinite(age) && age >= 0;
-            const fresh = validAge && age < 3 * 60 * 1000;
-            const lastSeen = !validAge
-                ? 'Update time unavailable'
-                : age < 60 * 1000
-                ? 'Updated less than a minute ago'
-                : `Updated ${Math.floor(age / 60000)}m ago`;
-            const icon = L.divIcon({
-                className: "",
-                html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
-            });
-            if (residentMarkers[r.id]) {
-                residentMarkers[r.id].setLatLng([r.latitude, r.longitude]).setIcon(icon);
-                residentMarkers[r.id].setPopupContent(
-                    `<strong style="color:#5b9cf6">${escapeHtml(r.name || 'Resident')}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${lastSeen}${fresh ? ' · live' : ' · stale'}</span>`
-                );
-            } else {
-                residentMarkers[r.id] = L.marker([r.latitude, r.longitude], { icon })
-                    .addTo(dMap)
-                    .bindPopup(`<strong style="color:#5b9cf6">${escapeHtml(r.name || 'Resident')}</strong><br><span style="color:${fresh ? '#2dd4a0' : '#7a8499'}">${lastSeen}${fresh ? ' · live' : ' · stale'}</span>`);
-            }
+        residents.forEach(resident => {
+            if (resident.latitude == null || resident.longitude == null) return;
+            seen.add(String(resident.id));
+            upsertResidentMarker(resident);
         });
         Object.keys(residentMarkers).forEach(id => {
-            if (!seen.has(Number(id))) {
+            if (!seen.has(String(id))) {
                 dMap.removeLayer(residentMarkers[id]);
                 delete residentMarkers[id];
             }
         });
         const hud = document.getElementById("residentCountHUD");
-        if (hud) hud.textContent = seen.size;
+        if (hud) hud.textContent = Object.keys(residentMarkers).length;
     } catch (e) { console.warn("loadResidents:", e); }
 }
 

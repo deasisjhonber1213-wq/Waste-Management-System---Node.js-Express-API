@@ -170,6 +170,9 @@ let hasLiveTruckLocation = false;
 
 let currentAssignmentId = null;
 let routeStatus = null;
+let truckLocationPollInterval = null;
+let truckLocationPollInFlight = false;
+let lastTruckUpdateReceivedAt = null;
 
 let animFrame = null;
 let animating = false;
@@ -556,7 +559,7 @@ function updateRouteProgress(lat, lng) {
     }
 }
 
-function animateTruck(from, to, duration = 3000) {
+function animateTruck(from, to, duration = 1000) {
     if (animating && animFrame) {
         cancelAnimationFrame(animFrame);
         animFrame = null;
@@ -603,10 +606,20 @@ function placeTruckMarker(lat, lng, animate = true, updatedAt = Date.now()) {
 
     if (!map) initMap(lat, lng);
 
+    const updateReceivedAt = performance.now();
+    const animationDuration = lastTruckUpdateReceivedAt === null
+        ? 1000
+        : Math.min(1400, Math.max(700, updateReceivedAt - lastTruckUpdateReceivedAt));
+    lastTruckUpdateReceivedAt = updateReceivedAt;
+
     if (truckMarker) {
         const currentPos = truckMarker.getLatLng();
-        if (animate && currentPos) {
-            animateTruck({ lat: currentPos.lat, lng: currentPos.lng }, { lat, lng });
+        if (animate && currentPos && currentPos.distanceTo(L.latLng(lat, lng)) >= 1) {
+            animateTruck(
+                { lat: currentPos.lat, lng: currentPos.lng },
+                { lat, lng },
+                animationDuration
+            );
         } else {
             truckMarker.setLatLng([lat, lng]);
             updateRouteProgress(lat, lng);
@@ -1036,8 +1049,13 @@ async function loadTodayTruck() {
     try {
         const data = await apiFetch('/api/resident/today-truck');
         if (!data) {
+            if (truckLocationPollInterval) {
+                clearInterval(truckLocationPollInterval);
+                truckLocationPollInterval = null;
+            }
             statusEl.textContent = 'No truck assigned today.';
             currentAssignmentId = null;
+            currentTruckId = null;
             routeStatus = null;
             routeStopStatuses = {};
             truckLocationUpdatedAt = null;
@@ -1045,6 +1063,9 @@ async function loadTodayTruck() {
             initMap();
             startUserTracking();
             return;
+        }
+        if (String(currentTruckId) !== String(data.truck_id)) {
+            lastTruckUpdateReceivedAt = null;
         }
         currentTruckId = data.truck_id;
         currentAssignmentId = data.id || null;
@@ -1097,7 +1118,12 @@ async function loadTodayTruck() {
 
         if (routeStarted && routeStatus === 'in_progress') {
             pollTruckLocation();
-            setInterval(pollTruckLocation, 10000);
+            if (!truckLocationPollInterval) {
+                truckLocationPollInterval = setInterval(pollTruckLocation, 10000);
+            }
+        } else if (truckLocationPollInterval) {
+            clearInterval(truckLocationPollInterval);
+            truckLocationPollInterval = null;
         }
     } catch (err) {
         console.error('loadTodayTruck failed:', err);
@@ -1108,7 +1134,8 @@ async function loadTodayTruck() {
 }
 
 async function pollTruckLocation() {
-    if (!currentTruckId || routeStatus !== 'in_progress') return;
+    if (!currentTruckId || routeStatus !== 'in_progress' || truckLocationPollInFlight) return;
+    truckLocationPollInFlight = true;
     try {
         console.log(`Polling truck ${currentTruckId} location...`);
         const logs = await apiFetch(`/api/resident/truck/${currentTruckId}/location`);
@@ -1117,11 +1144,13 @@ async function pollTruckLocation() {
             placeTruckMarker(logs[0].latitude, logs[0].longitude, true, logs[0].recorded_at);
             const statusEl = document.getElementById('todayTruck');
             if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
-                loadTodayTruck();
+                statusEl.querySelector('span')?.remove();
             }
         }
     } catch (e) {
         console.warn('Truck poll failed:', e);
+    } finally {
+        truckLocationPollInFlight = false;
     }
 }
 
@@ -1167,7 +1196,7 @@ function connectResidentSocket() {
 
         const statusEl = document.getElementById('todayTruck');
         if (statusEl && statusEl.innerHTML.includes('Waiting for GPS')) {
-            loadTodayTruck();
+            statusEl.querySelector('span')?.remove();
         }
     });
 

@@ -294,6 +294,29 @@ exports.getTrucks = async (req, res) => {
     }
 };
 
+exports.getActiveTruckLocations = async (req, res) => {
+    try {
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+        const [assignments] = await db.query(
+            `SELECT ra.id AS assignment_id, ra.truck_id, ra.driver_id,
+                    u.name AS driver_name, r.zone_name,
+                    t.plate_number, t.model, t.latitude, t.longitude,
+                    t.location_updated_at
+             FROM route_assignments ra
+             JOIN users u ON u.id = ra.driver_id
+             JOIN routes r ON r.id = ra.route_id
+             JOIN trucks t ON t.id = ra.truck_id
+             WHERE ra.assigned_date = ? AND ra.status = 'in_progress'
+             ORDER BY ra.id`,
+            [today]
+        );
+        res.json(assignments);
+    } catch (err) {
+        console.error("Active truck location lookup failed:", err);
+        res.status(500).json({ error: "Could not load active truck locations" });
+    }
+};
+
 exports.editTruck = async (req, res) => {
     try {
         const { plate_number, model } = req.body;

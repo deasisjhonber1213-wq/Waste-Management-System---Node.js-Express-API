@@ -75,6 +75,24 @@ function manilaToday() {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 }
 
+async function emitToAssignedDrivers(req, event, payload) {
+    const io = req.app.get('io');
+    if (!io) {
+        console.error(`Cannot emit ${event}: Socket.IO is not available`);
+        return;
+    }
+
+    const [assignments] = await db.query(
+        `SELECT DISTINCT driver_id
+         FROM route_assignments
+         WHERE assigned_date = ? AND status <> 'cancelled'`,
+        [manilaToday()]
+    );
+    assignments.forEach(({ driver_id }) => {
+        io.to(`driver-${driver_id}`).emit(event, payload);
+    });
+}
+
 exports.getTodayTruck = async (req, res) => {
     try {
         const today = manilaToday();
@@ -382,7 +400,16 @@ exports.shareMyLocation = async (req, res) => {
             [latitude, longitude, req.user.id]
         );
 
-        res.json({ message: "Location shared", latitude, longitude });
+        const location_updated_at = new Date().toISOString();
+        await emitToAssignedDrivers(req, 'resident-location', {
+            id: req.user.id,
+            name: req.user.name,
+            latitude,
+            longitude,
+            location_updated_at
+        });
+
+        res.json({ message: "Location shared", latitude, longitude, location_updated_at });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
@@ -397,6 +424,7 @@ exports.stopSharingLocation = async (req, res) => {
              WHERE id = ? AND role = 'resident'`,
             [req.user.id]
         );
+        await emitToAssignedDrivers(req, 'resident-location-cleared', { id: req.user.id });
         res.json({ message: "Location sharing stopped and your shared location was cleared" });
     } catch (err) {
         console.error(err);
