@@ -1,5 +1,4 @@
 const db = require("../config/db");
-const { isNearRoute, isValidCoordinate } = require("../utils/geo");
 
 // ─────────────────────────────────────────────────────────
 // HELPER: Get today's date in Asia/Manila timezone
@@ -582,15 +581,14 @@ exports.updateRouteProgress = async (req, res) => {
 exports.getResidentLocations = async (req, res) => {
     try {
         const [assignments] = await db.query(
-            `SELECT r.waypoints_json
+            `SELECT id
              FROM route_assignments ra
-             JOIN routes r ON r.id = ra.route_id
              WHERE ra.driver_id = ? AND ra.assigned_date = ?
-               AND ra.status IN ('pending', 'in_progress')`,
+               AND ra.status <> 'cancelled'
+             LIMIT 1`,
             [req.user.id, manilaToday()]
         );
-        const routes = assignments.map(row => row.waypoints_json).filter(Boolean);
-        if (!routes.length) return res.json([]);
+        if (!assignments.length) return res.json([]);
 
         const [residents] = await db.query(
             `SELECT id, name, latitude, longitude, location_updated_at
@@ -600,15 +598,10 @@ exports.getResidentLocations = async (req, res) => {
                AND location_updated_at >= NOW() - INTERVAL 2 HOUR
              ORDER BY location_updated_at DESC`
         );
-        const visibleResidents = residents.filter(resident => {
-            const point = { lat: Number(resident.latitude), lng: Number(resident.longitude) };
-            return isValidCoordinate(point) &&
-                routes.some(route => isNearRoute(point, route));
-        });
-        res.json(visibleResidents);
+        res.json(residents);
     } catch (err) {
         console.error("Driver resident-location lookup failed:", err);
-        res.status(500).json({ error: "Could not load residents near your assigned route" });
+        res.status(500).json({ error: "Could not load shared resident locations" });
     }
 };
 
