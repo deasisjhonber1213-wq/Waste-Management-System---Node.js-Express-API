@@ -203,6 +203,20 @@ let allUsers = [];
 let currentViewUser = null;
 let pendingDeleteId = null;
 let pendingDeleteName = null;
+const USER_ROLE_FILTER_KEY = 'admin-users-role-filter';
+
+function normalizeRole(role) {
+    return String(role ?? '').trim().toLowerCase();
+}
+
+function restoreRoleFilter() {
+    const roleFilter = document.getElementById("roleFilter");
+    if (!roleFilter) return;
+
+    const savedRole = localStorage.getItem(USER_ROLE_FILTER_KEY);
+    const validRole = Array.from(roleFilter.options).some(option => option.value === savedRole);
+    roleFilter.value = validRole ? savedRole : '';
+}
 
 function escHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c =>
@@ -230,12 +244,16 @@ async function loadUsers() {
             throw new Error(msg);
         }
 
-        allUsers = await res.json();
-        renderUsers(allUsers);
+        const users = await res.json();
+        if (!Array.isArray(users)) {
+            throw new Error("Unexpected user list response");
+        }
+        allUsers = users;
+        filterUsers();
 
         document.getElementById("totalUsers").textContent = allUsers.length;
-        document.getElementById("totalDrivers").textContent = allUsers.filter(u => u.role === "driver").length;
-        document.getElementById("totalResidents").textContent = allUsers.filter(u => u.role === "resident").length;
+        document.getElementById("totalDrivers").textContent = allUsers.filter(u => normalizeRole(u.role) === "driver").length;
+        document.getElementById("totalResidents").textContent = allUsers.filter(u => normalizeRole(u.role) === "resident").length;
     } catch (err) {
         console.error('Load users error:', err);
         showToast("Failed to load users: " + (err.message || "unknown error"), "error");
@@ -273,11 +291,15 @@ function renderUsers(data) {
 }
 
 function filterUsers() {
-    const q = document.getElementById("searchInput").value.toLowerCase();
-    const role = document.getElementById("roleFilter").value;
+    const q = (document.getElementById("searchInput")?.value || '').trim().toLowerCase();
+    const roleFilter = document.getElementById("roleFilter");
+    const role = normalizeRole(roleFilter?.value);
+    if (role) localStorage.setItem(USER_ROLE_FILTER_KEY, role);
+    else localStorage.removeItem(USER_ROLE_FILTER_KEY);
+
     const filtered = allUsers.filter(u =>
         (!q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)) &&
-        (!role || u.role === role)
+        (!role || normalizeRole(u.role) === role)
     );
     renderUsers(filtered);
 }
@@ -553,4 +575,5 @@ window.togglePasswordVisibility = togglePasswordVisibility;
 window.doLogout = doLogout;
 
 loadAdminProfile();
+restoreRoleFilter();
 loadUsers();
