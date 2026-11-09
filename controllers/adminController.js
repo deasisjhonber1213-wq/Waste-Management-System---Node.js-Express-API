@@ -5,6 +5,8 @@ const bcrypt = require("bcrypt");
 const fs = require("fs");
 const { distanceFromRouteMeters, getRouteGeometry } = require("../utils/geo");
 
+const AUTO_PICKUP_SMS_ENABLED = false;
+
 function parseJsonValue(raw) {
     if (!raw) return null;
     if (typeof raw !== 'string') return raw;
@@ -558,8 +560,10 @@ exports.assignRoute = async (req, res) => {
             [driver_id, truck_id, route_id, assigned_date, pickup_type || "regular"]
         );
 
-        notifyResidentsOfPickup(route_id, truck_id, assigned_date, pickup_type || "regular")
-            .catch((e) => console.error("Pickup SMS notify error:", e));
+        if (AUTO_PICKUP_SMS_ENABLED) {
+            notifyResidentsOfPickup(route_id, truck_id, assigned_date, pickup_type || "regular")
+                .catch((e) => console.error("Pickup SMS notify error:", e));
+        }
 
         res.json({ message: "Route assigned successfully" });
     } catch (err) {
@@ -569,6 +573,11 @@ exports.assignRoute = async (req, res) => {
 };
 
 async function notifyResidentsOfPickup(route_id, truck_id, assigned_date, pickup_type) {
+    if (!AUTO_PICKUP_SMS_ENABLED) {
+        console.log("Pickup SMS notifications are temporarily disabled");
+        return;
+    }
+
     try {
         const { sendPickupNotice } = require("../utils/sms");
 
@@ -615,6 +624,10 @@ async function notifyResidentsOfPickup(route_id, truck_id, assigned_date, pickup
 }
 
 exports.notifyPickupToday = async (req, res) => {
+    if (!AUTO_PICKUP_SMS_ENABLED) {
+        return res.status(503).json({ error: "Pickup SMS notifications are temporarily disabled" });
+    }
+
     try {
         const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
         const [assignments] = await db.query(
