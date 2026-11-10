@@ -284,11 +284,20 @@
                         <div class="form-group"><label class="form-label">Address</label><input class="form-control"
                                 id="editAddress" placeholder="123 Main St"></div>
                         <div class="form-group"><label class="form-label">Role</label>
-                            <select class="form-control" id="editRole">
+                            <select class="form-control" id="editRole" onchange="toggleSmsNotificationSetting()">
                                 <option value="resident">Resident</option>
                                 <option value="driver">Driver</option>
                                 <option value="admin">Admin</option>
                             </select>
+                        </div>
+                        <div class="form-group" id="smsNotificationSetting" style="grid-column:1/-1">
+                            <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                                <input type="checkbox" id="editSmsNotificationsEnabled" checked>
+                                Receive pickup SMS notifications
+                            </label>
+                            <div style="font-size:12px;color:var(--text3);margin-top:4px">
+                                Turn this off to skip SMS messages for this resident.
+                            </div>
                         </div>
                     </div>
                 </div>

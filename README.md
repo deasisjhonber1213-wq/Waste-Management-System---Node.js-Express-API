@@ -28,6 +28,8 @@
 
 ## Location, route progress, and offline updates
 
+Administrators can turn off pickup SMS notifications for individual residents from the Users page by editing the resident and clearing **Receive pickup SMS notifications**. New and existing residents are enabled by default; this preference does not affect account-recovery SMS.
+
 Residents can share their location with administrators and drivers who have an assignment that day. Drivers can see all recently shared resident locations while they have a non-cancelled assignment that day; locations are no longer limited to a radius around the assigned route. Resident location changes and stops are sent to assigned drivers in real time, with periodic refresh as a fallback. The resident map smoothly interpolates live truck updates. The resident map advises sharing a point beside a public road or collection route. Stopping sharing clears saved coordinates immediately when online; if offline, the clear request is queued for reconnection. Coordinates are also cleared after two hours without an update. While sharing is active, the latest location update may be queued for up to five minutes.
 
 Administrators can track trucks on active routes from the Trucks page. The fleet map highlights in-progress assignments and follows their live GPS updates, with a periodic refresh to reconcile route status.

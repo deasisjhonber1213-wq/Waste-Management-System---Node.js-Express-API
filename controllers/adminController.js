@@ -145,7 +145,7 @@ exports.dashboardStats = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const [users] = await db.query(
-            "SELECT id, name, email, role, phone, address FROM users"
+            "SELECT id, name, email, role, phone, address, sms_notifications_enabled FROM users"
         );
         res.json(users);
     } catch (err) {
@@ -157,7 +157,7 @@ exports.getUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
     try {
         const [users] = await db.query(
-            "SELECT id, name, email, role, phone, address FROM users WHERE id = ?",
+            "SELECT id, name, email, role, phone, address, sms_notifications_enabled FROM users WHERE id = ?",
             [req.params.id]
         );
         if (!users.length) {
@@ -174,10 +174,13 @@ exports.getUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, email, phone, address, role, password } = req.body;
+        const { name, email, phone, address, role, password, sms_notifications_enabled } = req.body;
 
         if (!name || !email) {
             return res.status(400).json({ error: "Name and email are required" });
+        }
+        if (sms_notifications_enabled !== undefined && typeof sms_notifications_enabled !== "boolean") {
+            return res.status(400).json({ error: "SMS notification preference must be a boolean" });
         }
 
 
@@ -200,6 +203,10 @@ exports.updateUser = async (req, res) => {
         let query = "UPDATE users SET name = ?, email = ?, phone = ?, address = ?, role = ?";
         let values = [name, email, phone || null, address || null, role || 'resident'];
 
+        if (sms_notifications_enabled !== undefined) {
+            query += ", sms_notifications_enabled = ?";
+            values.push(sms_notifications_enabled ? 1 : 0);
+        }
 
         if (password) {
             if (password.length < 6) {
@@ -224,6 +231,38 @@ exports.updateUser = async (req, res) => {
         res.json({ message: "User updated successfully" });
     } catch (err) {
         console.error('Update user error:', err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.updateUserSmsNotifications = async (req, res) => {
+    try {
+        const enabled = req.body.enabled;
+        if (typeof enabled !== "boolean") {
+            return res.status(400).json({ error: "SMS notification setting must be a boolean" });
+        }
+
+        const [result] = await db.query(
+            "UPDATE users SET sms_notifications_enabled = ? WHERE id = ? AND role = 'resident'",
+            [enabled ? 1 : 0, req.params.id]
+        );
+        if (!result.affectedRows) {
+            const [[resident]] = await db.query(
+                "SELECT id FROM users WHERE id = ? AND role = 'resident'",
+                [req.params.id]
+            );
+            if (!resident) {
+                return res.status(404).json({ error: "Resident not found" });
+            }
+        }
+
+        await db.query(
+            "INSERT INTO audit_logs (user_id, action) VALUES (?, ?)",
+            [req.user.id, `${enabled ? "Enabled" : "Disabled"} pickup SMS for resident ID ${req.params.id}`]
+        );
+        res.json({ message: `Pickup SMS ${enabled ? "enabled" : "disabled"}` });
+    } catch (err) {
+        console.error("Update resident SMS preference error:", err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -599,7 +638,9 @@ async function notifyResidentsOfPickup(route_id, truck_id, assigned_date, pickup
 
         const [residents] = await db.query(
             `SELECT id, name, phone FROM users
-             WHERE role = 'resident' AND phone IS NOT NULL AND phone != ''`
+             WHERE role = 'resident'
+               AND sms_notifications_enabled = 1
+               AND phone IS NOT NULL AND phone != ''`
         );
 
         if (!residents.length) {

@@ -13,6 +13,7 @@ router.get("/users", ctrl.getUsers);
 router.get("/users/:id", ctrl.getUserById);
 router.post("/users", ctrl.createUser);          // admin create → auto-verified
 router.put("/users/:id", ctrl.updateUser);
+router.patch("/users/:id/sms-notifications", ctrl.updateUserSmsNotifications);
 router.delete("/users/:id", ctrl.deleteUser);
 
 // Trucks

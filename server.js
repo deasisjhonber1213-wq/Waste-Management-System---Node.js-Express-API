@@ -874,6 +874,24 @@ app.use((err, req, res, next) => {
 });
 
 async function initializeAppSchema() {
+    const [userColumns] = await db.query(`
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'users'
+    `);
+    if (!userColumns.some(column => column.COLUMN_NAME === 'sms_notifications_enabled')) {
+        try {
+            await db.query(
+                `ALTER TABLE users
+                 ADD COLUMN sms_notifications_enabled TINYINT(1) NOT NULL DEFAULT 1`
+            );
+            console.log('Added sms_notifications_enabled column to users');
+        } catch (err) {
+            if (err.code !== 'ER_DUP_FIELDNAME') throw err;
+        }
+    }
+
     await db.query(`
         CREATE TABLE IF NOT EXISTS resident_report_requests (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

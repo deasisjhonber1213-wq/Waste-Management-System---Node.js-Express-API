@@ -154,6 +154,16 @@ const API = {
             body: JSON.stringify(data)
         });
     },
+    patch: async (endpoint, data) => {
+        return fetch(API_URL + endpoint, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken()
+            },
+            body: JSON.stringify(data)
+        });
+    },
     del: async (endpoint) => {
         return fetch(API_URL + endpoint, {
             method: 'DELETE',
@@ -282,6 +292,7 @@ function renderUsers(data) {
                     <td class="table-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(u.address || "—")}</td>
                     <td>
                         <div class="flex-row" style="gap:6px;flex-wrap:nowrap;">
+                            ${normalizeRole(u.role) === "resident" ? `<button class="btn ${u.sms_notifications_enabled === undefined || Number(u.sms_notifications_enabled) === 1 ? "btn-outline" : "btn-gold"} btn-sm" onclick="toggleSmsNotifications(${u.id})">${u.sms_notifications_enabled === undefined || Number(u.sms_notifications_enabled) === 1 ? "Disable SMS" : "Enable SMS"}</button>` : ""}
                             <button class="btn btn-outline btn-icon btn-sm" title="View" onclick="viewUser(${u.id})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
                             <button class="btn btn-gold btn-icon btn-sm" title="Edit" onclick="openEditUser(${u.id})"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
                             <button class="btn btn-danger btn-icon btn-sm" title="Delete" onclick="openDeleteConfirm(${u.id},'${escHtml(u.name)}')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -302,6 +313,31 @@ function filterUsers() {
         (!role || normalizeRole(u.role) === role)
     );
     renderUsers(filtered);
+}
+
+async function toggleSmsNotifications(id) {
+    const user = allUsers.find(u => u.id === id);
+    if (!user) {
+        showToast("Resident not found", "error");
+        return;
+    }
+
+    const enabled = !(user.sms_notifications_enabled === undefined ||
+        Number(user.sms_notifications_enabled) === 1);
+    try {
+        const res = await API.patch(`/admin/users/${id}/sms-notifications`, {
+            enabled
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "Failed to update SMS notifications");
+        }
+        user.sms_notifications_enabled = enabled ? 1 : 0;
+        filterUsers();
+        showToast(`Pickup SMS ${enabled ? "enabled" : "disabled"} for ${user.name}`, "success");
+    } catch (err) {
+        showToast(err.message || "Failed to update SMS notifications", "error");
+    }
 }
 
 async function addUser() {
@@ -366,9 +402,17 @@ function openEditUser(id) {
     document.getElementById("editPhone").value = user.phone || '';
     document.getElementById("editAddress").value = user.address || '';
     document.getElementById("editRole").value = user.role || 'resident';
+    document.getElementById("editSmsNotificationsEnabled").checked =
+        user.sms_notifications_enabled === undefined || Number(user.sms_notifications_enabled) === 1;
+    toggleSmsNotificationSetting();
     document.getElementById("editPassword").value = '';
     document.getElementById("editPasswordConfirm").value = '';
     openModal("editUserModal");
+}
+
+function toggleSmsNotificationSetting() {
+    const isResident = document.getElementById("editRole").value === "resident";
+    document.getElementById("smsNotificationSetting").hidden = !isResident;
 }
 
 async function updateUser() {
@@ -397,7 +441,14 @@ async function updateUser() {
         }
     }
 
-    const payload = { name, email, phone, address, role };
+    const payload = {
+        name,
+        email,
+        phone,
+        address,
+        role,
+        sms_notifications_enabled: document.getElementById("editSmsNotificationsEnabled").checked
+    };
     if (password) payload.password = password;
 
     try {
