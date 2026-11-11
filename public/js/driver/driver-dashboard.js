@@ -1196,7 +1196,7 @@ function upsertResidentMarker(resident) {
         : `Updated ${Math.floor(age / 60000)}m ago`;
     const icon = L.divIcon({
         className: "",
-        html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🏠</span></div>`,
+        html: `<div class="resident-marker ${fresh ? 'fresh' : 'stale'}"><span style="font-size:11px">🗑️</span></div>`,
         iconSize: [24, 24],
         iconAnchor: [12, 12]
     });

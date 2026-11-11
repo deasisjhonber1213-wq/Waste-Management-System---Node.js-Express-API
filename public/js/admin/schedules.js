@@ -294,12 +294,15 @@ async function assignRoute() {
         showToast("Fill all fields", "error");
         return;
     }
+    const submitButton = document.querySelector("#assignModal .modal-footer .btn-gold");
+    if (submitButton?.disabled) return;
+    if (submitButton) submitButton.disabled = true;
+
     try {
         const res = await API.post("/admin/assign-route", body);
         if (!res.ok) {
-            const err = await res.text();
-            console.error('Assign error:', err);
-            throw new Error(err);
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || `Request failed (HTTP ${res.status})`);
         }
         closeModal("assignModal");
         showToast("Route assigned successfully", "success");
@@ -307,6 +310,8 @@ async function assignRoute() {
     } catch (err) {
         console.error('Assign failed:', err);
         showToast("Assignment failed: " + err.message, "error");
+    } finally {
+        if (submitButton) submitButton.disabled = false;
     }
 }
 

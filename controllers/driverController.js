@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { deduplicateAssignments } = require("../utils/routeAssignments");
 
 // ─────────────────────────────────────────────────────────
 // HELPER: Get today's date in Asia/Manila timezone
@@ -58,9 +59,9 @@ exports.getTodayAssignment = async (req, res) => {
 
         const [assignments] = await db.query(
             `SELECT
-                ra.id, ra.assigned_date, ra.status, ra.pickup_type, ra.progress_log,
+                ra.id, ra.driver_id, ra.assigned_date, ra.status, ra.pickup_type, ra.progress_log,
                 r.id as route_id, r.zone_name, r.description AS zone_description,
-                t.id AS truck_id, t.plate_number, t.model, t.latitude, t.longitude
+                ra.truck_id, t.plate_number, t.model, t.latitude, t.longitude
              FROM route_assignments ra
              JOIN routes r ON ra.route_id = r.id
              JOIN trucks t ON ra.truck_id = t.id
@@ -69,7 +70,7 @@ exports.getTodayAssignment = async (req, res) => {
             [req.user.id, today]
         );
 
-        res.json(assignments.map(assignment => ({
+        res.json(deduplicateAssignments(assignments).map(assignment => ({
             ...assignment,
             progress_log: parseProgressLog(assignment.progress_log)
         })));
@@ -138,6 +139,9 @@ exports.getMySchedule = async (req, res) => {
         const [rows] = await db.query(
             `SELECT
                 ra.id,
+                ra.driver_id,
+                ra.route_id,
+                ra.truck_id,
                 ra.assigned_date,
                 ra.status,
                 ra.pickup_type,
@@ -152,7 +156,7 @@ exports.getMySchedule = async (req, res) => {
              LIMIT 30`,
             [req.user.id]
         );
-        res.json(rows);
+        res.json(deduplicateAssignments(rows));
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });

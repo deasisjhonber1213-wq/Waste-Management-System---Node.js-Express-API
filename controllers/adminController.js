@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const fs = require("fs");
 const { distanceFromRouteMeters, getRouteGeometry } = require("../utils/geo");
 
-const AUTO_PICKUP_SMS_ENABLED = false;
+const AUTO_PICKUP_SMS_ENABLED = true;
 
 function parseJsonValue(raw) {
     if (!raw) return null;
@@ -592,6 +592,21 @@ exports.deleteRoute = async (req, res) => {
 exports.assignRoute = async (req, res) => {
     try {
         const { driver_id, truck_id, route_id, assigned_date, pickup_type } = req.body;
+        if (!driver_id || !truck_id || !route_id || !assigned_date) {
+            return res.status(400).json({ error: "Driver, truck, route and date are required" });
+        }
+
+        const [existingAssignments] = await db.query(
+            `SELECT id FROM route_assignments
+             WHERE driver_id = ? AND truck_id = ? AND route_id = ?
+               AND assigned_date = ? AND LOWER(COALESCE(pickup_type, 'regular')) = LOWER(?)
+             LIMIT 1`,
+            [driver_id, truck_id, route_id, assigned_date, pickup_type || "regular"]
+        );
+        if (existingAssignments.length) {
+            return res.status(409).json({ error: "This same route is already scheduled for this driver, truck and date" });
+        }
+
         await db.query(
             `INSERT INTO route_assignments
                 (driver_id, truck_id, route_id, assigned_date, pickup_type, status)

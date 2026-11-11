@@ -182,6 +182,7 @@ io.use((socket, next) => {
 });
 
 const db = require("./config/db");
+const { deduplicateAssignments } = require("./utils/routeAssignments");
 const jwt = require("jsonwebtoken");
 const auth = require("./middleware/auth");
 const connectedDrivers = new Map();
@@ -246,7 +247,7 @@ io.on('connection', (socket) => {
             );
 
             // Always emit an array — client's assignment-update handler expects it
-            socket.emit('assignment-update', assignments);
+            socket.emit('assignment-update', deduplicateAssignments(assignments));
 
             const [stats] = await db.query(
                 `SELECT 
@@ -389,7 +390,7 @@ io.on('connection', (socket) => {
             ORDER BY ra.id ASC`,
                 [driverId]
             );
-            io.to(`driver-${driverId}`).emit('assignment-update', assignments);
+            io.to(`driver-${driverId}`).emit('assignment-update', deduplicateAssignments(assignments));
 
             socket.broadcast.to(`dispatcher-${driverId}`).emit('driver-status-changed', {
                 driverId,
