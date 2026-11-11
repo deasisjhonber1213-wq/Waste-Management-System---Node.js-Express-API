@@ -26,6 +26,10 @@
 - `JWT_SECRET`: Required signing key for authentication tokens. Use a unique, unpredictable secret of at least 32 bytes and keep it out of source control.
 - `MIGRATION_SECRET`: Optional migration endpoint key. To use `POST /migrate`, configure a unique secret of at least 32 characters and send it in the `X-Migration-Secret` header.
 
+## Local XAMPP database schema
+
+The application schema is documented in [`database/schema.sql`](./database/schema.sql). It targets the existing `smartwaste` database and creates missing tables without dropping data. Import it in phpMyAdmin after MySQL is healthy. `CREATE TABLE IF NOT EXISTS` does not retrofit foreign keys on tables that already exist; compare their structure before applying any relationship migration.
+
 ## Location, route progress, and offline updates
 
 Pickup SMS is enabled for same-day route assignments and is sent only to residents with a phone number and **Receive pickup SMS notifications** enabled. Administrators can turn it off per resident from the Users page; new and existing residents are enabled by default. This preference does not affect account-recovery SMS. Duplicate assignments for the same driver, truck, route, date, and pickup type are rejected, and duplicate historical entries are collapsed in the driver's schedule.

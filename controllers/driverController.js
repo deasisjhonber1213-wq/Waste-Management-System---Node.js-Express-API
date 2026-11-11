@@ -290,19 +290,31 @@ exports.getTripHistory = async (req, res) => {
     try {
         const [rows] = await db.query(
             `SELECT
-                tl.id,
-                COALESCE(tl.completed_at, tl.end_time, ra.assigned_date) AS completed_at,
+                ra.id AS assignment_id,
+                COALESCE(
+                    (SELECT MAX(COALESCE(tl.completed_at, tl.end_time))
+                     FROM trip_logs tl
+                     WHERE tl.assignment_id = ra.id
+                       AND (tl.completed_at IS NOT NULL OR tl.end_time IS NOT NULL)),
+                    ra.assigned_date
+                ) AS completed_at,
                 ra.assigned_date,
                 ra.pickup_type,
                 ra.status,
                 r.zone_name,
                 t.plate_number
-             FROM trip_logs tl
-             JOIN route_assignments ra ON tl.assignment_id = ra.id
+             FROM route_assignments ra
              JOIN routes r ON ra.route_id = r.id
              JOIN trucks t ON ra.truck_id = t.id
              WHERE ra.driver_id = ?
-             ORDER BY COALESCE(tl.completed_at, tl.end_time, tl.logged_at) DESC
+               AND ra.status IN ('completed', 'cancelled')
+             ORDER BY COALESCE(
+                 (SELECT MAX(COALESCE(tl.completed_at, tl.end_time))
+                  FROM trip_logs tl
+                  WHERE tl.assignment_id = ra.id
+                    AND (tl.completed_at IS NOT NULL OR tl.end_time IS NOT NULL)),
+                 ra.assigned_date
+             ) DESC
              LIMIT 20`,
             [req.user.id]
         );
