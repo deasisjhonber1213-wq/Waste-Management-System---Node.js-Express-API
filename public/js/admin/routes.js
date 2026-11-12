@@ -402,7 +402,11 @@ function openEditModal(id) {
         initMarkingMap();
         setActiveLayer('road');
         const { road, pins, mrf } = parseWaypoints(route.waypoints_json);
-        road.forEach(p => addRoadVertex(p.lat, p.lng));
+        roadPoints = road.map(p => ({ lat: Number(p.lat), lng: Number(p.lng) }));
+        rebuildRoadMarkersFromPoints();
+        rebuildRoadPolyline();
+        rebuildGhostHandles();
+        updateUI();
         pins.forEach(p => addPinMarker(p.lat, p.lng));
         mrf.forEach(p => addMRFMarker(p.lat, p.lng));
         const allPts = [...road, ...pins, ...mrf];
@@ -450,79 +454,94 @@ function setActiveLayer(layer) {
 function addRoadVertex(lat, lng, insertAfterIdx = null) {
     if (insertAfterIdx !== null) {
         roadPoints.splice(insertAfterIdx + 1, 0, { lat, lng });
+        rebuildRoadMarkersFromPoints();
+        rebuildRoadPolyline();
+        rebuildGhostHandles();
     } else {
         roadPoints.push({ lat, lng });
+        createRoadMarker(roadPoints.length - 1);
+        rebuildRoadPolyline();
+        if (roadPoints.length > 1) createGhostHandle(roadPoints.length - 2);
     }
-    rebuildRoadMarkersFromPoints();
-    rebuildRoadPolyline();
-    rebuildGhostHandles();
     updateUI();
 }
 
 function rebuildRoadMarkersFromPoints() {
     roadMarkers.forEach(m => markingMap.removeLayer(m));
     roadMarkers = [];
-    roadPoints.forEach((pt, idx) => {
-        const icon = L.divIcon({
-            html: `<div class="road-vertex"></div>`,
-            iconSize: [12, 12], iconAnchor: [6, 6], className: ''
-        });
-        const m = L.marker([pt.lat, pt.lng], { icon, draggable: true, zIndexOffset: 100 }).addTo(markingMap);
-        m.on('drag', () => {
-            roadPoints[idx] = { lat: m.getLatLng().lat, lng: m.getLatLng().lng };
-            rebuildRoadPolyline();
-            rebuildGhostHandles();
-        });
-        m.on('dragend', updateUI);
-        m.on('contextmenu', e => {
-            L.DomEvent.stopPropagation(e);
-            roadPoints.splice(idx, 1);
-            rebuildRoadMarkersFromPoints();
-            rebuildRoadPolyline();
-            rebuildGhostHandles();
-            updateUI();
-        });
-        roadMarkers.push(m);
+    roadPoints.forEach((_, idx) => createRoadMarker(idx));
+}
+
+function createRoadMarker(idx) {
+    const pt = roadPoints[idx];
+    const icon = L.divIcon({
+        html: `<div class="road-vertex"></div>`,
+        iconSize: [12, 12], iconAnchor: [6, 6], className: ''
     });
+    const marker = L.marker([pt.lat, pt.lng], { icon, draggable: true, zIndexOffset: 100 }).addTo(markingMap);
+    marker.on('drag', () => {
+        roadPoints[idx] = { lat: marker.getLatLng().lat, lng: marker.getLatLng().lng };
+        rebuildRoadPolyline();
+    });
+    marker.on('dragend', () => {
+        rebuildGhostHandles();
+        updateUI();
+    });
+    marker.on('contextmenu', e => {
+        L.DomEvent.stopPropagation(e);
+        roadPoints.splice(idx, 1);
+        rebuildRoadMarkersFromPoints();
+        rebuildRoadPolyline();
+        rebuildGhostHandles();
+        updateUI();
+    });
+    roadMarkers.push(marker);
 }
 
 function rebuildRoadPolyline() {
-    if (roadPolyline) {
+    if (roadPoints.length > 1) {
+        const latLngs = roadPoints.map(p => [p.lat, p.lng]);
+        if (roadPolyline) {
+            roadPolyline.setLatLngs(latLngs);
+        } else {
+            roadPolyline = L.polyline(latLngs,
+                { color: '#60a5fa', weight: 4, opacity: 0.9 }).addTo(markingMap);
+        }
+    } else if (roadPolyline) {
         markingMap.removeLayer(roadPolyline);
         roadPolyline = null;
     }
-    if (roadPoints.length > 1)
-        roadPolyline = L.polyline(roadPoints.map(p => [p.lat, p.lng]),
-            { color: '#60a5fa', weight: 4, opacity: 0.9 }).addTo(markingMap);
 }
 
 function rebuildGhostHandles() {
     ghostMarkers.forEach(m => markingMap.removeLayer(m));
     ghostMarkers = [];
     for (let i = 0; i < roadPoints.length - 1; i++) {
-        const a = roadPoints[i],
-            b = roadPoints[i + 1];
-        const midLat = (a.lat + b.lat) / 2,
-            midLng = (a.lng + b.lng) / 2;
-        const insertAfter = i;
-        const icon = L.divIcon({
-            html: `<div class="ghost-handle"></div>`,
-            iconSize: [10, 10], iconAnchor: [5, 5], className: ''
-        });
-        const g = L.marker([midLat, midLng], { icon, draggable: true, zIndexOffset: 50 }).addTo(markingMap);
-        g.on('dragstart', () => {
-            const pos = g.getLatLng();
-            markingMap.removeLayer(g);
-            const gIdx = ghostMarkers.indexOf(g);
-            if (gIdx >= 0) ghostMarkers.splice(gIdx, 1);
-            roadPoints.splice(insertAfter + 1, 0, { lat: pos.lat, lng: pos.lng });
-            rebuildRoadMarkersFromPoints();
-            rebuildRoadPolyline();
-            rebuildGhostHandles();
-            updateUI();
-        });
-        ghostMarkers.push(g);
+        createGhostHandle(i);
     }
+}
+
+function createGhostHandle(segmentIdx) {
+    const a = roadPoints[segmentIdx];
+    const b = roadPoints[segmentIdx + 1];
+    const icon = L.divIcon({
+        html: `<div class="ghost-handle"></div>`,
+        iconSize: [10, 10], iconAnchor: [5, 5], className: ''
+    });
+    const marker = L.marker([(a.lat + b.lat) / 2, (a.lng + b.lng) / 2],
+        { icon, draggable: true, zIndexOffset: 50 }).addTo(markingMap);
+    marker.on('dragstart', () => {
+        const pos = marker.getLatLng();
+        markingMap.removeLayer(marker);
+        const idx = ghostMarkers.indexOf(marker);
+        if (idx >= 0) ghostMarkers.splice(idx, 1);
+        roadPoints.splice(segmentIdx + 1, 0, { lat: pos.lat, lng: pos.lng });
+        rebuildRoadMarkersFromPoints();
+        rebuildRoadPolyline();
+        rebuildGhostHandles();
+        updateUI();
+    });
+    ghostMarkers.push(marker);
 }
 
 function addPinMarker(lat, lng) {
